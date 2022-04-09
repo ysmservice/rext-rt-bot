@@ -3,7 +3,7 @@
 from discord.ext import commands, tasks
 import discord
 
-from utils import RT, Cog, Embed, t
+from rtlib import RT, Cog, Embed, t
 
 
 class General(Cog):

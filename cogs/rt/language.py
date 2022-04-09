@@ -5,7 +5,7 @@ from typing import Literal, Optional
 from discord.ext import commands
 from discord import app_commands
 
-from utils import RT, Cog, DatabaseManager, cursor, Pool, Cursor, t
+from rtlib import RT, Cog, DatabaseManager, cursor, Pool, Cursor, t
 
 
 class DataManager(DatabaseManager):
