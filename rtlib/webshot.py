@@ -1,27 +1,22 @@
-from aiohttp import ClientSession
-import asyncio
-import io
-import io
+# RT - WebShot
 
-class WebShot:
+from asyncio import run
+
+from aiofiles import open as aioopen
+from aiohttp import ClientSession
+
+
+async def shot(url: str, path: str) -> None:
+    """Shot a webpage
     
-    async def shot(self, url: str) -> io.BytesIO:
-        """shot a webpage
-        
-        Parameters
-        ----------
-        url: str
-            URL"""
-        if not url.startswith(("https://", "http")):
-            url = "https://" + url
-        async with ClientSession() as session:
-            async with session.post("https://apiwebshot.dmsblog.cf/api", json={"url": url}) as r:
-                return io.BytesIO(await r.read())
-        
+    Parameters
+    ----------
+    url: strURL"""
+    async with ClientSession() as session:
+        async with session.post("https://apiwebshot.dmsblog.cf/api", json={"url": url}) as r:
+            async with aioopen(path, "wb") as f:
+                await f.write(await r.read())
+
+
 if __name__ == "__main__":
-    async def main():
-        webshot = WebShot()
-        with open("image.png", "wb") as f:
-            f.write((await webshot.shot("https://example.com")).read())
-            
-    asyncio.run(main())
+    run(shot("https://www.google.co.jp", "test.png"))
