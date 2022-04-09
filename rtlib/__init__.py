@@ -11,13 +11,15 @@ from aiomysql import Pool, Cursor
 from .bot import RT
 from .cacher import Cacher, Cache, CacherPool
 from .data_manager import DatabaseManager, cursor
+from .help import Help
+
 from data.constants import Colors
 
 
 __all__ = (
     "RT", "Cog", "Cacher", "Cache", "CacherPool",
     "DatabaseManager", "cursor", "Pool", "Cursor",
-    "t", "cast"
+    "t", "cast", "Help"
 )
 
 
@@ -27,19 +29,6 @@ class Embed(OriginalEmbed):
         if "color" not in kwargs:
             kwargs["color"] = Colors.normal
         super().__init__(*args, **kwargs)
-
-
-class Cog(OriginalCog):
-    "Extended cog"
-
-    async def _inject(self, *args, **kwargs):
-        await super()._inject(*args, **kwargs)
-        self.__parent__ = __file__[:__file__.rfind("/")]
-        self.__category__ = self.__parent__[__file__.rfind("/")+1:]
-
-    def embed(self, **kwargs) -> Embed:
-        "Make embed and set title to the cog name."
-        return Embed(self.__cog_name__, **kwargs)
 
 
 def _get_client(obj):
@@ -73,6 +62,23 @@ def t(text: dict[str, str], ctx: Any = None, **kwargs) -> str:
         if language is None: language = "en"
         text = text.get("en", text["ja"]) if language is None else text[language] # type: ignore
     return text.format(**kwargs) # type: ignore
+
+
+class Cog(OriginalCog):
+    "Extended cog"
+
+    Help = Help
+    Embed = Embed
+    t = t
+
+    async def _inject(self, *args, **kwargs):
+        await super()._inject(*args, **kwargs)
+        self.__parent__ = __file__[:__file__.rfind("/")]
+        self.__category__ = self.__parent__[__file__.rfind("/")+1:]
+
+    def embed(self, **kwargs) -> Embed:
+        "Make embed and set title to the cog name."
+        return Embed(self.__cog_name__, **kwargs)
 
 
 def cast(**kwargs: dict[str, str]) -> str:
