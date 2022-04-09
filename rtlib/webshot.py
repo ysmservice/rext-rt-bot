@@ -6,7 +6,12 @@ import io
 class WebShot:
     
     async def shot(self, url: str) -> io.BytesIO:
-        """shot a webpage"""
+        """shot a webpage
+        
+        Parameters
+        ----------
+        url: str
+            URL"""
         if not url.startswith(("https://", "http")):
             url = "https://" + url
         async with ClientSession() as session:
