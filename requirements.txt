@@ -1,0 +1,7 @@
+aiohttp[speedups]
+aiomysql
+aiofiles
+ujson
+git+https://github.com/Rapptz/discord.py
+discord-ext-fslash
+jishaku
