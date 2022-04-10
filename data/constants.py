@@ -1,5 +1,6 @@
 # RT Data - Constants
 
+from re import A
 from sys import argv
 
 
@@ -19,6 +20,16 @@ ADMINS = (
     634763612535390209, 667319675176091659, 266988527915368448,
     884692310166761504, 739702692393517076
 )
+
+
+"Category alias display in Help"
+CATEGORIES = {
+    "server-tool": {"ja": "サーバー ツール"},
+    "server-panel": {"ja": "サーバー パネル"},
+    "server-safety": {"ja": "サーバー 安全"},
+    "individual": {"ja": "個人"},
+    "entertainment": {"ja": "娯楽"}
+}
 
 
 class Colors:

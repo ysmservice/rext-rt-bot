@@ -1,6 +1,6 @@
 # RT - Bot
 
-from typing import Optional
+from typing import Literal, Optional
 
 from dataclasses import dataclass
 from os.path import isdir
@@ -42,12 +42,13 @@ class RT(commands.AutoShardedBot):
         kwargs["status"] = discord.Status.dnd
         kwargs["activity"] = discord.Game("起動")
         kwargs["command_prefix"] = self._get_command_prefix
+        kwargs["help_command"] = None
         super().__init__(*args, **kwargs)
 
         self.prefixes = {}
         self.language = Caches({}, {})
 
-        extend_force_slash(self)
+        extend_force_slash(self, replace_invalid_annotation_to_str=True)
 
     def _get_command_prefix(self, _, message: discord.Message):
         return PREFIXES if message.guild is None or message.guild.id not in self.prefixes \
@@ -68,8 +69,10 @@ class RT(commands.AutoShardedBot):
 
     async def setup_hook(self):
         self.cachers = CacherPool()
+        self.print("Prepared cachers")
         self.pool = await create_pool(**SECRET["mysql"])
-        # await self.load_extension("jishaku")
+        self.print("Prepared mysql pool")
+        await self.load_extension("jishaku")
         for path in listdir("cogs"):
             path = f"cogs/{path}"
             if isdir(path):
@@ -77,21 +80,33 @@ class RT(commands.AutoShardedBot):
                     await self._load(f"{path}/{deep}")
             else:
                 await self._load(path)
+        self.print("Prepared extensions")
+        self.dispatch("load")
+
+    async def connect(self, reconnect: bool = True) -> None:
+        self.print("Connecting...")
+        return await super().connect(reconnect=reconnect)
 
     async def on_ready(self):
         await self.tree.sync()
+        self.print("Command tree was synced")
 
     async def is_owner(self, user: discord.User) -> bool:
         return user.id in ADMINS
 
+    def get_language(self, mode: Literal["guild", "user"], id_: int) -> str:
+        "Get language setting from user/guild id."
+        return getattr(self.language, mode).get(id_, "en")
+
     async def get_user(self, user_id: int) -> Optional[discord.User]:
+        "get/fetch user"
         user = super().get_user(user_id)
         if user is None:
             user = await self.fetch_user(user_id)
         return user
 
     async def get_member(self, guild: discord.Guild, member_id: int) -> Optional[discord.Member]:
-        "Get member or fetch member"
+        "get/fetch member from guild"
         member = guild.get_member(member_id)
         if member is None:
             member = await guild.fetch_member(member_id)
@@ -105,4 +120,5 @@ class RT(commands.AutoShardedBot):
         return await super().close()
 
     def get_parsed_latency(self) -> str:
+        "Get latency text"
         return "%.1f" % round(self.latency * 1000, 1)

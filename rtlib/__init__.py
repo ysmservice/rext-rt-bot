@@ -2,6 +2,8 @@
 
 from typing import Optional, Any
 
+from inspect import stack
+
 from discord.ext.commands import Cog as OriginalCog
 from discord.ext.fslash import is_fslash
 from discord import Embed as OriginalEmbed
@@ -11,7 +13,8 @@ from aiomysql import Pool, Cursor
 from .bot import RT
 from .cacher import Cacher, Cache, CacherPool
 from .data_manager import DatabaseManager, cursor
-from .help import Help
+from .help import Help, HelpCommand
+from . import utils
 
 from data.constants import Colors
 
@@ -67,14 +70,10 @@ def t(text: dict[str, str], ctx: Any = None, **kwargs) -> str:
 class Cog(OriginalCog):
     "Extended cog"
 
-    Help = Help
+    Help, HelpCommand = Help, HelpCommand
     Embed = Embed
-    t = t
-
-    async def _inject(self, *args, **kwargs):
-        await super()._inject(*args, **kwargs)
-        self.__parent__ = __file__[:__file__.rfind("/")]
-        self.__category__ = self.__parent__[__file__.rfind("/")+1:]
+    t = staticmethod(t)
+    utils = utils
 
     def embed(self, **kwargs) -> Embed:
         "Make embed and set title to the cog name."

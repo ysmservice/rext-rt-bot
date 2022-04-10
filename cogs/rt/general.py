@@ -27,13 +27,23 @@ class General(Cog):
                 self.now_status_mode = mode
 
     @commands.command(
-        aliases=("p", "latency", "レイテンシ"),
+        aliases=("p", "latency", "レイテンシ"), category="rt",
         description="Displays RT's latency."
     )
     async def ping(self, ctx: commands.Context):
         await ctx.reply(embed=Embed(
             title=t(dict(ja="RTのレイテンシ", en="RT Latency"), ctx)
         ).add_field(name="Bot", value=f"{self.bot.get_parsed_latency()}ms"))
+
+    Cog.HelpCommand(ping) \
+        .set_description(
+            ja="現在のRTの通信状況を表示します。", en="Displays latency of RT."
+        ) \
+        .set_extra(
+            "Notes", ja="200msを超えている場合は通信が遅いです。",
+            en="If it exceeds 200 ms, communication is slow."
+        ) \
+        .update_headline(ja="RTのレイテンシを表示します。")
 
     async def cog_unload(self):
         self.status_updater.cancel()

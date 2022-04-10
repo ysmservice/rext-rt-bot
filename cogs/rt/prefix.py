@@ -24,7 +24,7 @@ class DataManager(DatabaseManager):
             self.bot.prefixes[row[0]] = row[1]
 
     async def set(self, guild_id: int, prefix: Optional[str] = None):
-        "Set a custome prefix."
+        "Set a custom prefix."
         if prefix is None:
             if guild_id in self.bot.prefixes:
                 await cursor.execute(
@@ -48,9 +48,10 @@ class Prefix(Cog):
     async def cog_load(self):
         await self.data.prepare_table()
 
-    @commands.command(description="Setting up a custome prefix.")
+    @commands.command(description="Setting up a custom prefix.", category="rt")
     @commands.guild_only()
-    @app_commands.describe(prefix="A Custome prefix")
+    @commands.has_guild_permissions(administrator=True)
+    @app_commands.describe(prefix="A Custom prefix")
     async def prefix(self, ctx: commands.Context, *, prefix: Optional[str] = None):
         await ctx.trigger_typing()
         await self.data.prepare_table()
@@ -66,9 +67,24 @@ class Prefix(Cog):
             await ctx.reply(embed=self.embed(
                 description=t(dict(
                     ja="このサーバーのカスタムプリフィックスを{prefix}に設定しました。",
-                    en="Custome prefix on here set to `{prefix}`."
+                    en="Custom prefix on here set to `{prefix}`."
                 ), ctx, prefix=prefix)
             ))
+
+    Cog.HelpCommand(prefix) \
+        .set_description(
+            ja="""カスタムプリフィックスを設定します。
+            カスタムプリフィックスはサーバー毎に設定することができます。
+            通常のプリフィックスは`rt!`等ですが、これを設定することで好きなプリフィックスを追加で設定することができます。""",
+            en="""Set a custom prefix.  
+            Custom prefixes can be set on a per-server basis.  
+            Normal prefixes are `rt!`, etc., but setting this allows you to set additional prefixes of your choice."""
+        ) \
+        .add_arg("prefix", "str", "Optional",
+            ja="設定するカスタムプリフィックスです。\n未入力の場合は設定解除として扱われます。",
+            en="Custom prefix to be set. \nIf not entered, the setting is treated as cancelled."
+        ) \
+        .update_headline(ja="カスタムプリフィックスを設定します。")
 
 
 async def setup(bot: RT):

@@ -64,8 +64,11 @@ class Language(Cog):
         await self.data.prepare_table()
 
     @commands.command(
-        aliases=("lang", "言語", "言葉"), description="Language setting per user/server"
+        aliases=("lang", "言語", "言葉"), description="Language setting per user/server",
+        category="rt"
     )
+    @commands.cooldown(1, 8, commands.BucketType.user)
+    @commands.cooldown(1, 8, commands.BucketType.guild)
     @app_commands.describe(mode="Server setting or user setting", language="The language")
     @app_commands.choices(mode=[
         app_commands.Choice(name="Server", value="Guild"),
@@ -78,20 +81,51 @@ class Language(Cog):
         self, ctx: commands.Context, mode: app_commands.Choice[str],
         *, language: app_commands.Choice[str]
     ):
-        if mode.value == "Guild" and ctx.guild is None:
-            await ctx.reply(t({
-                "ja": "ここでサーバーの設定をすることはできません。",
-                "en": "You cannot configure the server settings here."
-            }, ctx))
-        else:
-            await self.data.set(
-                mode.value, ctx.guild.id if mode.value == "Guild" else ctx.author.id, # type: ignore
-                language.value
-            )
-            await ctx.reply(t({
-                "ja": "あなたの言語設定を`{language}`にしました。",
-                "en": "Set your language setting to {language}."
-            }, ctx, language=language.name))
+        if mode.value == "Guild":
+            if ctx.guild is None:
+                return await ctx.reply(t({
+                    "ja": "ここでサーバーの設定をすることはできません。",
+                    "en": "You cannot configure the server settings here."
+                }, ctx))
+            elif not ctx.author.guild_permissions.administrator: # type: ignore
+                return await ctx.reply(t({
+                    "ja": "この設定をするには管理者権限が必要です。",
+                    "en": "Administrative privileges are required to make this setting."
+                }, ctx))
+        await self.data.set(
+            mode.value, ctx.guild.id if mode.value == "Guild" else ctx.author.id, # type: ignore
+            language.value
+        )
+        await ctx.reply(t({
+            "ja": "あなたの言語設定を`{language}`にしました。",
+            "en": "Set your language setting to {language}."
+        }, ctx, language=language.name))
+
+    Cog.HelpCommand(language) \
+        .set_description(
+            ja="言語設定をします。", en="Setting language"
+        ) \
+        .add_arg("mode", "Choice",
+            ja="""これはサーバーかあなたかどちらとして設定をするかです。
+            `Server`: サーバーでの設定
+            `Your`: あなたの設定""",
+            en="""This is whether the configuration is done as the server or you.
+            `Server`: Configuration on the server
+            `Your`: Your settings."""
+        ) \
+        .add_arg("language", "Choice",
+            ja="""どの言語にするかです。
+            `日本語`: 日本語として設定します。
+            `English`: 英語として設定します。""",
+            en="""Which language is to be used.
+            Japanese`: Set as Japanese.
+            `English`: Set as English."""
+        ) \
+        .set_examples(
+            dict(ja="Your English", en="Your 日本語"),
+            dict(ja="あなたの言語を英語に設定します。", en="Set your language as Japanese.")
+        ) \
+        .update_headline(ja="言語設定を変更します。")
 
 
 async def setup(bot):
