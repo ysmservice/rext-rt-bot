@@ -5,3 +5,4 @@ ujson
 git+https://github.com/Rapptz/discord.py
 discord-ext-fslash
 jishaku
+keras
