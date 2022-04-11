@@ -132,6 +132,11 @@ class RTA(commands.Cog):
                     color=self.bot.Colors.normal
                 )
             )
+            
+    Cog.HelpCommand(rta) \
+        .set_description(ja="即抜けRTA通知用のコマンドです", en="Set channel which recording the leaving RTA.") \
+        .set_extra("Notes", ja="もう一度このコマンドを実行するとRTA設定をOffにできます。",
+                   en="Run this command again to turn off the RTA setting.")
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
