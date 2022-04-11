@@ -1,6 +1,6 @@
 # RT - Views
 
-from typing import Literal, TypeAlias, Optional
+from typing import TypeAlias, Literal, Optional
 from collections.abc import Callable
 
 import discord
@@ -8,7 +8,7 @@ import discord
 from .__init__ import t
 
 
-__all__ = ("TimeoutView", "Mode", "BasePage", "EmbedPage", "prepare_embeds")
+__all__ = ("TimeoutView", "Mode", "BasePage", "EmbedPage", "prepare_embeds", "check")
 
 
 class TimeoutView(discord.ui.View):
@@ -23,25 +23,42 @@ class TimeoutView(discord.ui.View):
         await self.message.edit(view=self)
 
 
+async def check(
+    view: discord.ui.View, interaction: discord.Interaction
+) -> bool:
+    """ユーザーがViewを使用することができるかどうかを確認します。
+    これを使用する場合は`view`に、対象のユーザーIDまたはオブジェクトが入った`target`を付けておく必要があります。"""
+    assert isinstance(interaction, discord.Interaction), "インタラクションオブジェクトじゃないものが渡されました。"
+    if interaction.user.id == getattr(getattr(view, "target"), "id", getattr(view, "target")):
+        return True
+    await interaction.response.send_message(t(dict(
+        ja="あなたはこのコンポーネントを使うことができません。",
+        en="You can't use this component."
+    ), interaction), ephemeral=True)
+    return False
+
+
 Mode: TypeAlias = Literal["dl", "l", "r", "dr"]
 class BasePage(TimeoutView):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.page = 0
-        self.counter.label = str(self.page)
+
+    def update_counter(self):
+        self.counter.label = str(self.page + 1)
 
     async def on_turn(
         self, mode: Mode, _: discord.Interaction
     ):
         self.page = self.page + \
             (-1 if mode.endswith("l") else 1)*((mode[0] == "d")+1)
-        self.counter.label = str(self.page)
+        self.update_counter()
 
-    @discord.ui.button(emoji="⏪")
+    @discord.ui.button(emoji="⏪", custom_id="BPViewDashLeft")
     async def dash_left(self, interaction: discord.Interaction, _):
         await self.on_turn("dl", interaction)
 
-    @discord.ui.button(emoji="◀️")
+    @discord.ui.button(emoji="◀️", custom_id="BPViewLeft")
     async def left(self, interaction: discord.Interaction, _):
         await self.on_turn("l", interaction)
 
@@ -49,11 +66,11 @@ class BasePage(TimeoutView):
     async def counter(self, interaction: discord.Interaction, _):
         await interaction.response.send_message("へんじがない。ただの　しかばね　のようだ。")
 
-    @discord.ui.button(emoji="▶️")
+    @discord.ui.button(emoji="▶️", custom_id="BPViewRight")
     async def right(self, interaction: discord.Interaction, _):
         await self.on_turn("r", interaction)
 
-    @discord.ui.button(emoji="⏩")
+    @discord.ui.button(emoji="⏩", custom_id="BPViewDashRight")
     async def dash_right(self, interaction: discord.Interaction, _):
         await self.on_turn("dr", interaction)
 
@@ -92,10 +109,10 @@ class EmbedPage(BasePage):
 
     async def on_select(self, interaction: discord.Interaction):
         self.page = int(self.select.values[0])
-        self.counter.label = self.select.values[0]
+        self.update_counter()
         await interaction.response.edit_message(
-            embed=self.embeds[self.page], **self.on_page(
-                interaction
+            embed=self.embeds[self.page], **self.on_edit(
+                interaction, view=self
             )
         )
 
@@ -118,7 +135,10 @@ class EmbedPage(BasePage):
                     ja="これ以上ページを捲ることができません。",
                     en="I can't turn the page any further."
                 ), interaction), ephemeral=True)
-        await interaction.response.edit_message(embed=embed, **self.on_page(interaction))
+        self.update_counter()
+        await interaction.response.edit_message(
+            embed=embed, **self.on_edit(interaction, view=self)
+        )
 
-    def on_page(self, _: discord.Interaction):
-        return {}
+    def on_edit(self, _: discord.Interaction, **kwargs):
+        return kwargs

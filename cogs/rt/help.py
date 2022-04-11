@@ -11,8 +11,7 @@ from discord.ext.fslash import _get
 from discord.ext import commands
 import discord
 
-from rtlib.views import EmbedPage
-from rtlib.help import prepare_default
+from rtlib.help import make_default
 from rtlib import RT, Cog, t
 
 from data import get_category
@@ -46,19 +45,25 @@ class HelpSelect(discord.ui.Select):
             self.add_option(label=option[0], value=option[2], description=option[1])
 
     async def callback(self, interaction: discord.Interaction):
-        category, command = None, None
-        if self.mode == "category":
-            print(self.values[0])
-            category = self.values[0]
-        else:
-            command = self.values[0]
-            category = self.category
-        view = HelpView(
-            self.view.cog, self.view.language, self.view.cog.make_parts(
-                self.view.language, category, command
+        if await Cog.views.check(self.view, interaction):
+            category, command = None, None
+            if self.mode == "category":
+                category = self.values[0]
+            else:
+                command = self.values[0]
+                category = self.category
+            view = HelpView(
+                self.view.cog, self.view.language, self.view.cog.make_parts(
+                    self.view.language, category, command
+                ), self.view.target
             )
-        )
-        await interaction.response.edit_message(embed=view.page.embeds[0], view=view)
+            await interaction.response.edit_message(embed=view.page.embeds[0], view=view)
+
+
+class ExtendedEmbedPage(Cog.views.EmbedPage):
+    def on_edit(self, _, **kwargs):
+        del kwargs["view"]
+        return kwargs
 
 
 class HelpView(discord.ui.View):
@@ -66,35 +71,39 @@ class HelpView(discord.ui.View):
 
     def __init__(
         self, cog: Help, language: str, parts: EmbedParts,
-        *args, **kwargs
+        target: Cog.UserMember, *args, **kwargs
     ):
         self.cog, self.language = cog, language
-        self.parts = parts
+        self.parts, self.target = parts, target
 
         super().__init__(*args, **kwargs)
 
         embeds: list[discord.Embed] = []
-        embeds = EmbedPage.prepare_embeds(
+        embeds = Cog.views.EmbedPage.prepare_embeds(
             self.parts[2], lambda x: Cog.Embed(self.parts[1], description=x)
         )
         length = len(embeds)
-        self.page = EmbedPage(embeds)
+        self.page = ExtendedEmbedPage(embeds)
         if length != 1:
             for i, embed in enumerate(embeds, 1):
                 embed.set_footer(text=f"{i}/{length}")
             for item in self.page.children:
-                self.add_item(item)
+                if getattr(item, "custom_id") != "BPViewCounter":
+                    self.add_item(item)
 
         self.add_item(HelpSelect("category", [
             (get_category(category, language), category, category)
             for category in self.cog.data.keys()
-        ], self.parts.category_name, self.parts.command_name))
-        print(self.parts)
+        ], self.parts.category_name, self.parts.command_name, placeholder=t(dict(
+            ja="カテゴリー", en="Category"
+        ), target)))
         if self.parts.category_name is not None:
             self.add_item(HelpSelect("command", [
                 (name, detail.headline.get(language, "..."), name)
                 for name, detail in self.cog.data[self.parts.category_name].items() # type: ignore
-            ], self.parts.category_name, self.parts.command_name))
+            ], self.parts.category_name, self.parts.command_name, placeholder=t(dict(
+                ja="コマンド", en="Command"
+            ), target)))
 
 
 RESULT_TYPES = {
@@ -112,15 +121,24 @@ class Help(Cog):
     async def on_load(self):
         self.load()
 
+    def make_other_command_help(self, command: commands.Command | commands.Group) -> Cog.Help:
+        assert command.callback.__doc__ is not None
+        return Cog.HelpCommand(command) \
+            .set_description(**make_default(command.callback.__doc__))
+
     def load(self):
         "Load help"
-        for command in self.bot.walk_commands():
+        for command in self.bot.commands:
             value: Optional[Cog.Help] = getattr(command.callback, "__help__", None)
             if value is not None:
                 self.data[value.category][command.name] = value
             elif command.callback.__doc__ and _get(command, "category", None) is None:
-                self.data["Other"][command.name] = Cog.HelpCommand(command) \
-                    .set_description(**prepare_default(command.callback.__doc__))
+                self.data["Other"][command.name] = self.make_other_command_help(command)
+                if isinstance(command, commands.Group):
+                    for target in command.walk_commands():
+                        self.data["Other"][command.name].add_sub(
+                            self.make_other_command_help(target)
+                        )
         self.bot.dispatch("help_load")
 
     def make_parts(
@@ -179,10 +197,12 @@ class Help(Cog):
                 return
 
         if found:
-            view = HelpView(self, language, self.make_parts(language, category, command))
+            view = HelpView(self, language, self.make_parts(
+                language, category, command
+            ), ctx.author)
             await ctx.reply(embed=view.page.embeds[0], view=view)
         else:
-            view = EmbedPage(EmbedPage.prepare_embeds(
+            view = Cog.views.EmbedPage(Cog.views.EmbedPage.prepare_embeds(
                 "".join((Cog.utils.get(RESULT_TYPES, key, language), "\n".join(
                     f"`{name}` {headline}"
                     for name, headline in map(

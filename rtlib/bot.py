@@ -85,11 +85,11 @@ class RT(commands.AutoShardedBot):
 
     async def connect(self, reconnect: bool = True) -> None:
         self.print("Connecting...")
-        return await super().connect(reconnect=reconnect)
-
-    async def on_ready(self):
+        await super().connect(reconnect=reconnect)
+        self.print("Connected")
         await self.tree.sync()
         self.print("Command tree was synced")
+        self.print("Started")
 
     async def is_owner(self, user: discord.User) -> bool:
         return user.id in ADMINS
