@@ -67,9 +67,9 @@ class RTA(commands.Cog):
         self.db, self.bot = DataManager(bot), bot
         self.sended_remover.start()
         self.sended: dict[str, float] = {}
+        self.cachers = bot.cachers
 
     @commands.group(description="即抜けRTA機能")
-    @app_commands
     @commands.has_guild_permissions(kick_members=True)
     async def rta(self, ctx):
         """!lang ja
@@ -90,32 +90,8 @@ class RTA(commands.Cog):
             await ctx.reply("コマンドの使いかたが間違っています。")
 
     @rta.command(aliases=["set", "設定"])
-    @app_commands.describe(channel="設定したいチャンネル名")
+    @app_commands.describe(channel="channel's name")
     async def setup(self, ctx, channel: Optional[discord.TextChannel] = None):
-        """!lang ja
-        -------
-        即抜けRTAを設定します。
-        Parameters
-        ----------
-        channel : チャンネル名かメンション、ID
-            通知を行うチャンネルです。  
-            もしない場合は実行したチャンネルに通知されます。
-        Notes
-        -----
-        もう一度このコマンドを実行するとRTA設定をOffにできます。
-            
-        !lang en
-        --------
-        Set channel which recording the leaving RTA.
-        
-        Parameters
-        ----------
-        channel : channel name, mention, or id
-            The notification channel.  
-            If you don't set the parameter, the RTA will be notified to the executed channel.
-        Notes
-        -----
-        Run this command again to turn off the RTA setting."""
         if await self.db.set_rta(ctx.guild.id, (channel := (channel or ctx.channel)).id):
             await ctx.reply(
                 embed=discord.Embed(
