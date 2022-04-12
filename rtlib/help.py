@@ -115,7 +115,7 @@ class Help:
         ))
 
     def get_full_str(self, language: str) -> str:
-        return '{}\n\n{}'.format(self.to_str(language), "\n\n".join(self.get_str_list(language)))
+        return '{}{}'.format(self.to_str(language), "".join(self.get_str_list(language)))
 
     def get_str_list(self, language: str) -> list[str]:
         return [h.to_str(language) for h in self.sub]
@@ -208,13 +208,12 @@ class HelpCommand(Help):
             "\n{}".format(
                 '\n'.join(f'　　{line}' for line in gettext(detail, language).splitlines())
             )
-        )) for name, annotation, option, detail in self.args), "\n\n")) if self.args else ""
+        )) for name, annotation, option, detail in self.args), "\n\n")) if self.args else "\n"
 
     def to_str(self, language: str) -> str:
         return "".join((
             f"**{self.title}**\n\n" if self.command.parent else "",
             f"{gettext(self.description, language)}\n\n**#** ",
-            f"{get(EXTRAS, 'How', language)}\n",
-            f"{self.full_qualified(language)}\n",
+            f"{get(EXTRAS, 'How', language)}\n", f"{self.full_qualified(language)}\n",
             self.args_text(language), self.extras_text(language)
         ))

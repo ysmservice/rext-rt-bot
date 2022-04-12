@@ -195,6 +195,8 @@ class Help(Cog):
                     if word in detail.description.get(language, "...") \
                             or any(word in extra for extra in list(detail.extras.values())):
                         result["detail_contain"].append((category, command))
+                else: continue
+                break
             else:
                 await ctx.reply(t(dict(ja="見つかりませんでした。", en="Not found...")))
                 return
