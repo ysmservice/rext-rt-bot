@@ -13,7 +13,7 @@ from time import time
 
 from aiomysql import Pool
 
-from rtlib import RT, DatabaseManager, Cog, cursor
+from rtlib import RT, DatabaseManager, Cog, cursor, Cacher
 
 
 class DataManager(DatabaseManager):
@@ -66,7 +66,7 @@ class RTA(commands.Cog):
     def __init__(self, bot: RT):
         self.db, self.bot = DataManager(bot), bot
         self.sended_remover.start()
-        self.sended: dict[str, float] = bot.acquire(60)
+        self.sended: Cacher[str, float] = bot.acquire(60)
 
     @commands.group(description="即抜けRTA機能")
     @commands.has_guild_permissions(kick_members=True)
