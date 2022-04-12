@@ -66,8 +66,7 @@ class RTA(commands.Cog):
     def __init__(self, bot: RT):
         self.db, self.bot = DataManager(bot), bot
         self.sended_remover.start()
-        self.sended: dict[str, float] = {}
-        self.cachers = bot.cachers
+        self.sended: dict[str, float] = bot.acquire(60)
 
     @commands.group(description="即抜けRTA機能")
     @commands.has_guild_permissions(kick_members=True)
@@ -128,14 +127,6 @@ class RTA(commands.Cog):
                     color=self.bot.Colors.unknown
                 ))
                 self.sended[f"{member.guild.id}-{member.id}"] = time()
-
-    @tasks.loop(minutes=10)
-    async def sended_remover(self):
-        # 送信済みのキャッシュを消す。
-        now = time()
-        for key, value in list(self.sended.items()):
-            if now - value > 300:
-                del self.sended[key]
 
     async def cog_unload(self):
         self.sended_remover.cancel()
