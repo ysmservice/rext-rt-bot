@@ -80,7 +80,7 @@ def prepare_embeds(
         = lambda text: discord.Embed(description=text),
     set_page: Optional[Callable[[discord.Embed, int, int], None]] = None
 ) -> list[discord.Embed]:
-    "Split description into list of embed."
+    "渡された説明で`on_make`を呼び出して、説明を複数の埋め込みに分割します。"
     embeds: list[discord.Embed] = []
     while description:
         embeds.append(on_make(description[:2000]))

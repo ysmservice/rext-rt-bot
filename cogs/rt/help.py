@@ -30,7 +30,7 @@ EmbedParts = NamedTuple("EmbedParts", (
 
 
 class HelpSelect(discord.ui.Select):
-    "Command or category select"
+    "ヘルプパネルで使うコマンドかカテゴリーを選択するためのセレクトです。"
 
     view: HelpView
 
@@ -61,13 +61,15 @@ class HelpSelect(discord.ui.Select):
 
 
 class ExtendedEmbedPage(Cog.views.EmbedPage):
+    "Viewを更新しないようにした`EmbedPage`です。"
+
     def on_edit(self, _, **kwargs):
         del kwargs["view"]
         return kwargs
 
 
 class HelpView(discord.ui.View):
-    "Help panel view"
+    "ヘルプのカテゴリーやコマンドの選択用のセレクトのViewです。"
 
     def __init__(
         self, cog: Help, language: str, parts: EmbedParts,
@@ -122,12 +124,13 @@ class Help(Cog):
         self.load()
 
     def make_other_command_help(self, command: commands.Command | commands.Group) -> Cog.Help:
+        "`HelpCommand`が用意されていないコマンドから自動でヘルプオブジェクトを作る。"
         assert command.callback.__doc__ is not None
         return Cog.HelpCommand(command) \
             .set_description(**make_default(command.callback.__doc__))
 
     def load(self):
-        "Load help"
+        "ヘルプを読み込む。"
         for command in self.bot.commands:
             value: Optional[Cog.Help] = getattr(command.callback, "__help__", None)
             if value is not None:
@@ -145,7 +148,7 @@ class Help(Cog):
         self, language: str, category_name: Optional[str] = None,
         command_name: Optional[str] = None
     ) -> EmbedParts:
-        "Make embed parts"
+        "ヘルプ用の埋め込みのパーツを作る。"
         level = 0
         description, title = FIRST_OF_HELP[language], "Help"
         command, category = None, None

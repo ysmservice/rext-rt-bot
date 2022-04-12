@@ -18,12 +18,12 @@ __all__ = (
 
 
 def cleantext(text: Text) -> Text:
-    "Clean the string value of the passed dictionary."
+    "渡されたTextにある全ての値を`cleandoc`で掃除します。"
     return {key: cleandoc(value) for key, value in text.items()}
 
 
 def make_default(text: str | Text) -> Text:
-    "Make default `Text`."
+    "渡された文字列を日本語と英語のキーがあるTextに入れます。\nTextが渡された場合はそのまま返します。"
     return {"ja": text, "en": text} if isinstance(text, str) else text
 
 
@@ -54,7 +54,7 @@ COMMAND_TYPES = {
 
 
 def gettext(text: Text, language: str) -> str:
-    "Get text"
+    "渡されたTextから指定された言語のものを取り出します。\nもし見つからなかった場合は英語、日本語、それ以外のどれかの順で代わりのものを返します。"
     last = "Translations not found..."
     for key, value in text.items():
         if key == language:
@@ -66,6 +66,8 @@ def gettext(text: Text, language: str) -> str:
 
 SelfT = TypeVar("SelfT", bound="Help")
 class Help:
+    "ヘルプオブジェクトです。\nこれを使用してヘルプの項目を構成します。"
+
     def __init__(self):
         self.title = "..."
         self.description = {"ja": "...", "en": "..."}
@@ -100,10 +102,6 @@ class Help:
         self.headline.update(cleantext(headline))
         return self
 
-    def extend(self: SelfT, help_: Help) -> SelfT:
-        self.sub.append(help_)
-        return self
-
     def extras_text(self, language: str) -> str:
         return "\n\n".join(
             f"**#** {gettext(EXTRAS.get(key, make_default(key)), language)}\n{gettext(text, language)}"
@@ -131,7 +129,7 @@ class Help:
 
 
 def concat(data: Text, plus: Text, space: str = "") -> Text:
-    "Concatenation text"
+    "TextとTextを連結させます。"
     data = {}
     for key, value in list(data.items()):
         data[key] = f'{value}{space}{plus.get(key, plus.get("en", key))}'
@@ -141,6 +139,8 @@ def concat(data: Text, plus: Text, space: str = "") -> Text:
 CmdType: TypeAlias = Literal["message", "slash"] | str
 SelfCmdT = TypeVar("SelfCmdT", bound="HelpCommand")
 class HelpCommand(Help):
+    "ヘルプオブジェクトを継承したコマンドから簡単にヘルプを構成できるようにしたヘルプオブジェクトです。"
+
     def __init__(self, command: CmdGrp):
         self.command = command
         self.fsparent = _get(command, "fsparent", None)
