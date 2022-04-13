@@ -23,7 +23,7 @@ class DataManager(DatabaseManager):
         self.bot = bot
         self.bot.loop.create_task(self._prepare_table())
 
-    async def _get(self, guild_id: int):
+    async def get(self, guild_id: int):
         await cursor.execute(
             f"SELECT channel FROM {self.TABLES[0]} WHERE guild = %s;",
             (guild_id,)
@@ -60,13 +60,13 @@ class DataManager(DatabaseManager):
             return False
 
 
-class RTA(commands.Cog):
+class RTA(Cog):
     def __init__(self, bot: RT):
         self.db, self.bot = DataManager(bot), bot
         self.sended_remover.start()
         self.sended: Cacher[str, float] = bot.acquire(60)
 
-    @commands.group(description="即抜けRTA機能")
+    @commands.group(description="Instant exit RTA function", category="entertainment")
     @commands.has_guild_permissions(kick_members=True)
     async def rta(self, ctx):
         """!lang ja
@@ -111,7 +111,7 @@ class RTA(commands.Cog):
         .set_extra("Notes", ja="もう一度このコマンドを実行するとRTA設定をOffにできます。",
                    en="Run this command again to turn off the RTA setting.")
 
-    @commands.Cog.listener()
+    @Cog.listener()
     async def on_member_remove(self, member: discord.Member):
         if f"{member.guild.id}-{member.id}" in self.sended:
             return # もし既にRTAメッセージを送信しているならやめる。
@@ -119,10 +119,9 @@ class RTA(commands.Cog):
         joined_after = datetime.now(timezone.utc) - member.joined_at
         if joined_after.days == 0 and joined_after.seconds < 60:
             if (channel := await self.db.get_channel(member.guild.id)) is not None:
-                await channel.send(embed=discord.Embed(
+                await channel.send(embed=Cog.Embed(
                     title="即抜けRTA",
-                    description=f"{member}が{round(joined_after.seconds, 6)}秒で抜けちゃった。。。",
-                    color=self.bot.Colors.unknown
+                    description=f"{member}が{round(joined_after.seconds, 6)}秒で抜けちゃった。。。"
                 ))
                 self.sended[f"{member.guild.id}-{member.id}"] = time()
 
