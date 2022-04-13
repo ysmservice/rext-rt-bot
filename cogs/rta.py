@@ -11,9 +11,7 @@ import discord
 from datetime import datetime, timezone
 from time import time
 
-from aiomysql import Pool
-
-from rtlib import RT, DatabaseManager, Cog, cursor, Cacher
+from rtlib import RT, DatabaseManager, Cog, cursor, Cacher, Pool
 
 
 class DataManager(DatabaseManager):
