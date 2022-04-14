@@ -78,8 +78,6 @@ class Cog(OriginalCog):
     Help, HelpCommand = Help, HelpCommand
     Embed = Embed
     t = staticmethod(t)
-    utils = utils
-    views = views
     UserMember: TypeAlias = discord.User | discord.Member
 
     def embed(self, **kwargs) -> Embed:

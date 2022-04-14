@@ -1,26 +1,48 @@
 # RT - Views
 
-from typing import TypeAlias, Literal, Optional
-from collections.abc import Callable
+from typing import TypeAlias, Literal, Optional, Any
+from collections.abc import Callable, Iterator
 
+from functools import cache
+
+from discord.ext.commands import Context as OriginalContext
 import discord
+
+from discord.ext.fslash import Context
 
 from .__init__ import t
 
 
-__all__ = ("TimeoutView", "Mode", "BasePage", "EmbedPage", "prepare_embeds", "check")
+__all__ = (
+    "TimeoutView", "Mode", "BasePage", "EmbedPage", "NoEditEmbedPage",
+    "separate", "prepare_embeds", "check"
+)
 
 
 class TimeoutView(discord.ui.View):
     "タイムアウト時にコンポーネントを使用不可に編集するようにするViewです。"
 
-    message: discord.Message
+    ctx: Optional[discord.Message | discord.Interaction] = None
 
     async def on_timeout(self):
         for child in self.children:
             if hasattr(child, "disabled"):
                 child.disabled = True # type: ignore
-        await self.message.edit(view=self)
+        if self.ctx is not None:
+            if isinstance(self.ctx, discord.Message):
+                await self.ctx.edit(view=self)
+            else:
+                await self.ctx.edit_original_message(view=self)
+
+    def set_message(
+        self, ctx: Context | OriginalContext | discord.Interaction,
+        message: Optional[discord.Message] = None
+    ):
+        "Viewを編集するメッセージを指定します。"
+        if isinstance(ctx, Context):
+            self.ctx = ctx.interaction
+        elif message is not None:
+            self.ctx = message
 
 
 async def check(
@@ -75,16 +97,20 @@ class BasePage(TimeoutView):
         await self.on_turn("dr", interaction)
 
 
+def separate(text: str, length: int = 2000) -> Iterator[str]:
+    "渡された文字列を指定された数で分割します。"
+    while text:
+        yield text[:length]
+        text = text[length:]
+
+
 def prepare_embeds(
     description: str, on_make: Callable[[str], discord.Embed]
         = lambda text: discord.Embed(description=text),
     set_page: Optional[Callable[[discord.Embed, int, int], None]] = None
 ) -> list[discord.Embed]:
     "渡された説明で`on_make`を呼び出して、説明を複数の埋め込みに分割します。"
-    embeds: list[discord.Embed] = []
-    while description:
-        embeds.append(on_make(description[:2000]))
-        description = description[2000:]
+    embeds = [on_make(text) for text in separate(description)]
     if set_page is not None:
         length = len(embeds)
         for i in range(len(embeds)):
@@ -106,6 +132,11 @@ class EmbedPage(BasePage):
             for i in range(len(embeds)):
                 self.select.add_option(label=f"{i}ページ目", value=str(i))
             self.add_item(self.select)
+
+    @property
+    @cache
+    def length(self) -> int:
+        return len(self.embeds)
 
     async def on_select(self, interaction: discord.Interaction):
         self.page = int(self.select.values[0])
@@ -141,4 +172,12 @@ class EmbedPage(BasePage):
         )
 
     def on_edit(self, _: discord.Interaction, **kwargs):
+        return kwargs
+
+
+class NoEditEmbedPage(EmbedPage):
+    "ページ切り替え時にViewを更新しないようにした`EmbedPage`です。"
+
+    def on_edit(self, _, **kwargs):
+        del kwargs["view"]
         return kwargs

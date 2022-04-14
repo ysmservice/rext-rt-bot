@@ -8,7 +8,7 @@ from inspect import cleandoc
 from discord.ext.fslash import _get
 
 from ._types import CmdGrp, Text
-from .utils import get
+from .utils import get_inner_text
 
 
 __all__ = (
@@ -177,13 +177,13 @@ class HelpCommand(Help):
         )
 
     def get_type_text(self, type_: CmdType, language: str):
-        return get(COMMAND_TYPES, type_, language)
+        return get_inner_text(COMMAND_TYPES, type_, language)
 
     def full_qualified(self, language: str, args: dict[CmdType, Text] = {}) -> str:
         return "\n".join((
             "".join((
                 f"{self.get_type_text(t, language)}: `{getattr(self, f'{t}_qualified')}",
-                f" {get(args, t, language)}" if args else (
+                f" {get_inner_text(args, t, language)}" if args else (
                     f" {self.command.signature}" if self.command.signature else ""
                 ), "`"
             )) for t in ("message", "slash")
@@ -214,6 +214,7 @@ class HelpCommand(Help):
         return "".join((
             f"**{self.title}**\n\n" if self.command.parent else "",
             f"{gettext(self.description, language)}\n\n**#** ",
-            f"{get(EXTRAS, 'How', language)}\n", f"{self.full_qualified(language)}\n",
+            f"{get_inner_text(EXTRAS, 'How', language)}\n",
+            f"{self.full_qualified(language)}\n",
             self.args_text(language), self.extras_text(language)
         ))

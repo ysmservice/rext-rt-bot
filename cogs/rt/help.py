@@ -12,6 +12,8 @@ from discord.ext.fslash import _get
 from discord.ext import commands
 import discord
 
+from rtlib.views import TimeoutView, EmbedPage, NoEditEmbedPage, check
+from rtlib.utils import get_inner_text
 from rtlib.help import make_default
 from rtlib import RT, Cog, t
 
@@ -46,7 +48,7 @@ class HelpSelect(discord.ui.Select):
             self.add_option(label=option[0], value=option[2], description=option[1])
 
     async def callback(self, interaction: discord.Interaction):
-        if await Cog.views.check(self.view, interaction):
+        if await check(self.view, interaction):
             category, command = None, None
             if self.mode == "category":
                 category = self.values[0]
@@ -59,17 +61,10 @@ class HelpSelect(discord.ui.Select):
                 ), self.view.target
             )
             await interaction.response.edit_message(embed=view.page.embeds[0], view=view)
+            view.set_message(interaction)
 
 
-class ExtendedEmbedPage(Cog.views.EmbedPage):
-    "Viewを更新しないようにした`EmbedPage`です。"
-
-    def on_edit(self, _, **kwargs):
-        del kwargs["view"]
-        return kwargs
-
-
-class HelpView(discord.ui.View):
+class HelpView(TimeoutView):
     "ヘルプのカテゴリーやコマンドの選択用のセレクトのViewです。"
 
     def __init__(
@@ -82,11 +77,11 @@ class HelpView(discord.ui.View):
         super().__init__(*args, **kwargs)
 
         embeds: list[discord.Embed] = []
-        embeds = Cog.views.EmbedPage.prepare_embeds(
+        embeds = EmbedPage.prepare_embeds(
             self.parts[2], lambda x: Cog.Embed(self.parts[1], description=x)
         )
         length = len(embeds)
-        self.page = ExtendedEmbedPage(embeds)
+        self.page = NoEditEmbedPage(embeds)
         if length != 1:
             for i, embed in enumerate(embeds, 1):
                 embed.set_footer(text=f"{i}/{length}")
@@ -211,20 +206,22 @@ class Help(Cog):
             view = HelpView(self, language, self.make_parts(
                 language, category, command
             ), ctx.author)
-            await ctx.reply(embed=view.page.embeds[0], view=view)
+            view.set_message(ctx, await ctx.reply(embed=view.page.embeds[0], view=view))
         else:
-            view = Cog.views.EmbedPage(Cog.views.EmbedPage.prepare_embeds(
-                "\n\n".join("\n".join((f"**{Cog.utils.get(RESULT_TYPES, key, language)}**", "\n".join(
-                    f"`{name}` {headline}"
-                    for name, headline in map(
-                        lambda x: (x[1], self.data[x[0]][x[1]].headline.get(language, "...")),
-                        result[key] # type: ignore
-                    )
-                ))) for key in ("contain", "detail_contain")) or "...",
+            view = EmbedPage(EmbedPage.prepare_embeds(
+                "\n\n".join("\n".join((
+                    f"**{get_inner_text(RESULT_TYPES, key, language)}**", "\n".join(
+                        f"`{name}` {headline}"
+                        for name, headline in map(
+                            lambda x: (x[1], self.data[x[0]][x[1]].headline.get(language, "...")),
+                            result[key] # type: ignore
+                        )
+                    ) or "..."
+                )) for key in ("contain", "detail_contain")),
                 lambda text: self.embed(description=text)
             ))
-            if view.embeds:
-                await ctx.reply(embed=view.embeds[0], view=view)
+            if view.length > 1:
+                view.set_message(ctx, await ctx.reply(embed=view.embeds[0], view=view))
             else:
                 await ctx.reply(embed=view.embeds[0])
 
