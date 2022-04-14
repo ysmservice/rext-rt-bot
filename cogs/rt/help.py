@@ -121,12 +121,17 @@ class Help(Cog):
 
     def make_other_command_help(self, command: commands.Command | commands.Group) -> Cog.Help:
         "`HelpCommand`が用意されていないコマンドから自動でヘルプオブジェクトを作る。"
-        assert command.callback.__doc__ is not None
+        assert command.callback.__doc__ is not None or command.description
         return Cog.HelpCommand(command) \
-            .set_description(**make_default(command.callback.__doc__))
+            .set_description(**make_default(command.callback.__doc__ or command.description))
+
+    async def aioload(self):
+        "ヘルプを非同期に読み込みます。"
+        await self.bot.loop.run_in_executor(None, self.load)
 
     def load(self):
         "ヘルプを読み込む。"
+        self.data = defaultdict(dict)
         for command in self.bot.commands:
             value: Optional[Cog.Help] = getattr(command.callback, "__help__", None)
             if value is not None:
@@ -139,7 +144,8 @@ class Help(Cog):
                         self.data[path][command.name] = self.data[value.category][command.name]
                         del self.data[value.category][command.name]
                         self.data[path][command.name].set_category(path)
-            elif command.callback.__doc__ and _get(command, "category", None) is None:
+            elif (command.callback.__doc__ or command.description) \
+                    and _get(command, "category", None) is None:
                 self.data["Other"][command.name] = self.make_other_command_help(command)
                 if isinstance(command, commands.Group):
                     for target in command.walk_commands():

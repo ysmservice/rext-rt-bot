@@ -48,7 +48,7 @@ class General(Cog):
     async def ping(self, ctx: commands.Context):
         await ctx.reply(embed=Embed(
             title=t(dict(ja="RTのレイテンシ", en="RT Latency"), ctx)
-        ).add_field(name="Bot", value=f"{self.bot.get_parsed_latency()}ms"))
+        ).add_field(name="Bot", value=self.bot.parsed_latency))
 
     Cog.HelpCommand(ping) \
         .set_description(
@@ -58,7 +58,7 @@ class General(Cog):
             "Notes", ja="200msを超えている場合は通信が遅いです。",
             en="If it exceeds 200 ms, communication is slow."
         ) \
-        .update_headline(ja="RTのレイテンシを表示します。")
+        .update_headline(ja="RTのレイテンシを表示します。a")
 
     async def cog_unload(self):
         self.status_updater.cancel()

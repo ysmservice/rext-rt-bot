@@ -119,6 +119,12 @@ class RT(commands.AutoShardedBot):
         self.pool.close()
         return await super().close()
 
-    def get_parsed_latency(self) -> str:
-        "Get latency text"
+    @property
+    def round_latency(self) -> str:
+        "Get round latency"
         return "%.1f" % round(self.latency * 1000, 1)
+
+    @property
+    def parsed_latency(self) -> str:
+        "Get parsed latency"
+        return f"{self.round_latency}ms"

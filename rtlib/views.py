@@ -1,7 +1,7 @@
 # RT - Views
 
-from typing import TypeAlias, Literal, Optional, Any
-from collections.abc import Callable, Iterator
+from typing import TypeAlias, Literal, Optional
+from collections.abc import Callable
 
 from functools import cache
 
@@ -10,12 +10,14 @@ import discord
 
 from discord.ext.fslash import Context
 
+from .utils import separate
+
 from .__init__ import t
 
 
 __all__ = (
     "TimeoutView", "Mode", "BasePage", "EmbedPage", "NoEditEmbedPage",
-    "separate", "prepare_embeds", "check"
+    "prepare_embeds", "check"
 )
 
 
@@ -95,13 +97,6 @@ class BasePage(TimeoutView):
     @discord.ui.button(emoji="⏩", custom_id="BPViewDashRight")
     async def dash_right(self, interaction: discord.Interaction, _):
         await self.on_turn("dr", interaction)
-
-
-def separate(text: str, length: int = 2000) -> Iterator[str]:
-    "渡された文字列を指定された数で分割します。"
-    while text:
-        yield text[:length]
-        text = text[length:]
 
 
 def prepare_embeds(
