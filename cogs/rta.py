@@ -66,29 +66,9 @@ class RTA(Cog):
         self.sended_remover.start()
         self.sended: Cacher[str, float] = bot.acquire(60)
 
-    @commands.group(description="Instant exit RTA function", category="entertainment")
-    @commands.has_guild_permissions(kick_members=True)
-    async def rta(self, ctx):
-        """!lang ja
-        -------
-        即抜けRTA通知用のコマンドです。
-        
-        Aliases
-        -------
-        RTA, あーるてぃーえー, 即抜け, rta_notification, rta_notice
-        
-        !lang en
-        --------
-        This is the leaving RTA notification command.
-        Aliases
-        -------
-        RTA, rta_notification, rta_notice"""
-        if ctx.invoked_subcommand is None:
-            await ctx.reply("コマンドの使いかたが間違っています。")
-
-    @rta.command(aliases=["set", "設定"])
+    @commands.command()
     @app_commands.describe(channel="channel's name")
-    async def setup(self, ctx, channel: Optional[discord.TextChannel] = None):
+    async def rta(self, ctx, channel: Optional[discord.TextChannel] = None):
         if await self.db.set_rta(ctx.guild.id, (channel := (channel or ctx.channel)).id):
             await ctx.reply(
                 embed=discord.Embed(
