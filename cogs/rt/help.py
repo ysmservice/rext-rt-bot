@@ -6,6 +6,7 @@ from typing import Literal, Optional, NamedTuple
 from collections.abc import Sequence
 
 from collections import defaultdict
+from inspect import getfile
 
 from discord.ext.fslash import _get
 from discord.ext import commands
@@ -135,6 +136,14 @@ class Help(Cog):
             value: Optional[Cog.Help] = getattr(command.callback, "__help__", None)
             if value is not None:
                 self.data[value.category][command.name] = value
+                if self.data[value.category][command.name].category == "Other":
+                    if command.cog is not None:
+                        path = getfile(command.cog.__class__)
+                        path = path[:path.rfind("/")]
+                        path = path[path.rfind("/")+1:]
+                        self.data[path][command.name] = self.data[value.category][command.name]
+                        del self.data[value.category][command.name]
+                        self.data[path][command.name].set_category(path)
             elif command.callback.__doc__ and _get(command, "category", None) is None:
                 self.data["Other"][command.name] = self.make_other_command_help(command)
                 if isinstance(command, commands.Group):
@@ -172,7 +181,7 @@ class Help(Cog):
 
     @commands.command(
         aliases=("h", "ヘルプ", "助けて", "へ", "HelpMe,RITSUUUUUU!!"),
-        description="Displays how to use RT.", category="rt"
+        description="Displays how to use RT."
     )
     @discord.app_commands.describe(word="Search word or command name")
     async def help(self, ctx: commands.Context, *, word: Optional[str] = None) -> None:
@@ -186,7 +195,7 @@ class Help(Cog):
                 defaultdict(list)
             for category in list(self.data.keys()):
                 if category == word:
-                    found = True; break
+                    command = None; found = True; break
                 for command, detail in list(self.data[category].items()):
                     if command == word:
                         found = True; break
@@ -197,9 +206,6 @@ class Help(Cog):
                         result["detail_contain"].append((category, command))
                 else: continue
                 break
-            else:
-                await ctx.reply(t(dict(ja="見つかりませんでした。", en="Not found...")))
-                return
 
         if found:
             view = HelpView(self, language, self.make_parts(
@@ -208,16 +214,19 @@ class Help(Cog):
             await ctx.reply(embed=view.page.embeds[0], view=view)
         else:
             view = Cog.views.EmbedPage(Cog.views.EmbedPage.prepare_embeds(
-                "".join((Cog.utils.get(RESULT_TYPES, key, language), "\n".join(
+                "\n\n".join("\n".join((f"**{Cog.utils.get(RESULT_TYPES, key, language)}**", "\n".join(
                     f"`{name}` {headline}"
                     for name, headline in map(
                         lambda x: (x[1], self.data[x[0]][x[1]].headline.get(language, "...")),
                         result[key] # type: ignore
                     )
-                )) for key in ("contain", "detail_contain")),
+                ))) for key in ("contain", "detail_contain")) or "...",
                 lambda text: self.embed(description=text)
             ))
-            await ctx.reply(embed=view.embeds[0], view=view)
+            if view.embeds:
+                await ctx.reply(embed=view.embeds[0], view=view)
+            else:
+                await ctx.reply(embed=view.embeds[0])
 
     Cog.HelpCommand(help) \
         .add_arg(

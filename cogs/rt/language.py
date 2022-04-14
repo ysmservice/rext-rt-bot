@@ -64,8 +64,8 @@ class Language(Cog):
         await self.data.prepare_table()
 
     @commands.command(
-        aliases=("lang", "言語", "言葉"), description="Language setting per user/server",
-        category="rt"
+        aliases=("lang", "言語", "言葉"),
+        description="Language setting per user/server"
     )
     @commands.cooldown(1, 8, commands.BucketType.user)
     @commands.cooldown(1, 8, commands.BucketType.guild)

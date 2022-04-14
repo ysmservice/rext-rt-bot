@@ -1,9 +1,24 @@
 # RT - General
 
+from inspect import cleandoc
+
 from discord.ext import commands, tasks
 import discord
 
 from rtlib import RT, Cog, Embed, t
+
+
+RT_INFO = {
+    "ja": cleandoc(
+        """どうも、Rextが運営している有料のBotであるRTです。
+        多機能で安定した高品質なBotを目指しています。
+        詳細は[ここ](https://rt.rext.dev)をご覧ください。"""
+    ), "en": cleandoc(
+        """Hi, this is RT, a paid bot operated by Rext.
+        We aim to be a multifunctional, stable and high quality bot.
+        For more information, please visit [here](https://rt.rext.dev)."""
+    )
+}
 
 
 class General(Cog):
@@ -27,7 +42,7 @@ class General(Cog):
                 self.now_status_mode = mode
 
     @commands.command(
-        aliases=("p", "latency", "レイテンシ"), category="rt",
+        aliases=("p", "latency", "レイテンシ"),
         description="Displays RT's latency."
     )
     async def ping(self, ctx: commands.Context):
@@ -47,6 +62,14 @@ class General(Cog):
 
     async def cog_unload(self):
         self.status_updater.cancel()
+
+    @commands.command(description="Displays info of RT.")
+    async def info(self, ctx: commands.Context):
+        await ctx.reply(embed=Cog.Embed("RT Info", description=t(RT_INFO, ctx)))
+
+    Cog.HelpCommand(info) \
+        .set_description(ja="RTの情報を表示します。", en="Displays info of RT.") \
+        .update_headline(ja="RTの情報を表示します。")
 
 
 async def setup(bot):

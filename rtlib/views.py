@@ -62,7 +62,7 @@ class BasePage(TimeoutView):
     async def left(self, interaction: discord.Interaction, _):
         await self.on_turn("l", interaction)
 
-    @discord.ui.button(custom_id="BPViewCounter")
+    @discord.ui.button(label="0", custom_id="BPViewCounter")
     async def counter(self, interaction: discord.Interaction, _):
         await interaction.response.send_message("へんじがない。ただの　しかばね　のようだ。")
 

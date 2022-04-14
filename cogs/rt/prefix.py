@@ -48,7 +48,7 @@ class Prefix(Cog):
     async def cog_load(self):
         await self.data.prepare_table()
 
-    @commands.command(description="Setting up a custom prefix.", category="rt")
+    @commands.command(description="Setting up a custom prefix.")
     @commands.guild_only()
     @commands.has_guild_permissions(administrator=True)
     @app_commands.describe(prefix="A Custom prefix")
