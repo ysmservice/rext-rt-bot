@@ -86,6 +86,8 @@ class RT(commands.AutoShardedBot):
     async def connect(self, reconnect: bool = True) -> None:
         self.print("Connecting...")
         await super().connect(reconnect=reconnect)
+
+    async def on_connect(self):
         self.print("Connected")
         await self.tree.sync()
         self.print("Command tree was synced")
