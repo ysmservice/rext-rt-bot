@@ -24,11 +24,10 @@ ADMINS = (
 
 "Category alias display in Help"
 CATEGORIES = {
-    "server-tool": {"ja": "サーバー ツール"},
-    "server-panel": {"ja": "サーバー パネル"},
-    "server-safety": {"ja": "サーバー 安全"},
-    "individual": {"ja": "個人"},
-    "entertainment": {"ja": "娯楽"}
+    "server-tool": {"ja": "サーバー ツール"}, "server-panel": {"ja": "サーバー パネル"},
+    "server-safety": {"ja": "サーバー 安全"}, "individual": {"ja": "個人"},
+    "entertainment": {"ja": "娯楽"}, "music": {"ja": "音楽", "en": "Music"},
+    "tts": {"ja": "読み上げ", "en": "TTS"}
 }
 
 

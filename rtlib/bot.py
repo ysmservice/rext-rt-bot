@@ -14,7 +14,7 @@ from aiomysql import create_pool
 from aiohttp import ClientSession
 from ujson import dumps
 
-from data.constants import PREFIXES, ADMINS, Colors
+from data.constants import TEST, PREFIXES, ADMINS, Colors
 from data import SECRET
 
 from .cacher import CacherPool

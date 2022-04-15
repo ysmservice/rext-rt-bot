@@ -31,15 +31,16 @@ class General(Cog):
     @tasks.loop(minutes=1)
     async def status_updater(self):
         # Update status
-        await self.bot.change_presence(
-            activity=discord.Activity(
-                name=f"/help | {len(getattr(self.bot, self.now_status_mode))} {self.now_status_mode}",
-                type=discord.ActivityType.watching
+        if self.bot.is_ready():
+            await self.bot.change_presence(
+                activity=discord.Activity(
+                    name=f"/help | {len(getattr(self.bot, self.now_status_mode))} {self.now_status_mode}",
+                    type=discord.ActivityType.watching
+                )
             )
-        )
-        for mode in self.status_modes:
-            if mode != self.status_modes:
-                self.now_status_mode = mode
+            for mode in self.status_modes:
+                if mode != self.status_modes:
+                    self.now_status_mode = mode
 
     @commands.command(
         aliases=("p", "latency", "レイテンシ"),
