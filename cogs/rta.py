@@ -66,7 +66,7 @@ class RTA(Cog):
         self.sended_remover.start()
         self.sended: Cacher[str, float] = bot.acquire(60)
 
-    @commands.command()
+    @commands.command(description="setup a rta")
     @app_commands.describe(channel="channel's name")
     async def rta(self, ctx, channel: Optional[discord.TextChannel] = None):
         if await self.db.set_rta(ctx.guild.id, (channel := (channel or ctx.channel)).id):
@@ -89,7 +89,8 @@ class RTA(Cog):
     Cog.HelpCommand(rta) \
         .set_description(ja="即抜けRTA通知用のコマンドです", en="Set channel which recording the leaving RTA.") \
         .set_extra("Notes", ja="もう一度このコマンドを実行するとRTA設定をOffにできます。",
-                   en="Run this command again to turn off the RTA setting.")
+                   en="Run this command again to turn off the RTA setting.") \
+        .update_headline(ja="rta機能を設定します")
 
     @Cog.listener()
     async def on_member_remove(self, member: discord.Member):
