@@ -1,7 +1,7 @@
 # RT - Views
 
 from typing import TypeAlias, Literal, Optional
-from collections.abc import Callable
+from collections.abc import Sequence, Callable, Iterator
 
 from functools import cache
 
@@ -17,7 +17,7 @@ from .__init__ import t
 
 __all__ = (
     "TimeoutView", "Mode", "BasePage", "EmbedPage", "NoEditEmbedPage",
-    "prepare_embeds", "check"
+    "separate_to_embeds", "check"
 )
 
 
@@ -99,26 +99,20 @@ class BasePage(TimeoutView):
         await self.on_turn("dr", interaction)
 
 
-def prepare_embeds(
+def separate_to_embeds(
     description: str, on_make: Callable[[str], discord.Embed]
         = lambda text: discord.Embed(description=text),
-    set_page: Optional[Callable[[discord.Embed, int, int], None]] = None
-) -> list[discord.Embed]:
+    extractor: Callable[[str], str] = lambda text: text[:2000]
+) -> Iterator[discord.Embed]:
     "渡された説明で`on_make`を呼び出して、説明を複数の埋め込みに分割します。"
-    embeds = [on_make(text) for text in separate(description)]
-    if set_page is not None:
-        length = len(embeds)
-        for i in range(len(embeds)):
-            set_page(embeds[i], i+1, length)
-    return embeds
+    for text in separate(description, extractor):
+        yield on_make(text)
 
 
 class EmbedPage(BasePage):
     "埋め込みのページメニューです。"
 
-    prepare_embeds = staticmethod(prepare_embeds)
-
-    def __init__(self, embeds: list[discord.Embed], *args, select: bool = False, **kwargs):
+    def __init__(self, embeds: Sequence[discord.Embed], *args, select: bool = False, **kwargs):
         self.embeds = embeds
         super().__init__(*args, **kwargs)
         if select:

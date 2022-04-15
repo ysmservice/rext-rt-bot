@@ -58,7 +58,7 @@ class General(Cog):
             "Notes", ja="200msを超えている場合は通信が遅いです。",
             en="If it exceeds 200 ms, communication is slow."
         ) \
-        .update_headline(ja="RTのレイテンシを表示します。a")
+        .update_headline(ja="RTのレイテンシを表示します。")
 
     async def cog_unload(self):
         self.status_updater.cancel()

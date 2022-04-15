@@ -118,7 +118,7 @@ class Help:
         return '{}{}'.format(self.to_str(language), "".join(self.get_str_list(language)))
 
     def get_str_list(self, language: str) -> list[str]:
-        return [h.to_str(language) for h in self.sub]
+        return [self.to_str(language)] + [h.to_str(language) for h in self.sub]
 
     def add_sub(self: SelfT, sub: Help) -> SelfT:
         self.sub.append(sub)
@@ -141,12 +141,12 @@ SelfCmdT = TypeVar("SelfCmdT", bound="HelpCommand")
 class HelpCommand(Help):
     "ヘルプオブジェクトを継承したコマンドから簡単にヘルプを構成できるようにしたヘルプオブジェクトです。"
 
-    def __init__(self, command: CmdGrp):
+    def __init__(self, command: CmdGrp, set_help: bool = True):
         self.command = command
         self.fsparent = _get(command, "fsparent", None)
         self.args: list[tuple[str, Text, Text | None, Text]] = []
         super().__init__()
-        setattr(self.command._callback, "__help__", self)
+        if set_help: setattr(self.command._callback, "__help__", self)
         self.set_headline(en=command.description)
         self.set_title(self.command.name)
         self.set_category(_get(self.command, "category", "Other"))

@@ -25,10 +25,11 @@ __all__ = (
 
 
 class Embed(discord.Embed):
+    "Botのテーマカラーをデフォルトで設定するようにした`Embed`です。"
+
     def __init__(self, title: str, *args, **kwargs):
         kwargs["title"] = title
-        if "color" not in kwargs:
-            kwargs["color"] = Colors.normal
+        kwargs.setdefault("color", Colors.normal)
         super().__init__(*args, **kwargs)
 
 

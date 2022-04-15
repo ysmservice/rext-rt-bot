@@ -12,8 +12,8 @@ from discord.ext.fslash import _get
 from discord.ext import commands
 import discord
 
-from rtlib.views import TimeoutView, EmbedPage, NoEditEmbedPage, check
-from rtlib.utils import get_inner_text
+from rtlib.views import TimeoutView, EmbedPage, NoEditEmbedPage, check, separate_to_embeds
+from rtlib.utils import get_inner_text, separate_from_list, set_page
 from rtlib.help import make_default
 from rtlib import RT, Cog, t
 
@@ -27,7 +27,7 @@ FIRST_OF_HELP = {
 
 
 EmbedParts = NamedTuple("EmbedParts", (
-    ("level", Literal[0, 1, 2]), ("title", str), ("description", str),
+    ("level", Literal[0, 1, 2]), ("title", str), ("description", str | list[str]),
     ("category_name", str | None), ("command_name", str | None), ("over", bool)
 ))
 
@@ -76,15 +76,24 @@ class HelpView(TimeoutView):
 
         super().__init__(*args, **kwargs)
 
+        # 2000文字を超えている場合はDiscordで表示しきれない。そのため、分割を行う。
         embeds: list[discord.Embed] = []
-        embeds = EmbedPage.prepare_embeds(
-            self.parts[2], lambda x: Cog.Embed(self.parts[1], description=x)
-        )
+        if isinstance(self.parts[2], str):
+            embeds = list(separate_to_embeds(
+                self.parts[2], lambda x: Cog.Embed(self.parts[1], description=x), # type: ignore
+                lambda text: text[:2000]
+            ))
+        else:
+            # 文字列のリストの場合は、既に分割されてるということなので、そのまま追加する。
+            embeds = []
+            for text in self.parts[2]:
+                embeds.append(Cog.Embed(self.parts[1], description=text))
+
         length = len(embeds)
         self.page = NoEditEmbedPage(embeds)
         if length != 1:
-            for i, embed in enumerate(embeds, 1):
-                embed.set_footer(text=f"{i}/{length}")
+            # 複数ページにわたるヘルプの場合はEmbedPageのアイテムを付ける。
+            set_page(embeds, length=length)
             for item in self.page.children:
                 if getattr(item, "custom_id") != "BPViewCounter":
                     self.add_item(item)
@@ -117,12 +126,12 @@ class Help(Cog):
 
     @commands.Cog.listener()
     async def on_load(self):
-        self.load()
+        await self.aioload()
 
     def make_other_command_help(self, command: commands.Command | commands.Group) -> Cog.Help:
         "`HelpCommand`が用意されていないコマンドから自動でヘルプオブジェクトを作る。"
         assert command.callback.__doc__ is not None or command.description
-        return Cog.HelpCommand(command) \
+        return Cog.HelpCommand(command, False) \
             .set_description(**make_default(command.callback.__doc__ or command.description))
 
     async def aioload(self):
@@ -146,6 +155,7 @@ class Help(Cog):
                         self.data[path][command.name].set_category(path)
             elif (command.callback.__doc__ or command.description) \
                     and _get(command, "category", None) is None:
+                # ヘルプオブジェクトが実装されていないものは自動生成を行う。
                 self.data["Other"][command.name] = self.make_other_command_help(command)
                 if isinstance(command, commands.Group):
                     for target in command.walk_commands():
@@ -164,8 +174,10 @@ class Help(Cog):
         command, category = None, None
         if command_name is not None and category_name is not None:
             level = 2
-            description = self.data[category_name][command_name].get_full_str(language)
             title = command_name
+            description = list(separate_from_list(
+                self.data[category_name][command_name].get_str_list(language)
+            ))
             category, command = category_name, command_name
         elif category_name is not None:
             level = 1
@@ -214,7 +226,7 @@ class Help(Cog):
             ), ctx.author)
             view.set_message(ctx, await ctx.reply(embed=view.page.embeds[0], view=view))
         else:
-            view = EmbedPage(EmbedPage.prepare_embeds(
+            view = EmbedPage(list(separate_to_embeds(
                 "\n\n".join("\n".join((
                     f"**{get_inner_text(RESULT_TYPES, key, language)}**", "\n".join(
                         f"`{name}` {headline}"
@@ -225,7 +237,7 @@ class Help(Cog):
                     ) or "..."
                 )) for key in ("contain", "detail_contain")),
                 lambda text: self.embed(description=text)
-            ))
+            )))
             if view.length > 1:
                 view.set_message(ctx, await ctx.reply(embed=view.embeds[0], view=view))
             else:
