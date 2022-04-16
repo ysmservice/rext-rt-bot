@@ -1,18 +1,23 @@
 # RT - Language
 
-from typing import Literal, Optional
+from typing import TypeAlias, Literal, Optional
 
 from discord.ext import commands
 from discord import app_commands
 
-from rtlib import RT, Cog, DatabaseManager, cursor, Pool, Cursor, t
+from aiomysql import Pool, Cursor
+
+from rtlib.database import DatabaseManager, cursor
+from rtlib import RT, Cog, t
 
 
+Mode: TypeAlias = Literal["User", "Guild"]
 class DataManager(DatabaseManager):
     def __init__(self, pool: Pool, bot: RT):
         self.pool, self.bot = pool, bot
 
     async def prepare_table(self):
+        "テーブルを準備します。"
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS GuildLanguage (
                 GuildID BIGINT PRIMARY KEY NOT NULL, Language TINYTEXT
@@ -23,21 +28,22 @@ class DataManager(DatabaseManager):
                 UserID BIGINT PRIMARY KEY NOT NULL, Language TINYTEXT
             );"""
         )
-        await self._update_cache(cursor, "Guild")
-        await self._update_cache(cursor, "User")
+        await self.update_all_cache()
 
-    @DatabaseManager.ignore
-    async def _update_cache(self, cursor: Cursor, mode: Literal["User", "Guild"]):
+    async def update_cache(self, mode: Mode, **_):
+        "キャッシュを更新します。"
         await cursor.execute("SELECT * FROM {}Language;".format(mode))
         lower_mode = mode.lower()
         for row in await cursor.fetchall():
             getattr(self.bot.language, lower_mode)[row[0]] = row[1]
 
-    async def set(
-        self, mode: Literal["User", "Guild"], id_: int,
-        language: Optional[str] = None
-    ) -> None:
-        "Set language"
+    async def update_all_cache(self):
+        "全てのキャッシュを更新します。"
+        await self.update_cache("Guild", cursor=cursor)
+        await self.update_cache("User", cursor=cursor)
+
+    async def set(self, mode: Mode, id_: int, language: Optional[str] = None) -> None:
+        "設定を行います。"
         if language is None:
             lower_mode = mode.lower()
             if getattr(self.bot.language, lower_mode, None) is not None:
@@ -53,6 +59,18 @@ class DataManager(DatabaseManager):
                 (id_, language, language)
             )
             getattr(self.bot.language, mode.lower())[id_] = language
+
+    @DatabaseManager.ignore
+    async def _clean(self, mode: Mode, cursor: Cursor):
+        lower_mode = mode.lower()
+        for id_, language in getattr(self.bot.language, mode).items():
+            if id_:
+                if mode == "User":
+                    ...
+
+    async def clean(self):
+        "ゴミデータを削除します。"
+        ...
 
 
 class Language(Cog):

@@ -2,7 +2,7 @@
 
 from typing import TypeVar
 
-from inspect import iscoroutinefunction, getsource
+from inspect import iscoroutinefunction, getsource, getfile
 from warnings import filterwarnings
 from functools import wraps
 
@@ -38,9 +38,12 @@ class DatabaseManager:
                 async def _new(
                     self: DatabaseManager, *args, __dm_func__=l[key], **kwargs
                 ):
-                    async with self.pool.acquire() as conn:
-                        async with conn.cursor() as cursor:
-                            return await __dm_func__(self, cursor, *args, **kwargs)
+                    if "cursor" in kwargs:
+                        await __dm_func__(self, kwargs.pop("cursor"), *args, **kwargs)
+                    else:
+                        async with self.pool.acquire() as conn:
+                            async with conn.cursor() as cursor:
+                                return await __dm_func__(self, cursor, *args, **kwargs)
                 setattr(cls, key, _new)
 
     @staticmethod

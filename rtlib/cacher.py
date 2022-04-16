@@ -20,6 +20,10 @@ class Cache(Generic[DataT]):
     def __init__(self, data: DataT, deadline: Optional[float] = None):
         self.data, self.deadline = data, deadline
 
+    def update_deadline(self, seconds: float, now: Optional[float] = None) -> None:
+        "寿命を更新します。"
+        self.deadline = (now or time()) + seconds
+
     def is_dead(self, time_: Optional[float] = None) -> bool:
         "死んだキャッシュかどうかをチェックします。"
         return self.deadline is None or (time_ or time()) > self.deadline

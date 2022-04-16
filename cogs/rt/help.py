@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal, Optional, NamedTuple
+from typing import NamedTuple, Literal, Optional, Any
 from collections.abc import Sequence
 
 from collections import defaultdict
@@ -14,6 +14,7 @@ import discord
 
 from rtlib.views import TimeoutView, EmbedPage, NoEditEmbedPage, check, separate_to_embeds
 from rtlib.utils import get_inner_text, separate_from_list, set_page
+from rtlib.types_ import UserMember
 from rtlib.help import make_default
 from rtlib import RT, Cog, t
 
@@ -69,7 +70,7 @@ class HelpView(TimeoutView):
 
     def __init__(
         self, cog: Help, language: str, parts: EmbedParts,
-        target: Cog.UserMember, *args, **kwargs
+        target: UserMember, *args, **kwargs
     ):
         self.cog, self.language = cog, language
         self.parts, self.target = parts, target
@@ -192,6 +193,12 @@ class Help(Cog):
             level != 0 and len(description) > 2000
         )
 
+    def make_view(self, language: str, category: str, command: str, ctx: Any) -> HelpView:
+        "渡された情報から、コマンドのヘルプのデータが格納されたViewのインスタンスを作ります。"
+        return HelpView(self, language, self.make_parts(
+            language, category, command
+        ), ctx)
+
     @commands.command(
         aliases=("h", "ヘルプ", "助けて", "へ", "HelpMe,RITSUUUUUU!!"),
         description="Displays how to use RT."
@@ -204,6 +211,7 @@ class Help(Cog):
         if word is None:
             found = True
         else:
+            # ヘルプを検索する。全一致時は即終了する。
             result: defaultdict[Literal["contain", "detail_contain"], list[tuple[str, str]]] = \
                 defaultdict(list)
             for category in list(self.data.keys()):
@@ -221,11 +229,13 @@ class Help(Cog):
                 break
 
         if found:
+            # 全一致した場合
             view = HelpView(self, language, self.make_parts(
                 language, category, command
             ), ctx.author)
             view.set_message(ctx, await ctx.reply(embed=view.page.embeds[0], view=view))
         else:
+            # 検索結果の場合
             view = EmbedPage(list(separate_to_embeds(
                 "\n\n".join("\n".join((
                     f"**{get_inner_text(RESULT_TYPES, key, language)}**", "\n".join(

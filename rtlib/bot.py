@@ -1,23 +1,29 @@
 # RT - Bot
 
-from typing import Literal, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Literal, Optional
 
 from dataclasses import dataclass
 from os.path import isdir
 from os import listdir
 
 from discord.ext import commands
-from discord.ext.fslash import extend_force_slash
 import discord
+
+from discord.ext.fslash import extend_force_slash
 
 from aiomysql import create_pool
 from aiohttp import ClientSession
 from ujson import dumps
 
-from data.constants import TEST, PREFIXES, ADMINS, Colors
+from data import PREFIXES, ADMINS, Colors
 from data import SECRET
 
 from .cacher import CacherPool
+
+if TYPE_CHECKING:
+    from .log import LogCore
 
 
 __all__ = ("RT",)
@@ -32,15 +38,9 @@ class Caches:
 class RT(commands.AutoShardedBot):
 
     Colors = Colors
+    log: LogCore
 
     def __init__(self, *args, **kwargs):
-        self.session = ClientSession(json_serialize=dumps)
-
-        kwargs["intents"] = discord.Intents.default()
-        kwargs["intents"].message_content = True
-        kwargs["intents"].members = True
-        kwargs["status"] = discord.Status.dnd
-        kwargs["activity"] = discord.Game("起動")
         kwargs["command_prefix"] = self._get_command_prefix
         kwargs["help_command"] = None
         super().__init__(*args, **kwargs)
@@ -72,6 +72,11 @@ class RT(commands.AutoShardedBot):
         self.print("Prepared cachers")
         self.pool = await create_pool(**SECRET["mysql"])
         self.print("Prepared mysql pool")
+
+        self.session = ClientSession(json_serialize=dumps)
+
+        await self.load_extension("rtlib.log")
+        self.log = self.cogs["LogCore"] # type: ignore
         await self.load_extension("jishaku")
         for path in listdir("cogs"):
             path = f"cogs/{path}"

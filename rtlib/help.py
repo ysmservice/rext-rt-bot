@@ -3,28 +3,14 @@
 from __future__ import annotations
 
 from typing import TypeVar, TypeAlias, Literal
-from inspect import cleandoc
 
 from discord.ext.fslash import _get
 
-from ._types import CmdGrp, Text
-from .utils import get_inner_text
+from .utils import get_inner_text, gettext, cleantext, make_default
+from .types_ import CmdGrp, Text
 
 
-__all__ = (
-    "Help", "CONV", "ANNOTATIONS", "OPTIONS", "EXTRAS", "COMMAND_TYPES",
-    "cleantext", "gettext", "make_default"
-)
-
-
-def cleantext(text: Text) -> Text:
-    "渡されたTextにある全ての値を`cleandoc`で掃除します。"
-    return {key: cleandoc(value) for key, value in text.items()}
-
-
-def make_default(text: str | Text) -> Text:
-    "渡された文字列を日本語と英語のキーがあるTextに入れます。\nTextが渡された場合はそのまま返します。"
-    return {"ja": text, "en": text} if isinstance(text, str) else text
+__all__ = ("Help", "CONV", "ANNOTATIONS", "OPTIONS", "EXTRAS", "COMMAND_TYPES")
 
 
 CONV = {"ja": "のメンションか名前またはID", "en": " mention, name or id"}
@@ -35,11 +21,14 @@ ANNOTATIONS = {
     "Guild": {"ja": f"サーバー{CONV['ja']}", "en": f"Server{CONV['en']}"},
     "Thread": {"ja": f"スレッド{CONV['ja']}", "en": f"Thread{CONV['en']}"},
     "Role": {"ja": f"ロール{CONV['ja']}", "en": f"Role{CONV['en']}"},
+    "Emoji": {"ja": f"絵文字{CONV['ja']}", "en": f"Emoji{CONV['en']}"},
     "int": {"ja": "整数", "en": "Integer"}, "float": {"ja": "数字", "en": "Number"},
-    "str": {"ja": "文字列", "en": "Text"}, "Choice": {"ja": "選ぶ", "en": "Choice"}
+    "str": {"ja": "文字列", "en": "Text"}, "Choice": {"ja": "選ぶ", "en": "Choice"},
+    "bool": {"ja": "真偽地 (on/off, True/False のいずれか)", "en": "Boolean (any of on/off, True/False)"}
 }
 OPTIONS = {
-    "Optional": {"ja": "オプション", "en": "Option"}
+    "Optional": {"ja": "オプション", "en": "Option"},
+    "default": {"ja": "デフォルト", "en": "defualt"}
 }
 EXTRAS = {
     "Examples": {"ja": "使用例"}, "Notes": {"ja": "メモ"},
@@ -51,17 +40,6 @@ COMMAND_TYPES = {
     "ctxUser": {"ja": "ユーザーコンテキストメニュー", "en": "User context menu"},
     "ctxMessage": {"ja": "メッセージコンテキストメニュー", "en": "Message context menu"},
 }
-
-
-def gettext(text: Text, language: str) -> str:
-    "渡されたTextから指定された言語のものを取り出します。\nもし見つからなかった場合は英語、日本語、それ以外のどれかの順で代わりのものを返します。"
-    last = "Translations not found..."
-    for key, value in text.items():
-        if key == language:
-            return value
-        last = value
-    else:
-        return text.get("en") or text.get("ja") or last
 
 
 SelfT = TypeVar("SelfT", bound="Help")
@@ -146,25 +124,36 @@ class HelpCommand(Help):
         self.fsparent = _get(command, "fsparent", None)
         self.args: list[tuple[str, Text, Text | None, Text]] = []
         super().__init__()
+        # ここ以降はコマンドからの自動設定です。
         if set_help: setattr(self.command._callback, "__help__", self)
         self.set_headline(en=command.description)
         self.set_title(self.command.name)
         self.set_category(_get(self.command, "category", "Other"))
+        if command.aliases:
+            # エキストラにエイリアスを自動で追加する。
+            self.set_extra("Aliases", **make_default(f'`{"`, `".join(command.aliases)}`'))
 
     def add_arg(
         self: SelfCmdT, name: str, annotation: str | Text,
-        option: str | Text | None = None, **detail: str
+        option: str | tuple[str, str] | Text | None = None,
+        **detail: str
     ) -> SelfCmdT:
         if isinstance(annotation, str):
             annotation = ANNOTATIONS.get(annotation, annotation)
         if isinstance(option, str):
-            option = OPTIONS.get(option, option)
+            option = make_default(OPTIONS.get(option, option))
+        elif isinstance(option, tuple):
+            option = make_default(f"{OPTIONS.get(option[0], option[0])} {option[1]}")
         self.args.append((
             name, make_default(annotation),
-            None if option is None else make_default(option),
+            option,
             cleantext(detail)
         ))
         return self
+
+    def set_args(self, **kwargs: tuple):
+        for key, value in kwargs.items():
+            self.add_arg(key, *value[:-1], **value[-1])
 
     @property
     def message_qualified(self) -> str:
