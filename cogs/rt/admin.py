@@ -20,7 +20,7 @@ class Admin(Cog):
     def __init__(self, bot: RT):
         self.bot = bot
 
-    @commands.group(aliases=("sudo", "ad", "管理"), description="Tools for administration")
+    @commands.group(aliases=("sudo", "ad", "管理", "debug"), description="Tools for administration")
     @commands.is_owner()
     async def admin(self, ctx: commands.Context):
         if not ctx.invoked_subcommand:
