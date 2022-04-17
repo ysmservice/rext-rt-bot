@@ -11,7 +11,7 @@ from os import listdir
 from discord.ext import commands
 import discord
 
-from discord.ext.fslash import extend_force_slash
+from discord.ext.fslash import extend_force_slash, InteractionResponseMode
 
 from aiomysql import create_pool
 from aiohttp import ClientSession
@@ -48,7 +48,9 @@ class RT(commands.AutoShardedBot):
         self.prefixes = {}
         self.language = Caches({}, {})
 
-        extend_force_slash(self, replace_invalid_annotation_to_str=True)
+        extend_force_slash(self, replace_invalid_annotation_to_str=True, context_kwargs={
+            "interaction_response_mode": InteractionResponseMode.SEND_AND_REPLY
+        })
 
     def _get_command_prefix(self, _, message: discord.Message):
         return PREFIXES if message.guild is None or message.guild.id not in self.prefixes \

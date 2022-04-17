@@ -113,6 +113,8 @@ class DataManager(DatabaseManager):
 
     TIMEOUT = 3600 if TEST else 259200
     "何秒までログデータを保持するかです。"
+    MAX_RECORDS = 5 if TEST else 50000
+    "何個までログデータを保存するかです。"
 
     def __init__(self, pool: Pool):
         self.pool = pool
@@ -136,6 +138,15 @@ class DataManager(DatabaseManager):
                 data.feature_name, data.detail
             )
         )
+        # もしログデータが大量にある場合は、古いレコードを消して最大レコードの数だけにする。
+        await cursor.execute(
+            "SELECT Id, Time FROM Log ORDER BY Time DESC LIMIT %s, 1;",
+            (self.MAX_RECORDS - 1,)
+        )
+        if row := await cursor.fetchone():
+            await cursor.execute(
+                "DELETE FROM Log WHERE Id = %s AND Time < %s;", row
+            )
 
     async def clear(self, id_: int) -> None:
         "指定されたIDのログを全て消去します。"

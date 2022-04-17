@@ -126,6 +126,7 @@ class HelpCommand(Help):
         super().__init__()
         # ここ以降はコマンドからの自動設定です。
         if set_help: setattr(self.command._callback, "__help__", self)
+        else: setattr(self.command._callback, "__raw_help__", self)
         self.set_headline(en=command.description)
         self.set_title(self.command.name)
         self.set_category(_get(self.command, "category", "Other"))

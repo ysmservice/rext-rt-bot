@@ -8,12 +8,11 @@ from collections.abc import Sequence
 from collections import defaultdict
 from inspect import getfile
 
-from discord.ext.fslash import _get
 from discord.ext import commands
 import discord
 
 from rtlib.views import TimeoutView, EmbedPage, NoEditEmbedPage, check, separate_to_embeds
-from rtlib.utils import get_inner_text, separate_from_list, set_page
+from rtlib.utils import get_inner_text, separate_from_list, set_page, get_kwarg
 from rtlib.types_ import UserMember
 from rtlib.help import make_default
 from rtlib import RT, Cog, t
@@ -144,7 +143,7 @@ class Help(Cog):
         self.data = defaultdict(dict)
         for command in self.bot.commands:
             value: Optional[Cog.Help] = getattr(command.callback, "__help__", None)
-            if value is not None:
+            if value is not None and not getattr(command.callback, "__raw_help__", False):
                 self.data[value.category][command.name] = value
                 if self.data[value.category][command.name].category == "Other":
                     if command.cog is not None:
@@ -155,7 +154,7 @@ class Help(Cog):
                         del self.data[value.category][command.name]
                         self.data[path][command.name].set_category(path)
             elif (command.callback.__doc__ or command.description) \
-                    and _get(command, "category", None) is None:
+                    and get_kwarg(command, "category", None) is None:
                 # ヘルプオブジェクトが実装されていないものは自動生成を行う。
                 self.data["Other"][command.name] = self.make_other_command_help(command)
                 if isinstance(command, commands.Group):

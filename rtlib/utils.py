@@ -7,13 +7,15 @@ from inspect import cleandoc
 
 import discord
 
+from discord.ext.fslash import _get as get_kwarg
+
 from .types_ import Text
 
 
 __all__ = (
     "get_inner_text", "separate", "separate_from_list", "set_page", "code_block",
     "to_dict_for_dataclass", "get_name_and_id_str", "gettext", "cleantext",
-    "make_default"
+    "make_default", "get_kwarg"
 )
 
 

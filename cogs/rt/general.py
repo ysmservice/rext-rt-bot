@@ -318,15 +318,20 @@ class General(Cog):
 
     async def command_log(self, ctx: commands.Context, mode: Literal["success", "error"]):
         "コマンドのログを流します。"
+        feature = None
+        if ctx.command is not None:
+            feature = ctx.command.root_parent or ctx.command
+        if feature is None:
+            feature = ("...", ctx.message.content)
         await self.bot.log(self.bot.log.LogData.quick_make(
-            ctx.command or ("...", ctx.message.content),
+            feature,
             getattr(self.bot.log.ResultType, mode), ctx.guild or ctx.author,
             t(dict(
                 ja="実行者：{author}\nチャンネル：{channel}{error}",
                 en="User:{author}\nChannel:{channel}{error}"
             ), ctx, author=get_name_and_id_str(ctx.author),
             channel=get_name_and_id_str(ctx.channel),
-            error=code_block(getattr(ctx, "__rt_error__"), "python")
+            error=f'\n{code_block(getattr(ctx, "__rt_error__"), "python")}'
                 if hasattr(ctx, "__rt_error__") else ""), ctx=ctx
         ))
 
