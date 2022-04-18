@@ -1,11 +1,10 @@
 # RT - Reprypt
 
+from time import time
 from discord.ext import commands
 from rtlib import Cog
-import discord
-
-from time import time
 import reprypt
+import discord
 
 
 class Reprypt(Cog):
@@ -13,20 +12,10 @@ class Reprypt(Cog):
         self.bot = bot
 
     @commands.group(
-        extras={
-            "headding": {"ja": "Repryptを使用して文章を暗号化/復号化します。",
-                         "en": "..."},
-            "parent": "Individual"
-        },
-        name="reprypt"
+        name="reprypt",
+        description="Use Reprypt to encrypt/decrypt sentences."
     )
     async def reprypt_(self, ctx):
-        """!lang ja
-        --------
-        Repryptを使用して文章を暗号化/復号化します。
-        !lang en
-        --------
-        Encryption/Decryption by Reprypt."""
         if not ctx.invoked_subcommand:
             await ctx.reply(
                 {"ja": "使い方が違います。",
@@ -111,6 +100,10 @@ class Reprypt(Cog):
             f"```\n{result}\n```", replace_language=False,
             allowed_mentions=discord.AllowedMentions.none()
         )
+    
+    Cog.HelpCommand(reprypt_) \
+        .set_description(ja="Repryptを使用して文章を暗号化/復号化します。", en="Encryption/Decryption by Reprypt.") \
+        .update_headline(ja="Repryptを使用して文章を暗号化/復号化します。")
 
 
 async def setup(bot):
