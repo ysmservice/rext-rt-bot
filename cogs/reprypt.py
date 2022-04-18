@@ -11,7 +11,6 @@ import reprypt
 class Reprypt(Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.rate = {}
 
     @commands.group(
         extras={
@@ -114,5 +113,5 @@ class Reprypt(Cog):
         )
 
 
-def setup(bot):
-    bot.add_cog(Reprypt(bot))
+async def setup(bot):
+    await bot.add_cog(Reprypt(bot))
