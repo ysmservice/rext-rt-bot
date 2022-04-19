@@ -4,6 +4,7 @@ from time import time
 from discord.ext import commands
 from rtlib import Cog
 import reprypt
+from discord import app_commands
 import discord
 
 
@@ -23,39 +24,9 @@ class Reprypt(Cog):
             )
 
     @reprypt_.command(aliases=["en"])
-    async def encrypt(self, ctx, key, *, content):
-        """!lang ja
-        --------
-        指定された文章を暗号化します。
-        Parameters
-        ----------
-        key : str
-            復号時に必要となるパスワードです。
-        content : str
-            暗号化する文章です。
-        Examples
-        --------
-        `rt!reprypt encrypt tasuren 私の極秘情報！`
-        Aliases
-        -------
-        en
-        !lang en
-        --------
-        
-        Encrypts the specified text.
-        Parameters
-        ----------
-        key : str
-            The password required for decryption.
-        content : str
-            The text to be encrypted.
-        Examples
-        --------
-        `rt!reprypt encrypt tasuren My top secret!`
-        Aliases
-        -------
-        en
-        """
+    @app_commands.describe(key="The password required for decryption.")
+    @app_commands.describe(content="The text to be encrypted.")
+    async def encrypt(self, ctx, key: str, *, content: str):
         result = reprypt.encrypt(content, key)
         await ctx.reply(
             f"```\n{result}\n```", replace_language=False,
@@ -64,37 +35,6 @@ class Reprypt(Cog):
 
     @reprypt_.command(aliases=["de"])
     async def decrypt(self, ctx, key, *, content):
-        """!lang ja
-        --------
-        Repryptで暗号化された文章を復号化します。
-        Parameters
-        ----------
-        key : str
-            暗号化する時に使ったパスワードです。
-        content : str
-            復号したい暗号化された文章です。
-        Aliases
-        -------
-        de
-        Examples
-        --------
-        `rt!reprypt encrypt tasuren ByGqa44We55B1u56e5oYO65FC77x`
-        !lang en
-        --------
-        Decrypts the text encrypted by Reprypt.
-        Parameters
-        ----------
-        key : str
-            The password used for encryption.
-        content : str
-            The encrypted text to be decrypted.
-        Aliases
-        -------
-        de
-        Examples
-        --------
-        `rt!reprypt encrypt tasuren ByGqa44We55B1u56e5oYO65FC77x`
-        """
         result = reprypt.decrypt(content, key)
         await ctx.reply(
             f"```\n{result}\n```", replace_language=False,
@@ -103,7 +43,21 @@ class Reprypt(Cog):
     
     Cog.HelpCommand(reprypt_) \
         .set_description(ja="Repryptを使用して文章を暗号化/復号化します。", en="Encryption/Decryption by Reprypt.") \
-        .update_headline(ja="Repryptを使用して文章を暗号化/復号化します。")
+        .update_headline(ja="Repryptを使用して文章を暗号化/復号化します。") \
+        .add_sub(Cog.HelpCommand(encrypt) \
+                    .set_description(ja="指定された文章を暗号化します。", en="Encrypts the specified text.") \
+                    .add_args("key", "str", "Require", ja="復号時に必要となるパスワードです。",
+                              en="The password required for decryption.") \
+                    .add_args("content", "str", "Require", ja="暗号化する文章です。",
+                              en="The text to be encrypted.")
+                )
+        .add_sub(Cog.HelpCommand(decrypt) \
+                    .set_description(ja="Repryptで暗号化された文章を復号化します。", en="Decrypts the text encrypted by Reprypt.") \
+                    .add_args("key", "str", "Require", ja="暗号化する時に使ったパスワードです。",
+                              en="The password used for encryption.") \
+                    .add_args("content", "str", "Require", ja="復号したい暗号化された文章です。",
+                              en="The encrypted text to be decrypted.")
+                )
 
 
 async def setup(bot):
