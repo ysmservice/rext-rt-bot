@@ -53,7 +53,7 @@ class Reprypt(Cog):
                 )
         .add_sub(Cog.HelpCommand(decrypt) \
                     .set_description(ja="Repryptで暗号化された文章を復号化します。", en="Decrypts the text encrypted by Reprypt.") \
-                    .add_args("key", "str", "Require", ja="暗号化する時に使ったパスワードです。",
+                    .add_args("key", "str", ja="暗号化する時に使ったパスワードです。",
                               en="The password used for encryption.") \
                     .add_args("content", "str", "Require", ja="復号したい暗号化された文章です。",
                               en="The encrypted text to be decrypted.")
