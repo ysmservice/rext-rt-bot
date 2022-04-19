@@ -46,16 +46,16 @@ class Reprypt(Cog):
         .update_headline(ja="Repryptを使用して文章を暗号化/復号化します。") \
         .add_sub(Cog.HelpCommand(encrypt) \
                     .set_description(ja="指定された文章を暗号化します。", en="Encrypts the specified text.") \
-                    .add_args("key", "str", "Require", ja="復号時に必要となるパスワードです。",
+                    .add_args("key", "str", ja="復号時に必要となるパスワードです。",
                               en="The password required for decryption.") \
-                    .add_args("content", "str", "Require", ja="暗号化する文章です。",
+                    .add_args("content", "str", ja="暗号化する文章です。",
                               en="The text to be encrypted.")
                 )
         .add_sub(Cog.HelpCommand(decrypt) \
                     .set_description(ja="Repryptで暗号化された文章を復号化します。", en="Decrypts the text encrypted by Reprypt.") \
                     .add_args("key", "str", ja="暗号化する時に使ったパスワードです。",
                               en="The password used for encryption.") \
-                    .add_args("content", "str", "Require", ja="復号したい暗号化された文章です。",
+                    .add_args("content", "str", ja="復号したい暗号化された文章です。",
                               en="The encrypted text to be decrypted.")
                 )
 
