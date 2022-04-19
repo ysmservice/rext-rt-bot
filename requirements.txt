@@ -3,6 +3,6 @@ aiomysql
 aiofiles
 ujson
 git+https://github.com/Rapptz/discord.py
-git+https://github.com/RextTeam/table-manager.py
+MySQLer
 discord-ext-fslash
 jishaku
