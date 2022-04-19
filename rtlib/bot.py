@@ -17,8 +17,7 @@ from aiomysql import create_pool
 from aiohttp import ClientSession
 from ujson import dumps
 
-from data import PREFIXES, ADMINS, Colors
-from data import SECRET
+from data import PREFIXES, SECRET, TEST, ADMINS, Colors
 
 from .cacher import CacherPool
 
@@ -35,7 +34,7 @@ class Caches:
     user: dict[int, str]
 
 
-class RT(commands.AutoShardedBot):
+class RT(commands.Bot):
 
     Colors = Colors
     log: LogCore
@@ -137,3 +136,8 @@ class RT(commands.AutoShardedBot):
     def parsed_latency(self) -> str:
         "Get parsed latency"
         return f"{self.round_latency}ms"
+
+
+# もし本番用での実行の場合はシャードBotに交換する。
+if not TEST:
+    RT.__bases__ = (commands.AutoShardedBot,)

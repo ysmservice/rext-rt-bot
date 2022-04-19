@@ -23,3 +23,4 @@ Channel: TypeAlias = discord.abc.GuildChannel | discord.Thread | discord.abc.Pri
 class CommandInfo(TypedDict):
     name: str
     category: str
+Feature: TypeAlias = CmdGrp | tuple[str, str]

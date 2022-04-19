@@ -28,33 +28,33 @@ __all__ = ("IdType", "ProcessType", "LogData", "detect_type", "DataManager")
 class IdType(Enum):
     "IDの種類です。"
 
-    guild = 1
-    user = 2
+    GUILD = 1
+    USER = 2
 
 
 class ProcessType(Enum):
     "処理内容の種類です。"
 
-    command = 1
+    COMMAND = 1
     "コマンド実行"
-    working = 2
+    WORKING = 2
     "機能実行"
 
 
 class ResultType(Enum):
     "処理結果の種類です。"
 
-    success = 1
-    warning = 2
-    error = 3
-    unknown = 4
+    SUCCESS = 1
+    WARNING = 2
+    ERROR = 3
+    UNKNOWN = 4
 
 
 RESULT_TEXT = {
-    "warning": {"ja": "警告", "en": "Warning"},
-    "error": {"ja": "エラー", "en": "Error"},
-    "unknown": {"ja": "不明", "en": "Unknown"},
-    "success": {"ja": "成功", "en": "Success"}
+    "WARNING": {"ja": "警告", "en": "Warning"},
+    "ERROR": {"ja": "エラー", "en": "Error"},
+    "UNKNOWN": {"ja": "不明", "en": "Unknown"},
+    "SUCCESS": {"ja": "成功", "en": "Success"}
 }
 
 
@@ -63,21 +63,23 @@ Target: TypeAlias = discord.Guild | UserMember
 class LogData:
     "RTの処理ログのデータクラスです。"
 
-    target: Target
+    id: int
+    id_type: IdType
     process_type: ProcessType
     result_type: ResultType
-    time_: int
-    feature_name: str
+    time: int
     feature_category: str
+    feature_name: str
     detail: str
     ctx: Optional[Context] = None
+    target: Optional[Target] = None
 
     @classmethod
     def quick_make(
         cls, feature: CmdGrp | tuple[str, str],
-        result_type: ResultType, target: Target,
+        result_type: ResultType | str, target: Target,
         detail: str, time_: Optional[float] = None,
-        process_type: ProcessType = ProcessType.working,
+        process_type: ProcessType | str = ProcessType.WORKING,
         **kwargs
     ) -> LogData:
         "楽にLogDataオブジェクトを作るための関数です。"
@@ -87,25 +89,33 @@ class LogData:
             help_: Optional[Help] = getattr(feature.callback, "__help__", None)
             name = feature.name
             category = help_.category if help_ else "Other"
+        kwargs["target"] = target
         return cls(
-            target, process_type, result_type, int(time_ or time()),
-            name, category, detail, **kwargs
+            target.id, IdType.GUILD if isinstance(target, discord.Guild) else IdType.USER,
+            getattr(ProcessType, process_type) if isinstance(process_type, str) else process_type,
+            getattr(ResultType, result_type) if isinstance(result_type, str) else result_type,
+            int(time_ or time()), category, name, detail, **kwargs
         )
 
-    def to_str(self, language: str) -> str:
-        "データ内容を文字列に変換します。"
-        return "**{}@{}**\n<t:{}> {}{}\n{}".format(
-            self.feature_name, self.feature_category, self.time_, "{}{}".format(
-                EMOJIS.get(self.result_type.name), get_inner_text(
-                    RESULT_TEXT, self.result_type.name, language
-                )
-            ), self.detail
+    def title(self, language: str) -> str:
+        "タイトルを作ります。"
+        return "{}/{} <t:{}> {} {}".format(
+            self.feature_name, self.feature_category, self.time,
+            EMOJIS.get(self.result_type.name.lower()), get_inner_text(
+                RESULT_TEXT, self.result_type.name, language
+            )
+        )
+
+    def to_str(self, language: str, contain_title: bool = True) -> str:
+        "データ内容を文字列に変換します。\nタイトルを作らないのなら`language`はなんだって良いです。"
+        return "{}{}".format(
+            f"{self.title(language)}\n" if contain_title else "", self.detail
         )
 
 
 def detect_type(data: LogData) -> IdType:
     "IDの種類を割り出します。"
-    return IdType.guild if isinstance(data.target, discord.Guild) else IdType.user
+    return IdType.GUILD if isinstance(data.target, discord.Guild) else IdType.USER
 
 
 class DataManager(DatabaseManager):
@@ -113,7 +123,7 @@ class DataManager(DatabaseManager):
 
     TIMEOUT = 3600 if TEST else 259200
     "何秒までログデータを保持するかです。"
-    MAX_RECORDS = 5 if TEST else 50000
+    MAX_RECORDS = 30 if TEST else 50000
     "何個までログデータを保存するかです。"
 
     def __init__(self, pool: Pool):
@@ -133,8 +143,8 @@ class DataManager(DatabaseManager):
         await cursor.execute(
             "INSERT INTO Log VALUES (%s, %s, %s, %s, %s, %s, %s, %s);",
             (
-                data.target.id, detect_type(data).value, data.process_type.value,
-                data.result_type.value, data.time_, data.feature_category,
+                data.id, data.id_type.value, data.process_type.value,
+                data.result_type.value, data.time, data.feature_category,
                 data.feature_name, data.detail
             )
         )
@@ -162,6 +172,13 @@ class DataManager(DatabaseManager):
                     "DELETE FROM Log WHERE Id = %s AND Time = %s;",
                     row
                 )
+
+    def row_to_data(self, row: tuple) -> LogData:
+        "渡されたレコードのデータからLogDataオブジェクトを作ります。"
+        return LogData(
+            row[0], IdType(row[1]), ProcessType(row[2]), ResultType(row[3]),
+            row[4], row[5], row[6], row[7]
+        )
 
 
 class LogCore(Cog):

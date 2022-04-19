@@ -39,7 +39,7 @@ class DatabaseManager:
                     self: DatabaseManager, *args, __dm_func__=l[key], **kwargs
                 ):
                     if "cursor" in kwargs:
-                        await __dm_func__(self, kwargs.pop("cursor"), *args, **kwargs)
+                        return await __dm_func__(self, kwargs.pop("cursor"), *args, **kwargs)
                     else:
                         async with self.pool.acquire() as conn:
                             async with conn.cursor() as cursor:

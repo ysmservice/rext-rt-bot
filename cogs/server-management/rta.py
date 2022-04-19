@@ -11,23 +11,20 @@ import discord
 from datetime import datetime, timezone
 from time import time
 
-from rtlib.types_ import Channel
 from rtlib.database import DatabaseManager, cursor
 from rtlib.cacher import Cacher
+from rtlib.types_ import Channel
 from rtlib import RT, Cog, t
 
 
 class DataManager(DatabaseManager):
-
-    TABLES = ("rta",)
-
     def __init__(self, bot: RT):
         self.pool, self.bot = bot.pool, bot
 
     async def get(self, guild_id: int, **_) -> Optional[Channel]:
         "RTAの設定を読み込みます。"
         await cursor.execute(
-            "SELECT channel FROM {} WHERE guild = %s;".format(self.TABLES[0]),
+            "SELECT ChannelID FROM rta WHERE GuildID = %s;",
             (guild_id,)
         )
         if row := await cursor.fetchone():
@@ -36,28 +33,32 @@ class DataManager(DatabaseManager):
     async def prepare_table(self):
         "テーブルを用意します。"
         await cursor.execute(
-            """CREATE TABLE IF NOT EXISTS {} (
-                guild BIGINT PRIMARY KEY NOT NULL, channel BIGINT
-            );""".format(self.TABLES[0])
+            """CREATE TABLE IF NOT EXISTS rta (
+                GuildID BIGINT PRIMARY KEY NOT NULL, ChannelID BIGINT
+            );"""
         )
 
-    async def set(self, guild_id: int, channel_id: int) -> bool:
+    async def set(self, guild_id: int, channel_id: int | None) -> bool:
         "RTAを設定します。"
-        if await self.get(guild_id, cursor=cursor) is None:
+        if channel_id is None or (
+            (channel := await self.get(guild_id, cursor=cursor)) is not None
+            and channel.id == channel_id
+        ):
             await cursor.execute(
-                "INSERT INTO {} VALUES (%s, %s);".format(self.TABLES[0]),
-                (guild_id, channel_id)
-            )
-            return True
-        else:
-            await cursor.execute(
-                "DELETE FROM {} WHERE guild = %s;".format(self.TABLES[0]),
+                "DELETE FROM rta WHERE GuildID = %s;",
                 (guild_id,)
             )
             return False
+        else:
+            await cursor.execute(
+                """INSERT INTO rta VALUES (%s, %s)
+                    ON DUPLICATE KEY UPDATE ChannelID = %s;""",
+                (guild_id, channel_id, channel_id)
+            )
+            return True
 
 
-IMMEDIATE_EXIT = dict(ja="即抜けRTA", en="")
+IMMEDIATE_EXIT = dict(ja="即抜けRTA", en="Immediate Quit")
 class RTA(Cog):
     def __init__(self, bot: RT):
         self.db, self.bot = DataManager(bot), bot
@@ -66,9 +67,9 @@ class RTA(Cog):
     async def cog_load(self):
         await self.db.prepare_table()
 
-    @commands.command(description="Setup a rta")
+    @commands.command(description="Setup a Immediate Quit RTA")
     @app_commands.describe(channel="Notify target channel")
-    async def rta(self, ctx, channel: Optional[discord.TextChannel] = None):
+    async def rta(self, ctx, *, channel: Optional[discord.TextChannel] = None):
         if await self.db.set(ctx.guild.id, (channel := (channel or ctx.channel)).id):
             assert isinstance(channel, discord.TextChannel), t(dict(
                 ja="テキストチャンネルでなければいけません。",
@@ -96,6 +97,10 @@ class RTA(Cog):
             If not entered, it is the channel where the command was executed."""
         ) \
         .update_headline(ja="rta機能を設定します")
+    ON_ERROR = dict(
+        ja="即抜けRTA通知メッセージの送信に失敗しました。",
+        en="Failed to send Immediate Quit RTA Notification Message"
+    )
 
     @Cog.listener()
     async def on_member_remove(self, member: discord.Member):
@@ -107,17 +112,17 @@ class RTA(Cog):
         if joined_after.days == 0 and joined_after.seconds < 60:
             if (channel := await self.db.get(member.guild.id)) is not None:
                 if isinstance(channel, discord.TextChannel):
-                    await channel.send(embed=Cog.Embed(
-                        title=t(IMMEDIATE_EXIT, member.guild),
-                        description=t(dict(
-                            ja="{member}が{seconds}秒で抜けちゃった。。。",
-                            en="{member} left in {seconds}s."
-                        ), member.guild, member=member,
-                        seconds=round(joined_after.seconds, 6))
-                    ))
+                    await self.unwrap(self.rta, channel.guild, channel.send(
+                        embed=Cog.Embed(
+                            title=t(IMMEDIATE_EXIT, member.guild),
+                            description=t(dict(
+                                ja="{member}が{seconds}秒で抜けてしまいました。",
+                                en="{member} left in {seconds}s."
+                            ), member.guild, member=member,
+                            seconds=round(joined_after.seconds, 6))
+                        )
+                    ), self.ON_ERROR, channel, True)
                     self.sended[f"{member.guild.id}-{member.id}"] = time()
-                else:
-                    ... # TODO: RTの処理ログにエラーを流すようにする。
 
 
 async def setup(bot):

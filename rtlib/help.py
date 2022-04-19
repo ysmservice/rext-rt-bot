@@ -6,7 +6,7 @@ from typing import TypeVar, TypeAlias, Literal
 
 from discord.ext.fslash import _get
 
-from .utils import get_inner_text, gettext, cleantext, make_default
+from .utils import get_inner_text, gettext, cleantext, make_default, concat_text
 from .types_ import CmdGrp, Text
 
 
@@ -80,11 +80,11 @@ class Help:
         self.headline.update(cleantext(headline))
         return self
 
-    def extras_text(self, language: str) -> str:
-        return "\n\n".join(
+    def extras_text(self, language: str, first: str = "") -> str:
+        return "{}{}".format(first, "\n\n".join(
             f"**#** {gettext(EXTRAS.get(key, make_default(key)), language)}\n{gettext(text, language)}"
             for key, text in self.extras.items()
-        )
+        )) if self.extras else ""
 
     def to_str(self, language: str) -> str:
         return "".join((
@@ -93,10 +93,12 @@ class Help:
         ))
 
     def get_full_str(self, language: str) -> str:
-        return '{}{}'.format(self.to_str(language), "".join(self.get_str_list(language)))
+        return "\n\n".join(self.get_str_list(language))
 
     def get_str_list(self, language: str) -> list[str]:
-        return [self.to_str(language)] + [h.to_str(language) for h in self.sub]
+        return [f"{self.to_str(language)}\n\n"] + [
+            f"{h.to_str(language)}\n\n" for h in self.sub
+        ]
 
     def add_sub(self: SelfT, sub: Help) -> SelfT:
         self.sub.append(sub)
@@ -104,14 +106,6 @@ class Help:
 
     def __str__(self) -> str:
         return f"<Help title={self.title}>"
-
-
-def concat(data: Text, plus: Text, space: str = "") -> Text:
-    "TextとTextを連結させます。"
-    data = {}
-    for key, value in list(data.items()):
-        data[key] = f'{value}{space}{plus.get(key, plus.get("en", key))}'
-    return data
 
 
 CmdType: TypeAlias = Literal["message", "slash"] | str
@@ -170,41 +164,39 @@ class HelpCommand(Help):
         return get_inner_text(COMMAND_TYPES, type_, language)
 
     def full_qualified(self, language: str, args: dict[CmdType, Text] = {}) -> str:
-        return "\n".join((
-            "".join((
-                f"{self.get_type_text(t, language)}: `{getattr(self, f'{t}_qualified')}",
-                f" {get_inner_text(args, t, language)}" if args else (
-                    f" {self.command.signature}" if self.command.signature else ""
-                ), "`"
-            )) for t in ("message", "slash")
-        ))
+        return "\n".join(("".join((
+            f"{self.get_type_text(t, language)}: `{getattr(self, f'{t}_qualified')}",
+            f" {get_inner_text(args, t, language)}" if args else (
+                f" {self.command.signature}" if self.command.signature else ""
+            ), "`"
+        )) for t in ("message", "slash")))
 
     def set_examples(self: SelfCmdT, args: Text, detail: Text) -> SelfCmdT:
-        data = concat({
+        data = concat_text({
             key: self.full_qualified(
                 key, {"message": args, "slash": args}
             ) for key in ("ja", "en")
         }, detail)
         if "Examples" in self.extras:
-            self.extras["Examples"] = concat(self.extras["Examples"], data, "\n")
+            self.extras["Examples"] = concat_text(self.extras["Examples"], data, "\n")
         else:
             self.set_extra("Examples", **data)
         return self
 
-    def args_text(self, language: str) -> str:
-        return "".join(("\n".join("".join((
+    def args_text(self, language: str, first: str = "") -> str:
+        return "{}{}".format(first, "\n\n".join("".join((
             f"{name} : ", gettext(annotation, language),
             "" if option is None else f", {gettext(option, language)}",
             "\n{}".format(
                 '\n'.join(f'　　{line}' for line in gettext(detail, language).splitlines())
             )
-        )) for name, annotation, option, detail in self.args), "\n\n")) if self.args else "\n"
+        )) for name, annotation, option, detail in self.args)) if self.args else ""
 
     def to_str(self, language: str) -> str:
         return "".join((
             f"**{self.title}**\n\n" if self.command.parent else "",
             f"{gettext(self.description, language)}\n\n**#** ",
             f"{get_inner_text(EXTRAS, 'How', language)}\n",
-            f"{self.full_qualified(language)}\n",
-            self.args_text(language), self.extras_text(language)
+            self.full_qualified(language), self.args_text(language, "\n\n"),
+            self.extras_text(language, "\n\n")
         ))

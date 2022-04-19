@@ -58,7 +58,7 @@ class HelpSelect(discord.ui.Select):
             view = HelpView(
                 self.view.cog, self.view.language, self.view.cog.make_parts(
                     self.view.language, category, command
-                ), self.view.target
+                ), self.view.target # type: ignore
             )
             await interaction.response.edit_message(embed=view.page.embeds[0], view=view)
             view.set_message(interaction)

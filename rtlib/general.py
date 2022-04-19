@@ -7,6 +7,7 @@ from discord.ext.fslash import is_fslash
 import discord
 
 from .help import Help, HelpCommand, Text, gettext
+from .utils import unwrap, quick_log
 from .bot import RT
 
 from data import Colors
@@ -55,9 +56,9 @@ def t(text: Text, ctx: Any = None, **kwargs) -> str:
         else:
             if getattr(ctx, "user", None):
                 language = client.language.user.get(ctx.user.id) # type: ignore
-            if language is None and hasattr(ctx, "author"):
+            if language is None and getattr(ctx, "author", None):
                 language = client.language.user.get(ctx.author.id) # type: ignore
-            if language is None and hasattr(ctx, "guild"):
+            if language is None and getattr(ctx, "guild", None):
                 language = client.language.guild.get(ctx.guild.id) # type: ignore
             if language is None: language = "en"
         text = gettext(text, "en") if language is None else gettext(text, language) # type: ignore
@@ -69,7 +70,11 @@ class Cog(OriginalCog):
 
     Help, HelpCommand = Help, HelpCommand
     Embed = Embed
-    t = staticmethod(t)
+    WRONG_WAY = staticmethod(lambda ctx: t(dict(
+        ja="使い方が違います。", en="This is wrong way to use this command."
+    ), ctx))
+    unwrap = unwrap
+    log = quick_log
 
     def embed(self, **kwargs) -> Embed:
         "Make embed and set title to the cog name."
