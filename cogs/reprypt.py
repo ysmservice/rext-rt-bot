@@ -6,9 +6,9 @@ from discord.ext import commands
 from discord import app_commands
 import discord
 
-from rtlib import Cog, RT
-
 import reprypt
+
+from rtlib import Cog, RT
 
 
 class Reprypt(Cog):
