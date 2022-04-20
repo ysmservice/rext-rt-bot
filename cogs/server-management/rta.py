@@ -67,10 +67,19 @@ class RTA(Cog):
     async def cog_load(self):
         await self.db.prepare_table()
 
-    @commands.command(description="Setup a Immediate Quit RTA")
+    @commands.group(description="Immediate Quit RTA Feature")
+    @commands.has_guild_permissions(administrator=True)
+    async def rta(self, ctx: commands.Context):
+        if not ctx.invoked_subcommand:
+            await ctx.reply(self.ERRORS["WRONG_WAY"](ctx))
+
+    @rta.command(description="Setup a Immediate Quit RTA")
     @app_commands.describe(channel="Notify target channel")
-    async def rta(self, ctx, *, channel: Optional[discord.TextChannel] = None):
-        if await self.db.set(ctx.guild.id, (channel := (channel or ctx.channel)).id):
+    async def setup(
+        self, ctx: commands.Context, *,
+        channel: Optional[discord.TextChannel] = None
+    ):
+        if await self.db.set(ctx.guild.id, (channel := (channel or ctx.channel)).id): # type: ignore
             assert isinstance(channel, discord.TextChannel), t(dict(
                 ja="テキストチャンネルでなければいけません。",
                 en="It must be a text channel."
@@ -83,20 +92,42 @@ class RTA(Cog):
             await ctx.reply(t(dict(
                 ja="RTA通知を解除しました。", en="RTA notifications have been unset."
             ), ctx))
-            
-    Cog.HelpCommand(rta) \
-        .set_description(ja="即抜けRTA通知用のコマンドです", en="Set channel which recording the leaving RTA.") \
-        .set_extra(
-            "Notes", ja="もう一度このコマンドを実行するとRTA設定をOffにできます。",
-            en="Run this command again to turn off the RTA setting."
-        ) \
-        .add_arg(
-            "channel", "Channel", "Optional", ja="""対象のチャンネルです。
-            入力しなかった場合はコマンドを実行したチャンネルとなります。""",
-            en="""Target channel.
-            If not entered, it is the channel where the command was executed."""
-        ) \
-        .update_headline(ja="rta機能を設定します")
+
+    @rta.command(description="Show currently Immediate Quit RTA setting")
+    async def show(self, ctx: commands.Context):
+        if channel := await self.db.get(ctx.guild.id): # type: ignore
+            await ctx.reply(t(dict(
+                ja="現在の即抜けRTAのチャンネルは{channel}です。",
+                en="The current channel for the instant exit RTA is {channel}."
+            ), ctx, channel=self.mention_and_id(channel))) # type: ignore
+        else:
+            await ctx.reply(t(dict(
+                ja="現在何も設定されていません。", en="It is not set yet."
+            ), ctx))
+
+    (Cog.HelpCommand(rta)
+        .set_description(ja="即抜けRTA通知用のコマンドです", en="Set channel which recording the leaving RTA.")
+        .update_headline(ja="即抜けrta機能を設定します")
+        .add_sub(Cog.HelpCommand(setup)
+            .set_description(
+                ja="即抜けRTAの通知設定を行います。",
+                en="Set up a notification for an immediate exit RTA."
+            )
+            .add_arg(
+                "channel", "Channel", "Optional", ja="""対象のチャンネルです。
+                入力しなかった場合はコマンドを実行したチャンネルとなります。""",
+                en="""Target channel.
+                If not entered, it is the channel where the command was executed."""
+            )
+            .set_extra(
+                "Notes", ja="もう一度このコマンドを設定されているチャンネルで実行するとRTA設定をOffにできます。",
+                en="Run this command on channel which was set again to turn off the RTA setting."
+            ))
+        .add_sub(Cog.HelpCommand(show)
+            .set_description(
+                ja="即抜けRTAの現在の設定を表示します。",
+                en="Displays the current settings of the immediate RTA."
+            )))
     ON_ERROR = dict(
         ja="即抜けRTA通知メッセージの送信に失敗しました。",
         en="Failed to send Immediate Quit RTA Notification Message"

@@ -74,12 +74,19 @@ class Cog(OriginalCog):
 
     Help, HelpCommand = Help, HelpCommand
     Embed = Embed
-    WRONG_WAY = staticmethod(lambda ctx: t(dict(
-        ja="使い方が違います。", en="This is wrong way to use this command."
-    ), ctx))
+    ERRORS = {
+        "WRONG_WAY": staticmethod(lambda ctx: t(dict(
+            ja="使い方が違います。", en="This is wrong way to use this command."
+        ), ctx))
+    }
     unwrap = unwrap
     t = staticmethod(t)
     log = quick_log
+
+    def mention_and_id(
+        self, obj: discord.User | discord.Member | discord.abc.GuildChannel | discord.Thread
+    ) -> str:
+        return f"{obj.mention} (`{obj.id}`)"
 
     def embed(self, **kwargs) -> Embed:
         "Make embed and set title to the cog name."
