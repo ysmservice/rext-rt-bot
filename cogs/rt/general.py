@@ -69,8 +69,12 @@ class General(Cog):
         self._replied_caches: Cacher[int, list[str]] = \
             self.bot.cachers.acquire(5.0, list)
 
-        self.status_updater.start()
         self._dayly.start()
+
+    @Cog.listener()
+    async def on_ready(self):
+        if not self.status_updater.is_running():
+            self.status_updater.start()
 
     @tasks.loop(minutes=1)
     async def status_updater(self):

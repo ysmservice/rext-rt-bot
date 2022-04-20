@@ -113,8 +113,7 @@ async def unwrap(
 ) -> UPReT | Exception:
     "渡されたをtryでラップして実行をします。\n失敗した場合はRTログに流します。"
     make_response = lambda data: quick_log(
-        getattr(self, "bot"), feature, content, target,
-        data.pop("status", "ERROR"), data
+        self, feature, content, target, data.pop("status", "ERROR"), data
     )
     try:
         data = await coro

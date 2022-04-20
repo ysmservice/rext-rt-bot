@@ -34,7 +34,7 @@ def t(text: Text, ctx: Any = None, **kwargs) -> str:
     You can use keyword arguments to exchange strings like f-string."""
     # Extract client
     client: Optional[RT] = None
-    user = False
+    user, gu = False, False
     if isinstance(ctx, (discord.User, discord.Member, discord.Object)):
         client = _get_client(ctx) # type: ignore
         user = True
@@ -46,6 +46,8 @@ def t(text: Text, ctx: Any = None, **kwargs) -> str:
         client = _get_client(ctx.channel)
     elif getattr(ctx, "user", None):
         client = _get_client(ctx.user)
+    elif gu := isinstance(ctx, (discord.Guild, discord.User)):
+        client = _get_client(ctx) # type: ignore
     # Extract correct text
     if client is None:
         text = gettext(text, "en") # type: ignore
@@ -60,6 +62,8 @@ def t(text: Text, ctx: Any = None, **kwargs) -> str:
                 language = client.language.user.get(ctx.author.id) # type: ignore
             if language is None and getattr(ctx, "guild", None):
                 language = client.language.guild.get(ctx.guild.id) # type: ignore
+            if language is None and gu:
+                language = client.language.guild.get(ctx.id)
             if language is None: language = "en"
         text = gettext(text, "en") if language is None else gettext(text, language) # type: ignore
     return text.format(**kwargs) # type: ignore
@@ -74,6 +78,7 @@ class Cog(OriginalCog):
         ja="使い方が違います。", en="This is wrong way to use this command."
     ), ctx))
     unwrap = unwrap
+    t = staticmethod(t)
     log = quick_log
 
     def embed(self, **kwargs) -> Embed:
