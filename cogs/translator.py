@@ -1,15 +1,20 @@
+# RT - Translator
+
 import discord
-from rtlib import Cog
 from jishaku.functools import executor_function
 from deep_translator import GoogleTranslator
+from rtlib import Cog
+
 
 class Translator(Cog):
     def __init__(self, bot):
         self.bot = bot
      
     @executor_function
-    def translate(self, source: str,
-                  target: str, content: str):
+    def translate(self,
+                  source: str,
+                  target: str,
+                  content: str):
         translator = GoogleTranslator(source=source, target=target)
         return translator.translate(content)
         
@@ -21,6 +26,8 @@ class Translator(Cog):
                 translated = await self.translate(source, target, message.content)
                 embed = discord.Embed(title="translate", description=translated)
                 await message.channel.send(embed=embed)
+                
+                
                 break
                 
 async def setup(bot):
