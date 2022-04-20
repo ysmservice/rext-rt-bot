@@ -1,8 +1,10 @@
 # RT - Translator
 
 import discord
+
 from jishaku.functools import executor_function
 from deep_translator import GoogleTranslator
+
 from rtlib import Cog
 
 
