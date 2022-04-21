@@ -26,13 +26,12 @@ class DatabaseManager:
                 # `cursor`の引数を増設する。
                 l = {}
                 source = getsource(value).replace("self",  "self, cursor", 1)
-                source = "\n".join((
-                    "\n".join(
-                        f"{'    '*i}if True:"
-                        for i in range(int(len(source[:source.find("d")]) / 4)-1)
-                    ), source
-                ))
-                exec(source, value.__globals__, l)
+                if_count = int(len(source[:source.find("d")]) / 4) - 1
+                source = "{}{}".format(
+                    "\n" * (value.__code__.co_firstlineno - if_count - 1), "\n".join((
+                    "\n".join(f"{'    '*i}if True:" for i in range(if_count)), source
+                )))
+                exec(compile(source, getfile(value), "exec"), value.__globals__, l)
                 # 新しい関数を作る。
                 @wraps(l[key])
                 async def _new(

@@ -1,6 +1,8 @@
 # RT - General
 
-from typing import Optional, Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional, Any
 
 from discord.ext.commands import Cog as OriginalCog
 from discord.ext.fslash import is_fslash
@@ -11,6 +13,9 @@ from .utils import unwrap, quick_log
 from .bot import RT
 
 from data import Colors
+
+if TYPE_CHECKING:
+    from .rtevent import EventContext
 
 
 __all__ = ("RT", "Cog", "t", "cast", "Embed")
@@ -82,6 +87,7 @@ class Cog(OriginalCog):
     unwrap = unwrap
     t = staticmethod(t)
     log = quick_log
+    EventContext: type[EventContext]
 
     def mention_and_id(
         self, obj: discord.User | discord.Member | discord.abc.GuildChannel | discord.Thread
