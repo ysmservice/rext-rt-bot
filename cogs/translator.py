@@ -27,9 +27,8 @@ class Translator(Cog):
                 translated = await self.translate(source, target, message.content)
                 embed = discord.Embed(title="translate", description=translated)
                 await message.channel.send(embed=embed)
-                
-                
                 break
+                
                 
 async def setup(bot):
     await bot.add_cog(Translator(bot))
