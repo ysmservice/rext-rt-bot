@@ -33,7 +33,7 @@ OPTIONS = {
 EXTRAS = {
     "Examples": {"ja": "使用例"}, "Notes": {"ja": "メモ"},
     "Warnings": {"ja": "警告"}, "See Also": {"ja": "参照"},
-    "How": {"ja": "使い方"}
+    "How": {"ja": "使い方"}, "Aliases": {"ja": "エイリアス"}
 }
 COMMAND_TYPES = {
     "message": {"ja": "メッセージ"}, "slash": {"ja": "スラッシュ"},
@@ -184,7 +184,7 @@ class HelpCommand(Help):
         return self
 
     def args_text(self, language: str, first: str = "") -> str:
-        return "{}{}".format(first, "\n\n".join("".join((
+        return "{}{}".format(first, "\n".join("".join((
             f"{name} : ", gettext(annotation, language),
             "" if option is None else f", {gettext(option, language)}",
             "\n{}".format(

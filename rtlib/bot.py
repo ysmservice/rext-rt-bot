@@ -23,6 +23,7 @@ from .cacher import CacherPool
 
 if TYPE_CHECKING:
     from .log import LogCore
+    from .rtevent import RTEvent
 
 
 __all__ = ("RT",)
@@ -38,6 +39,7 @@ class RT(commands.Bot):
 
     Colors = Colors
     log: LogCore
+    rtevent: RTEvent
 
     def __init__(self, *args, **kwargs):
         kwargs["command_prefix"] = self._get_command_prefix
@@ -76,6 +78,7 @@ class RT(commands.Bot):
 
         self.session = ClientSession(json_serialize=dumps)
 
+        await self.load_extension("rtlib.rtevent")
         await self.load_extension("rtlib.log")
         self.log = self.cogs["LogCore"] # type: ignore
         await self.load_extension("jishaku")

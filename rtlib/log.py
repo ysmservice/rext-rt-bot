@@ -22,7 +22,9 @@ from .general import RT, Cog
 from data import EMOJIS, TEST
 
 
-__all__ = ("IdType", "ProcessType", "LogData", "detect_type", "DataManager")
+__all__ = (
+    "IdType", "ProcessType", "LogData", "detect_type", "DataManager", "Feature", "Target"
+)
 
 
 class IdType(Enum):
@@ -59,6 +61,7 @@ RESULT_TEXT = {
 
 
 Target: TypeAlias = discord.Guild | UserMember
+Feature: TypeAlias = CmdGrp | tuple[str, str]
 @dataclass
 class LogData:
     "RTの処理ログのデータクラスです。"
@@ -76,9 +79,8 @@ class LogData:
 
     @classmethod
     def quick_make(
-        cls, feature: CmdGrp | tuple[str, str],
-        result_type: ResultType | str, target: Target,
-        detail: str, time_: Optional[float] = None,
+        cls, feature: Feature, result_type: ResultType | str,
+        target: Target, detail: str, time_: Optional[float] = None,
         process_type: ProcessType | str = ProcessType.WORKING,
         **kwargs
     ) -> LogData:
@@ -191,12 +193,21 @@ class LogCore(Cog):
 
     def __init__(self, bot: RT):
         self.bot, self.data = bot, DataManager(bot.pool)
+        self.bot.rtevent.set(self.on_dispatch)
 
     async def cog_load(self):
         await self.data.prepare_table()
 
+    async def on_dispatch(self, _, args, __):
+        if (ctx := self.bot.rtevent.get_context(args)) is not None and ctx.log:
+            assert ctx.target is not None
+            await self.__call__(LogData.quick_make(
+                ctx.feature, ctx.status, ctx.target, ctx.detail
+            ))
+
     async def __call__(self, data: LogData):
         self.bot.dispatch("log", data)
+        self.bot.rtevent.dispatch("on_log", data)
         await self.data.add(data)
 
 

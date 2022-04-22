@@ -80,9 +80,9 @@ class Cog(OriginalCog):
     Help, HelpCommand = Help, HelpCommand
     Embed = Embed
     ERRORS = {
-        "WRONG_WAY": staticmethod(lambda ctx: t(dict(
+        "WRONG_WAY": lambda ctx: t(dict(
             ja="使い方が違います。", en="This is wrong way to use this command."
-        ), ctx))
+        ), ctx)
     }
     unwrap = unwrap
     t = staticmethod(t)

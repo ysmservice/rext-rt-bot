@@ -54,6 +54,7 @@ class ShowHelpView(TimeoutView):
             command.callback.__help__.category, command.name, # type: ignore
             interaction
         )
+        view.target = interaction.user.id
         await interaction.response.send_message(
             embed=view.page.embeds[0], view=view, ephemeral=True
         )
@@ -154,9 +155,9 @@ class General(Cog):
             color=getattr(self.bot.Colors, color)
         ), view=view)
 
-    BAD_ARGUMENT = staticmethod(lambda ctx: t(dict(
-        ja="引数がおかしいです。\nCode:`{}`", en="The argument format is incorrect.\nCode:`{}`"
-    ), ctx))
+    BAD_ARGUMENT = staticmethod(lambda ctx, code: t(dict(
+        ja="引数がおかしいです。\nCode:`{code}`", en="The argument format is incorrect.\nCode:`{code}`"
+    ), ctx, code=code))
 
     @commands.Cog.listener()
     async def on_command_error(
@@ -196,7 +197,7 @@ class General(Cog):
             if isinstance(content, dict):
                 content = t(content, ctx)
         elif isinstance(error, commands.UserInputError):
-            content = self.BAD_ARGUMENT(ctx)
+            content = self.BAD_ARGUMENT(ctx, error)
             if isinstance(error, commands.MissingRequiredArgument):
                 content = t(dict(
                     ja="引数が足りません。", en="Argument is missing."

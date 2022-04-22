@@ -1,3 +1,4 @@
+# core
 aiohttp[speedups]
 aiomysql
 aiofiles
@@ -5,3 +6,9 @@ ujson
 git+https://github.com/Rapptz/discord.py
 discord-ext-fslash
 jishaku
+# cogs.individual
+## reprypt
+reprypt
+# cogs.server-management
+## translator
+deep_translator
