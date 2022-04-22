@@ -17,8 +17,7 @@ class Translator(Cog):
                   source: str,
                   target: str,
                   content: str):
-        translator = GoogleTranslator(source=source, target=target)
-        return translator.translate(content)
+        return GoogleTranslator(source=source, target=target).translate(content)
         
     @Cog.listener()
     async def on_message(self, message: discord.Message):
