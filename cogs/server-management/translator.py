@@ -1,30 +1,39 @@
 # RT - Translator
 
-from discord.ext.commands import command, Context
+from discord.ext import commands
 import discord
+
+from discord.ext.fslash import Context
 
 from jishaku.functools import executor_function
 
 from deep_translator.exceptions import LanguageNotSupportedException
 from deep_translator import GoogleTranslator
 
-from rtlib import Cog, RT
+from rtlib.utils import quick_invoke_command
+from rtlib import Cog, RT, t
 
 
 class Translator(Cog):
     def __init__(self, bot: RT):
         self.bot = bot
+        self.bot.tree.remove_command("Translate")
+        self.bot.tree.add_command(discord.app_commands.ContextMenu(
+            name="Translate", callback=self.translate_from_context_menu,
+            type=discord.AppCommandType.message
+        ))
 
     @executor_function
     def translate(self, target: str, content: str) -> str:
         return GoogleTranslator(target=target).translate(content)
 
-    @command("translate", description="Translation.", aliases=("trans", "翻訳"))
+    @commands.command("translate", description="Translation.", aliases=("trans", "翻訳"))
     @discord.app_commands.describe(
         language="The language code of the target language.",
         content="The text to be translated."
     )
-    async def translate_(self, ctx: Context, language: str, *, content: str):
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def translate_(self, ctx: commands.Context, language: str, *, content: str):
         await ctx.trigger_typing()
 
         if language == "auto":
@@ -37,7 +46,7 @@ class Translator(Cog):
         try:
             await ctx.reply(
                 embed=Cog.Embed(
-                    title=Cog.t({"ja": "翻訳", "en": "Translation"}, ctx),
+                    title=t({"ja": "翻訳", "en": "Translation"}, ctx),
                     description=await self.translate(language, content)
                 ).set_footer(
                     text="Powered by Google Translate",
@@ -45,22 +54,37 @@ class Translator(Cog):
                 )
             )
         except LanguageNotSupportedException:
-            await ctx.reply(Cog.t(dict(
+            await ctx.reply(t(dict(
                 ja="その言語は対応していません。", en="That language is not supported."
             ), ctx))
+
+    async def translate_from_context_menu(
+        self, interaction: discord.Interaction, message: discord.Message
+    ):
+        if message.content:
+            await quick_invoke_command(
+                self.bot, self.translate_, Context(interaction, {}, self.translate_, self.bot), # type: ignore
+                kwargs={"language": "auto", "content": message.clean_content}
+            )
+        else:
+            await interaction.response.send_message(t(dict(
+                ja="メッセージ内容が空なので翻訳できませんでした。",
+                en="The message content was empty and could not be translated."
+            ), interaction))
 
     @Cog.listener()
     async def on_message(self, message: discord.Message):
         if not isinstance(message.channel, discord.TextChannel) \
-                or message.channel.topic is None:
-            return 
+                or message.channel.topic is None or not message.content \
+                or message.author.id == self.bot.application_id:
+            return
 
         for line in message.channel.topic.splitlines():
-            if line.startswith("rt>tran "):
+            if line.startswith(("rt>trans ", "rt>translate ")):
                 _, target = line.split()
-                await self.translate_(
-                    await self.bot.get_context(message), target,
-                    content=message.clean_content
+                await quick_invoke_command(
+                    self.bot, self.translate_, message, "content",
+                    kwargs={"language": target, "content": message.clean_content}
                 )
                 break
 

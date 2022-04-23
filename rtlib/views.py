@@ -51,6 +51,8 @@ class TimeoutView(ContainTargetView):
             self.ctx = ctx.interaction
         elif message is not None:
             self.ctx = message
+        elif isinstance(ctx, discord.Interaction):
+            self.ctx = ctx
 
 
 async def check(

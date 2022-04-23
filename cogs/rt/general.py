@@ -267,6 +267,7 @@ class General(Cog):
                     en="This command can only be executed on NSFW channels."
                 ), ctx)
         elif isinstance(error, commands.CommandOnCooldown):
+            status = 429
             content = t(dict(
                 ja="クールダウン中です。\n{seconds:.2f}秒お待ちください。",
                 en="It is currently on cool down.\nPlease wait for {seconds:.2f}s."

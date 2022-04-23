@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Any
+from typing import TYPE_CHECKING, TypeVar, Optional, Any
 
 from discord.ext.commands import Cog as OriginalCog
 from discord.ext.fslash import is_fslash
 import discord
 
 from .help import Help, HelpCommand, Text, gettext
-from .utils import unwrap, quick_log
+from .utils import make_error_message, code_block
 from .bot import RT
 
 from data import Colors
@@ -74,6 +74,7 @@ def t(text: Text, ctx: Any = None, **kwargs) -> str:
     return text.format(**kwargs) # type: ignore
 
 
+UCReT = TypeVar("UCReT")
 class Cog(OriginalCog):
     "Extended cog"
 
@@ -84,19 +85,34 @@ class Cog(OriginalCog):
             ja="使い方が違います。", en="This is wrong way to use this command."
         ), ctx)
     }
-    unwrap = unwrap
     t = staticmethod(t)
-    log = quick_log
+    FORBIDDEN = dict(
+        ja="権限がないため処理に失敗しました。", en="Processing failed due to lack of authorization."
+    )
     EventContext: type[EventContext]
+    bot: RT
 
+    @staticmethod
     def mention_and_id(
-        self, obj: discord.User | discord.Member | discord.abc.GuildChannel | discord.Thread
+        obj: discord.User | discord.Member | discord.abc.GuildChannel | discord.Thread
     ) -> str:
         return f"{obj.mention} (`{obj.id}`)"
 
     def embed(self, **kwargs) -> Embed:
         "Make embed and set title to the cog name."
         return Embed(self.__cog_name__, **kwargs)
+
+    CONSTANT_FOR_EXCEPTION_TO_TEXT = {
+        "ja": "内部エラーが発生しました。", "en": "An internal error has occurred."
+    }
+
+    @staticmethod
+    def error_to_text(error: Exception) -> Text:
+        error = code_block(make_error_message(error), "python") # type: ignore
+        return {
+            key: f"{Cog.CONSTANT_FOR_EXCEPTION_TO_TEXT[key]}\n{error}"
+            for key in ("ja", "en")
+        }
 
 
 def cast(**kwargs: dict[str, str]) -> str:

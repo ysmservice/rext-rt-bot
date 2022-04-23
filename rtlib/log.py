@@ -199,6 +199,7 @@ class LogCore(Cog):
         await self.data.prepare_table()
 
     async def on_dispatch(self, _, args, __):
+        # RTイベントで`log`が`True`のContextが引数にある場合は、ログに流す。
         if (ctx := self.bot.rtevent.get_context(args)) is not None and ctx.log:
             assert ctx.target is not None
             await self.__call__(LogData.quick_make(

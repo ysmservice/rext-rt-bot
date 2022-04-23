@@ -66,7 +66,7 @@ class RTLog(Cog):
     @commands.has_permissions(administrator=True)
     async def rtlog(self, ctx: commands.Context):
         if not ctx.invoked_subcommand:
-            await ctx.reply(Cog.WRONG_WAY(ctx))
+            await ctx.reply(Cog.ERRORS["WRONG_WAY"](ctx))
 
     @rtlog.command(description="Show RT Log")
     @commands.cooldown(1, 5, commands.BucketType.guild)

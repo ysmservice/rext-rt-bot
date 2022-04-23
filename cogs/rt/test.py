@@ -16,7 +16,9 @@ class Test(Cog):
 
     @test.command()
     async def log(self, ctx: commands.Context, *, text: str):
-        self.bot.dispatch("on_test_log", Cog.EventContext(ctx.guild, "SUCCESS", text))
+        self.bot.rtevent.dispatch(
+            "on_test_log", Cog.EventContext(ctx.guild, "SUCCESS", "testLog", text)
+        )
         await ctx.reply("Ok")
 
 

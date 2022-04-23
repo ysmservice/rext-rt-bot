@@ -58,6 +58,11 @@ class DataManager(DatabaseManager):
             return True
 
 
+class ImmediateExitContext(Cog.EventContext):
+    member: discord.Member
+    seconds: float
+
+
 IMMEDIATE_EXIT = dict(ja="即抜けRTA", en="Immediate Quit")
 class RTA(Cog):
     def __init__(self, bot: RT):
@@ -108,6 +113,10 @@ class RTA(Cog):
     (Cog.HelpCommand(rta)
         .set_description(ja="即抜けRTA通知用のコマンドです", en="Set channel which recording the leaving RTA.")
         .update_headline(ja="即抜けrta機能を設定します")
+        .set_rtevent(ImmediateExitContext, "on_immediate_quit",
+            ja="即抜けRTAの通知時に呼ばれるイベントです。",
+            en="This event is called at the time of notification of an immediate quit RTA."
+        )
         .add_sub(Cog.HelpCommand(setup)
             .set_description(
                 ja="即抜けRTAの通知設定を行います。",
@@ -128,10 +137,12 @@ class RTA(Cog):
                 ja="即抜けRTAの現在の設定を表示します。",
                 en="Displays the current settings of the immediate RTA."
             )))
+
     ON_ERROR = dict(
         ja="即抜けRTA通知メッセージの送信に失敗しました。",
         en="Failed to send Immediate Quit RTA Notification Message"
     )
+    SUBJECT = {"ja": "即抜けRTA検知", "en": "Instant Quit RTA detection"}
 
     @Cog.listener()
     async def on_member_remove(self, member: discord.Member):
@@ -143,16 +154,29 @@ class RTA(Cog):
         if joined_after.days == 0 and joined_after.seconds < 60:
             if (channel := await self.db.get(member.guild.id)) is not None:
                 if isinstance(channel, discord.TextChannel):
-                    await self.unwrap(self.rta, channel.guild, channel.send(
-                        embed=Cog.Embed(
-                            title=t(IMMEDIATE_EXIT, member.guild),
-                            description=t(dict(
-                                ja="{member}が{seconds}秒で抜けてしまいました。",
-                                en="{member} left in {seconds}s."
-                            ), member.guild, member=member,
-                            seconds=round(joined_after.seconds, 6))
+                    try:
+                        await channel.send(
+                            embed=Cog.Embed(
+                                title=t(IMMEDIATE_EXIT, member.guild),
+                                description=t(dict(
+                                    ja="{member}が{seconds}秒で抜けてしまいました。",
+                                    en="{member} left in {seconds}s."
+                                ), member.guild, member=member,
+                                seconds=round(joined_after.seconds, 6))
+                            )
                         )
-                    ), self.ON_ERROR, channel, True)
+                    except discord.Forbidden:
+                        self.bot.rtevent.dispatch("on_immediate_quit", ImmediateExitContext(
+                            member.guild, "ERROR", self.SUBJECT, Cog.FORBIDDEN, self.rta
+                        ))
+                    except Exception as e:
+                        self.bot.rtevent.dispatch("on_immediate_quit", ImmediateExitContext(
+                            member.guild, "ERROR", self.SUBJECT, self.error_to_text(e), self.rta
+                        ))
+                    else:
+                        self.bot.rtevent.dispatch("on_immediate_quit", ImmediateExitContext(
+                            member.guild, "SUCCESS", self.SUBJECT, "", self.rta
+                        ))
                     self.sended[f"{member.guild.id}-{member.id}"] = time()
 
 

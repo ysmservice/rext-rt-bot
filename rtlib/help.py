@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-from typing import TypeVar, TypeAlias, Literal
+from typing import TYPE_CHECKING, TypeVar, TypeAlias, Literal
 
 from discord.ext.fslash import _get
 
-from .utils import get_inner_text, gettext, cleantext, make_default, concat_text
+from .utils import get_inner_text, gettext, cleantext, make_default, concat_text, code_block
 from .types_ import CmdGrp, Text
+
+if TYPE_CHECKING:
+    from .rtevent import EventContext
 
 
 __all__ = ("Help", "CONV", "ANNOTATIONS", "OPTIONS", "EXTRAS", "COMMAND_TYPES")
@@ -191,6 +194,20 @@ class HelpCommand(Help):
                 '\n'.join(f'　　{line}' for line in gettext(detail, language).splitlines())
             )
         )) for name, annotation, option, detail in self.args)) if self.args else ""
+
+    def set_rtevent(
+        self: SelfCmdT, ctx: type[EventContext],
+        event_name: str, **detail: str
+    ) -> SelfCmdT:
+        detail = concat_text(concat_text(
+            make_default(f"EventName: `{event_name}`"), detail, "\n"
+        ), make_default(
+            "NoAttrs" if ctx.__name__ == "EventContext" else code_block("\n".join(
+                f"{key}\t{value}" for key, value in ctx.__annotations__.items()
+            )
+        )), "\n")
+        self.set_extra("RTEvent", **detail)
+        return self
 
     def to_str(self, language: str) -> str:
         return "".join((

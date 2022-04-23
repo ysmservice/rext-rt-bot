@@ -14,7 +14,8 @@ from ujson import loads, dumps
 
 from .utils import make_error_message
 from .log import Feature, Target
-from .general import Cog, RT
+from .general import Cog, RT, t
+from .types_ import Text
 
 
 __all__ = ("EventContext", "OnErrorContext", "RTEvent")
@@ -23,23 +24,33 @@ __all__ = ("EventContext", "OnErrorContext", "RTEvent")
 class EventContext:
     "イベントデータを格納する`Context`のベースです。"
 
-    feature: Feature = ("Unknown", "...")
-
     def __init__(
         self, target: Optional[Target] = None, status: str = "SUCCESS",
-        detail: str = "...", log: bool = True, **kwargs
+        subject: str | Text = "", detail: str | Text = "",
+        feature: Feature = ("Unknown", "..."),
+        log: bool = True, **kwargs
     ):
         self.keys = []
         for key, value in kwargs.items():
             setattr(self, key, value)
             self.keys.append(key)
-        self.log, self.status, self.detail, self.target = log, status, detail, target
+        self.log, self.status, self.target = log, status, target
+        # 文字列はもし辞書の場合は`t`を通す。
+        if isinstance(subject, dict):
+            subject = t(subject, target)
+        if isinstance(detail, dict):
+            detail = t(detail, target)
+        self.detail = "{}{}".format(
+            f"{subject}\n" if subject and detail else "",
+            detail
+        )
+        self.feature = feature
 
     def to_dict(self) -> dict[str, Any]:
         "格納されているデータを辞書にします。"
         return {
             key: value for key, value in self.__dict__.items()
-            if key in self.keys or key in ("status", "detail", "target")
+            if key in self.keys or key in ("status", "detail", "target", "feature")
         }
 
     def dumps(self) -> str:

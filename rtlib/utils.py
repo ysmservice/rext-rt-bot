@@ -11,11 +11,10 @@ from inspect import cleandoc
 from discord.ext import commands
 import discord
 
-from discord.ext.fslash import _get as get_kwarg
-
-from .types_ import Text, Feature
+from discord.ext.fslash import _get as get_kwarg, Context
 
 if TYPE_CHECKING:
+    from .types_ import Text, Feature, CmdGrp
     from .log import Target
     from .bot import RT
 
@@ -23,7 +22,8 @@ if TYPE_CHECKING:
 __all__ = (
     "get_inner_text", "separate", "separate_from_list", "set_page", "code_block",
     "to_dict_for_dataclass", "get_name_and_id_str", "gettext", "cleantext", "quick_log",
-    "make_default", "get_kwarg", "truncate", "unwrap", "concat_text", "make_error_message"
+    "make_default", "get_kwarg", "truncate", "unwrap", "concat_text", "make_error_message",
+    "quick_invoke_command"
 )
 
 
@@ -61,7 +61,6 @@ def make_default(text: str | Text) -> Text:
 
 def concat_text(data: Text, plus: Text, space: str = "") -> Text:
     "TextとTextを連結させます。"
-    data = {}
     for key, value in list(data.items()):
         data[key] = f'{value}{space}{plus.get(key, plus.get("en", key))}'
     return data
@@ -91,6 +90,35 @@ def truncate(text: str, max_: int = 255, end: str = "...") -> str:
 
 
 # discord.py関連
+async def quick_invoke_command(
+    bot: RT, cmd: CmdGrp,
+    ctx: Context | commands.Context[RT] | discord.Message | discord.Interaction,
+    end: str = "", **kwargs
+) -> bool:
+    "指定されたコマンドを渡されたContextで実行をします。\nエラー時には`on_command_error`を呼び出します。"
+    # 引数を入れる。
+    if isinstance(ctx, discord.Message):
+        ctx.content = ""
+        for key, value in kwargs.get("kwargs", {}).items():
+            if key != end and " " in value or "　" in value:
+                value = f'"{value}"'
+            ctx.content += f" {value}"
+        ctx.content = ctx.content[1:]
+
+    if isinstance(ctx, discord.Message | discord.Interaction):
+        ctx = await bot.get_context(ctx)
+
+    ctx.command = cmd
+    for key, value in kwargs.items():
+        setattr(ctx, key, value)
+
+    try: await ctx.command.invoke(ctx) # type: ignore
+    except Exception as e:
+        bot.dispatch("command_error", ctx, e)
+        return False
+    else: return True
+
+
 def quick_log(
     self: commands.Cog, feature: Feature, detail: Text,
     target: Target, status: str, more_detail: Optional[Text] = None
