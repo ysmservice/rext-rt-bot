@@ -6,6 +6,7 @@ ujson
 git+https://github.com/Rapptz/discord.py
 discord-ext-fslash
 jishaku
+uvloop; sys_platform != "win32" and implementation_name == "cpython"
 # cogs.individual
 ## reprypt
 reprypt
