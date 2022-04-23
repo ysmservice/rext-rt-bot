@@ -7,6 +7,10 @@ from discord import Intents, Status, Game, AllowedMentions
 from rtlib.bot import RT
 from data import SECRET
 
+try: from uvloop import install
+except ModuleNotFoundError: ...
+else: install()
+
 
 intents = Intents.default()
 intents.message_content = True

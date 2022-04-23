@@ -115,9 +115,11 @@ class Language(Cog):
             language.value
         )
         await ctx.reply(t({
-            "ja": "あなたの言語設定を`{language}`にしました。",
-            "en": "Set your language setting to {language}."
-        }, ctx, language=language.name))
+            "ja": "{ja_subject}の言語設定を`{language}`にしました。",
+            "en": "Set {en_subject} language setting to {language}."
+        }, ctx, language=language.name,
+        ja_subject="このサーバー" if mode.value == "Guild" else "あなた",
+        en_subject="this server" if mode.value == "Guild" else "このサーバー"))
 
     Cog.HelpCommand(language) \
         .set_description(

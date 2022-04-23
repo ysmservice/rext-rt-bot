@@ -6,13 +6,12 @@ from typing import NamedTuple, Literal, Optional, Any
 from collections.abc import Sequence
 
 from collections import defaultdict
-from inspect import getfile
 
 from discord.ext import commands
 import discord
 
 from rtlib.views import TimeoutView, EmbedPage, NoEditEmbedPage, check, separate_to_embeds
-from rtlib.utils import get_inner_text, separate_from_list, set_page, get_kwarg
+from rtlib.utils import get_inner_text, separate_from_list, set_page, get_kwarg, get_fsparent
 from rtlib.types_ import UserMember
 from rtlib.help import make_default
 from rtlib import RT, Cog, t
@@ -58,7 +57,7 @@ class HelpSelect(discord.ui.Select):
             view = HelpView(
                 self.view.cog, self.view.language, self.view.cog.make_parts(
                     self.view.language, category, command
-                ), self.view.target
+                ), self.view.target # type: ignore
             )
             await interaction.response.edit_message(embed=view.page.embeds[0], view=view)
             view.set_message(interaction)
@@ -147,12 +146,11 @@ class Help(Cog):
                 self.data[value.category][command.name] = value
                 if self.data[value.category][command.name].category == "Other":
                     if command.cog is not None:
-                        path = getfile(command.cog.__class__)
-                        path = path[:path.rfind("/")]
-                        path = path[path.rfind("/")+1:]
-                        self.data[path][command.name] = self.data[value.category][command.name]
+                        category = get_fsparent(command.cog.__class__)
+                        self.data[category][command.name] = \
+                            self.data[value.category][command.name]
                         del self.data[value.category][command.name]
-                        self.data[path][command.name].set_category(path)
+                        self.data[category][command.name].set_category(category)
             elif (command.callback.__doc__ or command.description) \
                     and get_kwarg(command, "category", None) is None:
                 # ヘルプオブジェクトが実装されていないものは自動生成を行う。

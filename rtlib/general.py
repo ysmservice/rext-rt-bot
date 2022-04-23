@@ -1,15 +1,21 @@
 # RT - General
 
-from typing import Optional, Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, TypeVar, Optional, Any
 
 from discord.ext.commands import Cog as OriginalCog
 from discord.ext.fslash import is_fslash
 import discord
 
+from .utils import make_error_message, code_block, get_fsparent
 from .help import Help, HelpCommand, Text, gettext
 from .bot import RT
 
 from data import Colors
+
+if TYPE_CHECKING:
+    from .rtevent import EventContext
 
 
 __all__ = ("RT", "Cog", "t", "cast", "Embed")
@@ -33,7 +39,7 @@ def t(text: Text, ctx: Any = None, **kwargs) -> str:
     You can use keyword arguments to exchange strings like f-string."""
     # Extract client
     client: Optional[RT] = None
-    user = False
+    user, gu = False, False
     if isinstance(ctx, (discord.User, discord.Member, discord.Object)):
         client = _get_client(ctx) # type: ignore
         user = True
@@ -45,6 +51,8 @@ def t(text: Text, ctx: Any = None, **kwargs) -> str:
         client = _get_client(ctx.channel)
     elif getattr(ctx, "user", None):
         client = _get_client(ctx.user)
+    elif gu := isinstance(ctx, (discord.Guild, discord.User)):
+        client = _get_client(ctx) # type: ignore
     # Extract correct text
     if client is None:
         text = gettext(text, "en") # type: ignore
@@ -55,25 +63,57 @@ def t(text: Text, ctx: Any = None, **kwargs) -> str:
         else:
             if getattr(ctx, "user", None):
                 language = client.language.user.get(ctx.user.id) # type: ignore
-            if language is None and hasattr(ctx, "author"):
+            if language is None and getattr(ctx, "author", None):
                 language = client.language.user.get(ctx.author.id) # type: ignore
-            if language is None and hasattr(ctx, "guild"):
+            if language is None and getattr(ctx, "guild", None):
                 language = client.language.guild.get(ctx.guild.id) # type: ignore
+            if language is None and gu:
+                language = client.language.guild.get(ctx.id)
             if language is None: language = "en"
         text = gettext(text, "en") if language is None else gettext(text, language) # type: ignore
     return text.format(**kwargs) # type: ignore
 
 
+UCReT = TypeVar("UCReT")
 class Cog(OriginalCog):
     "Extended cog"
 
+    get_fsparent = staticmethod(get_fsparent)
     Help, HelpCommand = Help, HelpCommand
     Embed = Embed
+    ERRORS = {
+        "WRONG_WAY": lambda ctx: t(dict(
+            ja="使い方が違います。", en="This is wrong way to use this command."
+        ), ctx)
+    }
     t = staticmethod(t)
+    FORBIDDEN = dict(
+        ja="権限がないため処理に失敗しました。", en="Processing failed due to lack of authorization."
+    )
+    EventContext: type[EventContext]
+    bot: RT
+
+    @staticmethod
+    def mention_and_id(
+        obj: discord.User | discord.Member | discord.abc.GuildChannel | discord.Thread
+    ) -> str:
+        return f"{obj.mention} (`{obj.id}`)"
 
     def embed(self, **kwargs) -> Embed:
         "Make embed and set title to the cog name."
         return Embed(self.__cog_name__, **kwargs)
+
+    CONSTANT_FOR_EXCEPTION_TO_TEXT = {
+        "ja": "内部エラーが発生しました。", "en": "An internal error has occurred."
+    }
+
+    @staticmethod
+    def error_to_text(error: Exception) -> Text:
+        error = code_block(make_error_message(error), "python") # type: ignore
+        return {
+            key: f"{Cog.CONSTANT_FOR_EXCEPTION_TO_TEXT[key]}\n{error}"
+            for key in ("ja", "en")
+        }
 
 
 def cast(**kwargs: dict[str, str]) -> str:

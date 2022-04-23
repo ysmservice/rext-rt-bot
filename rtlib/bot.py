@@ -17,13 +17,13 @@ from aiomysql import create_pool
 from aiohttp import ClientSession
 from ujson import dumps
 
-from data import PREFIXES, ADMINS, Colors
-from data import SECRET
+from data import CATEGORIES, PREFIXES, SECRET, TEST, ADMINS, Colors
 
 from .cacher import CacherPool
 
 if TYPE_CHECKING:
     from .log import LogCore
+    from .rtevent import RTEvent
 
 
 __all__ = ("RT",)
@@ -35,10 +35,11 @@ class Caches:
     user: dict[int, str]
 
 
-class RT(commands.AutoShardedBot):
+class RT(commands.Bot):
 
     Colors = Colors
     log: LogCore
+    rtevent: RTEvent
 
     def __init__(self, *args, **kwargs):
         kwargs["command_prefix"] = self._get_command_prefix
@@ -48,7 +49,10 @@ class RT(commands.AutoShardedBot):
         self.prefixes = {}
         self.language = Caches({}, {})
 
-        extend_force_slash(self, replace_invalid_annotation_to_str=True, context_kwargs={
+        extend_force_slash(self, replace_invalid_annotation_to_str=True,
+        first_groups=[discord.app_commands.Group(
+            name=key, description=CATEGORIES[key]["en"]
+        ) for key in CATEGORIES.keys()], context_kwargs={
             "interaction_response_mode": InteractionResponseMode.SEND_AND_REPLY
         })
 
@@ -77,6 +81,7 @@ class RT(commands.AutoShardedBot):
 
         self.session = ClientSession(json_serialize=dumps)
 
+        await self.load_extension("rtlib.rtevent")
         await self.load_extension("rtlib.log")
         self.log = self.cogs["LogCore"] # type: ignore
         await self.load_extension("jishaku")
@@ -137,3 +142,8 @@ class RT(commands.AutoShardedBot):
     def parsed_latency(self) -> str:
         "Get parsed latency"
         return f"{self.round_latency}ms"
+
+
+# もし本番用での実行の場合はシャードBotに交換する。
+if not TEST:
+    RT.__bases__ = (commands.AutoShardedBot,)

@@ -1,3 +1,4 @@
+# core
 aiohttp[speedups]
 aiomysql
 aiofiles
@@ -6,3 +7,10 @@ git+https://github.com/Rapptz/discord.py
 MySQLer
 discord-ext-fslash
 jishaku
+uvloop; sys_platform != "win32" and implementation_name == "cpython"
+# cogs.individual
+## reprypt
+reprypt
+# cogs.server-management
+## translator
+deep_translator

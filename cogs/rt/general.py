@@ -1,15 +1,14 @@
 # RT - General
 
-from typing import Literal, Optional
+from typing import Optional
 
-from traceback import TracebackException
 from itertools import chain
 from inspect import cleandoc
 
 from discord.ext import commands, tasks
 import discord
 
-from rtlib.utils import get_name_and_id_str, code_block, make_default
+from rtlib.utils import code_block, make_default, make_error_message
 from rtlib.views import TimeoutView
 from rtlib.cacher import Cacher
 from rtlib.types_ import CmdGrp
@@ -55,6 +54,7 @@ class ShowHelpView(TimeoutView):
             command.callback.__help__.category, command.name, # type: ignore
             interaction
         )
+        view.target = interaction.user.id
         await interaction.response.send_message(
             embed=view.page.embeds[0], view=view, ephemeral=True
         )
@@ -70,8 +70,12 @@ class General(Cog):
         self._replied_caches: Cacher[int, list[str]] = \
             self.bot.cachers.acquire(5.0, list)
 
-        self.status_updater.start()
         self._dayly.start()
+
+    @Cog.listener()
+    async def on_ready(self):
+        if not self.status_updater.is_running():
+            self.status_updater.start()
 
     @tasks.loop(minutes=1)
     async def status_updater(self):
@@ -151,9 +155,9 @@ class General(Cog):
             color=getattr(self.bot.Colors, color)
         ), view=view)
 
-    BAD_ARGUMENT = staticmethod(lambda ctx: t(dict(
-        ja="引数がおかしいです。\nCode:`{}`", en="The argument format is incorrect."
-    ), ctx))
+    BAD_ARGUMENT = staticmethod(lambda ctx, code: t(dict(
+        ja="引数がおかしいです。\nCode:`{code}`", en="The argument format is incorrect.\nCode:`{code}`"
+    ), ctx, code=code))
 
     @commands.Cog.listener()
     async def on_command_error(
@@ -161,16 +165,17 @@ class General(Cog):
         retry: bool = False
     ):
         # エラーハンドリングをします。
-        # 既に五秒以内に返信をしているのなら返信を行わない。
-        name = getattr(ctx.command, "name", "")
-        if name in self._replied_caches[ctx.author.id]:
-            if hasattr(error, "retry_after"):
-                # クールダウン告知後十秒以内にもう一度コマンドが実行された場合、クールダウンが終わるまでクールダウン告知を返信しないようにする。
-                self._replied_caches.get_raw(ctx.author.id) \
-                    .update_deadline(error.retry_after) # type: ignore
-            return
-        elif name:
-            self._replied_caches[ctx.author.id].append(name)
+        if not retry:
+            # 既に五秒以内に返信をしているのなら返信を行わない。
+            name = getattr(ctx.command, "name", "")
+            if name in self._replied_caches[ctx.author.id]:
+                if hasattr(error, "retry_after"):
+                    # クールダウン告知後十秒以内にもう一度コマンドが実行された場合、クールダウンが終わるまでクールダウン告知を返信しないようにする。
+                    self._replied_caches.get_raw(ctx.author.id) \
+                        .update_deadline(error.retry_after) # type: ignore
+                return
+            elif name:
+                self._replied_caches[ctx.author.id].append(name)
 
         # デフォルトのViewを用意しておく。
         view = None
@@ -183,13 +188,20 @@ class General(Cog):
 
         # エラーハンドリングを行う。
         if isinstance(error, commands.CommandInvokeError) and not retry:
-            await self.on_command_error(ctx, error.original, True)
+            return await self.on_command_error(ctx, error.original, True)
+        elif isinstance(error, AssertionError):
+            if isinstance(error.args[0], tuple):
+                status, content = error.args[0]
+            else:
+                content = error.args[0]
+            if isinstance(content, dict):
+                content = t(content, ctx)
         elif isinstance(error, commands.UserInputError):
-            content = self.BAD_ARGUMENT(ctx)
+            content = self.BAD_ARGUMENT(ctx, error)
             if isinstance(error, commands.MissingRequiredArgument):
-                return await self.reply_error(ctx, 400, t(dict(
+                content = t(dict(
                     ja="引数が足りません。", en="Argument is missing."
-                ), ctx), view)
+                ), ctx)
             elif isinstance(error, commands.BadArgument):
                 if error.__class__.__name__.endswith("NotFound"):
                     status = 404
@@ -255,6 +267,7 @@ class General(Cog):
                     en="This command can only be executed on NSFW channels."
                 ), ctx)
         elif isinstance(error, commands.CommandOnCooldown):
+            status = 429
             content = t(dict(
                 ja="クールダウン中です。\n{seconds:.2f}秒お待ちください。",
                 en="It is currently on cool down.\nPlease wait for {seconds:.2f}s."
@@ -289,11 +302,12 @@ class General(Cog):
             content = t(dict(
                 ja="コマンドが見つかりませんでした。{suggestion}", en="That command is not found.{suggetion}"
             ), ctx, suggestion=suggestion)
+            status = 404
 
         if content is None:
             # 不明なエラーが発生した場合
             # エラーの全文を生成する。
-            error_message = "".join(TracebackException.from_exception(error).format())
+            error_message = make_error_message(error)
             setattr(ctx, "__rt_error__", error_message)
             # ログを出力しておく。
             if TEST:
@@ -306,34 +320,11 @@ class General(Cog):
             status = 500
             content = code_block(error_message, "python")
 
+        self.bot.dispatch("command_error_review", status, content, ctx, error)
         await self.reply_error(
             ctx, status, content, view,
             "unknown" if view is None else "error"
         )
-        await self.command_log(ctx, "error")
-
-    @commands.Cog.listener()
-    async def on_command_completion(self, ctx: commands.Context):
-        await self.command_log(ctx, "success")
-
-    async def command_log(self, ctx: commands.Context, mode: Literal["success", "error"]):
-        "コマンドのログを流します。"
-        feature = None
-        if ctx.command is not None:
-            feature = ctx.command.root_parent or ctx.command
-        if feature is None:
-            feature = ("...", ctx.message.content)
-        await self.bot.log(self.bot.log.LogData.quick_make(
-            feature,
-            getattr(self.bot.log.ResultType, mode), ctx.guild or ctx.author,
-            t(dict(
-                ja="実行者：{author}\nチャンネル：{channel}{error}",
-                en="User:{author}\nChannel:{channel}{error}"
-            ), ctx, author=get_name_and_id_str(ctx.author),
-            channel=get_name_and_id_str(ctx.channel),
-            error=f'\n{code_block(getattr(ctx, "__rt_error__"), "python")}'
-                if hasattr(ctx, "__rt_error__") else ""), ctx=ctx
-        ))
 
 
 async def setup(bot):
