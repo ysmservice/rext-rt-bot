@@ -17,7 +17,7 @@ from aiomysql import create_pool
 from aiohttp import ClientSession
 from ujson import dumps
 
-from data import PREFIXES, SECRET, TEST, ADMINS, Colors
+from data import CATEGORIES, PREFIXES, SECRET, TEST, ADMINS, Colors
 
 from .cacher import CacherPool
 
@@ -49,7 +49,10 @@ class RT(commands.Bot):
         self.prefixes = {}
         self.language = Caches({}, {})
 
-        extend_force_slash(self, replace_invalid_annotation_to_str=True, context_kwargs={
+        extend_force_slash(self, replace_invalid_annotation_to_str=True,
+        first_groups=[discord.app_commands.Group(
+            name=key, description=CATEGORIES[key]["en"]
+        ) for key in CATEGORIES.keys()], context_kwargs={
             "interaction_response_mode": InteractionResponseMode.SEND_AND_REPLY
         })
 

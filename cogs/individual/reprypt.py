@@ -18,9 +18,12 @@ class Reprypt(Cog):
     def process(self, mode: str, text: str, key: str) -> str:
         return encrypt(text, key) if mode == "en" else decrypt(text, key)
 
+    FSPARENT = Cog.get_fsparent(__init__)
+
     @commands.group(
         name="reprypt",
-        description="Use Reprypt to encrypt/decrypt sentences."
+        description="Use Reprypt to encrypt/decrypt sentences.",
+        fsparent=FSPARENT
     )
     async def reprypt_(self, ctx):
         if not ctx.invoked_subcommand:

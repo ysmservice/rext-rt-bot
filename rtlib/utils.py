@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, TypeVar, Optional, Any
 from collections.abc import Coroutine, Callable, Iterator, Sequence
 
 from traceback import TracebackException
-from inspect import cleandoc
+from inspect import cleandoc, getfile
 
 from discord.ext import commands
 import discord
@@ -23,8 +23,16 @@ __all__ = (
     "get_inner_text", "separate", "separate_from_list", "set_page", "code_block",
     "to_dict_for_dataclass", "get_name_and_id_str", "gettext", "cleantext", "quick_log",
     "make_default", "get_kwarg", "truncate", "unwrap", "concat_text", "make_error_message",
-    "quick_invoke_command"
+    "quick_invoke_command", "get_fsparent"
 )
+
+
+def get_fsparent(obj: Any) -> str:
+    "オブジェクトからカテゴリーを取得します。"
+    fsparent = getfile(obj)
+    fsparent = fsparent[:fsparent.rfind("/")]
+    fsparent = fsparent[fsparent.rfind("/")+1:]
+    return fsparent
 
 
 def make_error_message(error: Exception) -> str:

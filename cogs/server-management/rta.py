@@ -72,7 +72,9 @@ class RTA(Cog):
     async def cog_load(self):
         await self.db.prepare_table()
 
-    @commands.group(description="Immediate Quit RTA Feature")
+    FSPARENT = Cog.get_fsparent(cog_load)
+
+    @commands.group(description="Immediate Quit RTA Feature", fsparent=FSPARENT)
     @commands.has_guild_permissions(administrator=True)
     async def rta(self, ctx: commands.Context):
         if not ctx.invoked_subcommand:

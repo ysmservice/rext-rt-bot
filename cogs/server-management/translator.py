@@ -27,7 +27,12 @@ class Translator(Cog):
     def translate(self, target: str, content: str) -> str:
         return GoogleTranslator(target=target).translate(content)
 
-    @commands.command("translate", description="Translation.", aliases=("trans", "翻訳"))
+    FSPARENT = Cog.get_fsparent(__init__)
+
+    @commands.command(
+        "translate", description="Translation.",
+        aliases=("trans", "翻訳"), fsparent=FSPARENT
+    )
     @discord.app_commands.describe(
         language="The language code of the target language.",
         content="The text to be translated."

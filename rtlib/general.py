@@ -8,8 +8,8 @@ from discord.ext.commands import Cog as OriginalCog
 from discord.ext.fslash import is_fslash
 import discord
 
+from .utils import make_error_message, code_block, get_fsparent
 from .help import Help, HelpCommand, Text, gettext
-from .utils import make_error_message, code_block
 from .bot import RT
 
 from data import Colors
@@ -78,6 +78,7 @@ UCReT = TypeVar("UCReT")
 class Cog(OriginalCog):
     "Extended cog"
 
+    get_fsparent = staticmethod(get_fsparent)
     Help, HelpCommand = Help, HelpCommand
     Embed = Embed
     ERRORS = {
