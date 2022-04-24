@@ -4,6 +4,7 @@ aiomysql
 aiofiles
 ujson
 git+https://github.com/Rapptz/discord.py
+MySQLer
 discord-ext-fslash
 jishaku
 ipcs
