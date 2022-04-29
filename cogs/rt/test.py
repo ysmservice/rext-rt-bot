@@ -2,7 +2,7 @@
 
 from discord.ext import commands
 
-from rtlib import Cog, RT
+from core import Cog, RT
 
 
 class Test(Cog):

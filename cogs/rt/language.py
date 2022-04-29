@@ -7,8 +7,8 @@ from discord import app_commands
 
 from aiomysql import Pool, Cursor
 
-from rtlib.database import DatabaseManager, cursor
-from rtlib import RT, Cog, t
+from core.database import DatabaseManager, cursor
+from core import RT, Cog, t
 
 
 Mode: TypeAlias = Literal["User", "Guild"]

@@ -4,22 +4,40 @@ from typing import TypedDict
 
 from sys import argv
 
-from ujson import load
+from orjson import loads
 
 
 __all__ = (
-    "SECRET", "get_category", "TEST", "PREFIXES", "ADMINS", "Colors", "EMOJIS",
-    "SUPPORT_SERVER", "PERMISSION_TEXTS"
+    "SECRET", "DATA", "CANARY", "get_category", "HOST_PORT", "URL", "API_URL",
+    "TEST", "PREFIXES", "ADMINS", "Colors", "EMOJIS", "SUPPORT_SERVER", "PERMISSION_TEXTS"
 )
 
 
 class Secret(TypedDict):
     token: str
     mysql: dict
-
-
 with open("secret.json", "r") as f:
-    SECRET: Secret = load(f)
+    SECRET: Secret = loads(f.read())
+
+
+class BackendData(TypedDict):
+    host: str
+    port: int
+class NormalData(TypedDict):
+    backend: BackendData
+with open("data.json", "r") as f:
+    DATA: NormalData = loads(f.read())
+
+
+HOST_PORT = "{}{}".format(
+    DATA["backend"]["host"], "" if DATA["backend"]["port"] in (80, 443)
+        else f":{DATA['backend']['port']}"
+)
+URL = "http{}://{}".format(
+    "s" if DATA["backend"]["port"] == 443 else "",
+    HOST_PORT
+)
+API_URL = URL.replace("://", "://api.", 1)
 
 
 def get_category(category: str, language: str) -> str:
@@ -28,8 +46,12 @@ def get_category(category: str, language: str) -> str:
 
 
 TEST = argv[-1] != "production"
+CANARY = "canary" in argv
 if TEST:
-    PREFIXES = ("r2!", "r2.", "r2,")
+    if CANARY:
+        PREFIXES = ("r2!", "r2.", "r2,")
+    else:
+        PREFIXES = ("r3!", "r3.", "r3,")
 else:
     PREFIXES = (
         "rt!", "Rt!", "rT!", "RT!", "rt.", "Rt.", "rT.", "RT.", "rt,", "Rt,", "rT,", "RT,",

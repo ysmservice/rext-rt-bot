@@ -11,10 +11,10 @@ import discord
 from datetime import datetime, timezone
 from time import time
 
-from rtlib.database import DatabaseManager, cursor
-from rtlib.cacher import Cacher
-from rtlib.types_ import Channel
-from rtlib import RT, Cog, t
+from core.database import DatabaseManager, cursor
+from core.cacher import Cacher
+from core.types_ import Channel
+from core import RT, Cog, t
 
 
 class DataManager(DatabaseManager):

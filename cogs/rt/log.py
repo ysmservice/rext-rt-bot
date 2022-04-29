@@ -7,10 +7,10 @@ from typing import Literal, Any
 from discord.ext import commands
 import discord
 
-from rtlib.views import BasePage, PageMode
-from rtlib.utils import get_name_and_id_str, truncate, code_block
-from rtlib.log import LogData
-from rtlib import RT, Cog, t
+from core.views import BasePage, PageMode
+from core.utils import get_name_and_id_str, truncate, code_block
+from core.log import LogData
+from core import RT, Cog, t
 
 
 class LogViewerView(BasePage):

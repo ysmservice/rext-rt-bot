@@ -1,0 +1,6 @@
+{
+    "backend": {
+        "host": "rt-bot-test.com", // バックエンドのhost名です。
+        "port": 8080 // バックエンドのポートです。
+    }
+}

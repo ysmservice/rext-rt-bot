@@ -11,9 +11,9 @@ import discord
 from jishaku.functools import executor_function
 import psutil
 
-from rtlib.utils import separate, set_page, code_block
-from rtlib.views import EmbedPage
-from rtlib import RT, Cog, t
+from core.utils import separate, set_page, code_block
+from core.views import EmbedPage
+from core import RT, Cog, t
 
 
 class Admin(Cog):

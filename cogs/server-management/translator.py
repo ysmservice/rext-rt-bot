@@ -10,8 +10,8 @@ from jishaku.functools import executor_function
 from deep_translator.exceptions import LanguageNotSupportedException
 from deep_translator import GoogleTranslator
 
-from rtlib.utils import quick_invoke_command
-from rtlib import Cog, RT, t
+from core.utils import quick_invoke_command
+from core import Cog, RT, t
 
 
 class Translator(Cog):

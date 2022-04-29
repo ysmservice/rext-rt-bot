@@ -13,11 +13,17 @@ import discord
 
 from discord.ext.fslash import extend_force_slash, InteractionResponseMode
 
+from ipcs.client import logger
+from ipcs import IpcsClient
+
 from aiomysql import create_pool
 from aiohttp import ClientSession
-from ujson import dumps
 
-from data import CATEGORIES, PREFIXES, SECRET, TEST, ADMINS, Colors
+from orjson import dumps
+
+from rtlib.common import set_handler
+
+from data import DATA, CATEGORIES, PREFIXES, SECRET, TEST, ADMINS, URL, API_URL, Colors
 
 from .cacher import CacherPool
 
@@ -27,6 +33,7 @@ if TYPE_CHECKING:
 
 
 __all__ = ("RT",)
+set_handler(logger)
 
 
 @dataclass
@@ -40,6 +47,8 @@ class RT(commands.Bot):
     Colors = Colors
     log: LogCore
     rtevent: RTEvent
+    URL = URL
+    API_URL = API_URL
 
     def __init__(self, *args, **kwargs):
         kwargs["command_prefix"] = self._get_command_prefix
@@ -79,10 +88,10 @@ class RT(commands.Bot):
         self.pool = await create_pool(**SECRET["mysql"])
         self.print("Prepared mysql pool")
 
-        self.session = ClientSession(json_serialize=dumps)
+        self.session = ClientSession(json_serialize=dumps) # type: ignore
 
-        await self.load_extension("rtlib.rtevent")
-        await self.load_extension("rtlib.log")
+        await self.load_extension("core.rtevent")
+        await self.load_extension("core.log")
         self.log = self.cogs["LogCore"] # type: ignore
         await self.load_extension("jishaku")
         for path in listdir("cogs"):
@@ -103,6 +112,13 @@ class RT(commands.Bot):
         self.print("Connected")
         await self.tree.sync()
         self.print("Command tree was synced")
+        self.print("Starting ipcs client...")
+        self.ipcs = IpcsClient(self.shard_id)
+        self.loop.create_task(self.ipcs.start(
+            uri=f"{API_URL.replace('http', 'ws')}/rtws",
+            port=DATA["backend"]["port"]
+        ), name="rt.ipcs")
+        self.print("Connected to backend")
         self.print("Started")
 
     async def is_owner(self, user: discord.User) -> bool:
@@ -131,6 +147,9 @@ class RT(commands.Bot):
         self.dispatch("close")
         # お片付けをする。
         self.pool.close()
+        self.print("Closed pool")
+        await self.ipcs.close(reason="Closing bot")
+        self.print("Closed ipcs")
         return await super().close()
 
     @property

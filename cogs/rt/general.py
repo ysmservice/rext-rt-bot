@@ -8,12 +8,14 @@ from inspect import cleandoc
 from discord.ext import commands, tasks
 import discord
 
-from rtlib.utils import code_block, make_default, make_error_message
-from rtlib.views import TimeoutView
-from rtlib.cacher import Cacher
-from rtlib.types_ import CmdGrp
-from rtlib.help import CONV, ANNOTATIONS
-from rtlib import RT, Cog, Embed, t
+from rtlib.common.utils import make_error_message
+
+from core.utils import code_block, make_default
+from core.views import TimeoutView
+from core.cacher import Cacher
+from core.types_ import CmdGrp
+from core.help import CONV, ANNOTATIONS
+from core import RT, Cog, Embed, t
 
 from data import TEST, SUPPORT_SERVER, PERMISSION_TEXTS
 

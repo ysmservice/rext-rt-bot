@@ -10,9 +10,10 @@ from inspect import iscoroutinefunction
 from collections import defaultdict
 from functools import wraps
 
-from ujson import loads, dumps
+from orjson import loads, dumps
 
-from .utils import make_error_message
+from rtlib.common.utils import make_error_message
+
 from .log import Feature, Target
 from .general import Cog, RT, t
 from .types_ import Text
@@ -54,8 +55,8 @@ class EventContext:
         }
 
     def dumps(self) -> str:
-        "`to_dict`で得たものを`ujson.dumps`で文字列にします。"
-        return dumps(self.to_dict())
+        "`to_dict`で得たものを`orjson.dumps`で文字列にします。"
+        return dumps(self.to_dict()).decode()
 
     @classmethod
     def loads(cls, data: str) -> EventContext:

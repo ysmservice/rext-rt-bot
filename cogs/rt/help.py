@@ -10,11 +10,11 @@ from collections import defaultdict
 from discord.ext import commands
 import discord
 
-from rtlib.views import TimeoutView, EmbedPage, NoEditEmbedPage, check, separate_to_embeds
-from rtlib.utils import get_inner_text, separate_from_list, set_page, get_kwarg, get_fsparent
-from rtlib.types_ import UserMember
-from rtlib.help import make_default
-from rtlib import RT, Cog, t
+from core.views import TimeoutView, EmbedPage, NoEditEmbedPage, check, separate_to_embeds
+from core.utils import get_inner_text, separate_from_list, set_page, get_kwarg, get_fsparent
+from core.types_ import UserMember
+from core.help import make_default
+from core import RT, Cog, t
 
 from data import get_category
 

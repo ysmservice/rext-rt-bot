@@ -6,8 +6,8 @@ import discord
 from jishaku.functools import executor_function
 from reprypt import encrypt, decrypt
 
-from rtlib.utils import code_block
-from rtlib import Cog, RT
+from core.utils import code_block
+from core import Cog, RT
 
 
 class Reprypt(Cog):

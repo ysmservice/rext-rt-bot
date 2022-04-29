@@ -2,7 +2,7 @@
 aiohttp[speedups]
 aiomysql
 aiofiles
-ujson
+orjson
 git+https://github.com/Rapptz/discord.py
 MySQLer
 discord-ext-fslash

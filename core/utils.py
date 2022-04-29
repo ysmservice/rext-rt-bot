@@ -5,13 +5,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, TypeVar, Optional, Any
 from collections.abc import Coroutine, Callable, Iterator, Sequence
 
-from traceback import TracebackException
 from inspect import cleandoc, getfile
 
 from discord.ext import commands
 import discord
 
 from discord.ext.fslash import _get as get_kwarg, Context
+
+from rtlib.common.utils import make_error_message
 
 if TYPE_CHECKING:
     from .types_ import Text, Feature, CmdGrp
@@ -22,8 +23,8 @@ if TYPE_CHECKING:
 __all__ = (
     "get_inner_text", "separate", "separate_from_list", "set_page", "code_block",
     "to_dict_for_dataclass", "get_name_and_id_str", "gettext", "cleantext", "quick_log",
-    "make_default", "get_kwarg", "truncate", "unwrap", "concat_text", "make_error_message",
-    "quick_invoke_command", "get_fsparent"
+    "make_default", "get_kwarg", "truncate", "unwrap", "concat_text", "quick_invoke_command",
+    "get_fsparent"
 )
 
 
@@ -33,11 +34,6 @@ def get_fsparent(obj: Any) -> str:
     fsparent = fsparent[:fsparent.rfind("/")]
     fsparent = fsparent[fsparent.rfind("/")+1:]
     return fsparent
-
-
-def make_error_message(error: Exception) -> str:
-    "渡されたエラーから全文を作ります。"
-    return "".join(TracebackException.from_exception(error).format())
 
 
 # 言語関連
