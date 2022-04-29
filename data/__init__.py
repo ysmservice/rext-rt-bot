@@ -8,7 +8,7 @@ from orjson import loads
 
 
 __all__ = (
-    "SECRET", "DATA", "CANARY", "get_category", "HOST_PORT", "URL", "API_URL",
+    "SECRET", "DATA", "CANARY", "get_category", "HOST_PORT", "URL", "API_URL", "SHARD",
     "TEST", "PREFIXES", "ADMINS", "Colors", "EMOJIS", "SUPPORT_SERVER", "PERMISSION_TEXTS"
 )
 
@@ -47,6 +47,7 @@ def get_category(category: str, language: str) -> str:
 
 TEST = argv[-1] != "production"
 CANARY = "canary" in argv
+SHARD = "shard" in argv
 if TEST:
     if CANARY:
         PREFIXES = ("r2!", "r2.", "r2,")

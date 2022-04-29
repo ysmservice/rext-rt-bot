@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Literal, Optional, Any
 
 from dataclasses import dataclass
 from os.path import isdir
@@ -23,9 +23,10 @@ from orjson import dumps
 
 from rtlib.common import set_handler
 
-from data import DATA, CATEGORIES, PREFIXES, SECRET, TEST, ADMINS, URL, API_URL, Colors
+from data import DATA, CATEGORIES, PREFIXES, SECRET, TEST, SHARD, ADMINS, URL, API_URL, Colors
 
 from .cacher import CacherPool
+from .rtws import setup
 
 if TYPE_CHECKING:
     from .log import LogCore
@@ -113,30 +114,40 @@ class RT(commands.Bot):
         await self.tree.sync()
         self.print("Command tree was synced")
         self.print("Starting ipcs client...")
-        self.ipcs = IpcsClient(self.shard_id)
+        self.ipcs = IpcsClient(str(self.shard_id))
         self.loop.create_task(self.ipcs.start(
             uri=f"{API_URL.replace('http', 'ws')}/rtws",
             port=DATA["backend"]["port"]
         ), name="rt.ipcs")
         self.print("Connected to backend")
+        setup(self)
         self.print("Started")
 
     async def is_owner(self, user: discord.User) -> bool:
+        "オーナーかチェックします。"
         return user.id in ADMINS
 
     def get_language(self, mode: Literal["guild", "user"], id_: int) -> str:
-        "Get language setting from user/guild id."
+        "指定されたユーザーまたはサーバーの言語設定を取得します。"
         return getattr(self.language, mode).get(id_, "en")
 
-    async def get_user(self, user_id: int) -> Optional[discord.User]:
-        "get/fetch user"
+    async def request(self, route: str, *args, **kwargs) -> Any:
+        "バックエンドにリクエストをします。"
+        return await self.ipcs.request("__IPCS_SERVER__", route, *args, **kwargs)
+
+    async def exists(self, mode: str, id_: int) -> bool:
+        "指定されたオブジェクトがRTが見える範囲に存在しているかを確認します。"
+        return await self.ipcs.request("__IPCS_SERVER__", "exists", mode, id_)
+
+    async def search_user(self, user_id: int) -> Optional[discord.User]:
+        "`get_user`または`fetch_user`のどちらかを使用してユーザーデータの取得を試みます。"
         user = super().get_user(user_id)
         if user is None:
             user = await self.fetch_user(user_id)
         return user
 
     async def get_member(self, guild: discord.Guild, member_id: int) -> Optional[discord.Member]:
-        "get/fetch member from guild"
+        "Guildの`get_member`または`fetch_member`でメンバーオブジェクトの取得を試みます。"
         member = guild.get_member(member_id)
         if member is None:
             member = await guild.fetch_member(member_id)
@@ -154,15 +165,15 @@ class RT(commands.Bot):
 
     @property
     def round_latency(self) -> str:
-        "Get round latency"
+        "綺麗にしたレイテンシの文字列を取得します。"
         return "%.1f" % round(self.latency * 1000, 1)
 
     @property
     def parsed_latency(self) -> str:
-        "Get parsed latency"
+        "`round_latency`で取得した文字列の後ろに`ms`を最後に付けた文字列を取得します。"
         return f"{self.round_latency}ms"
 
 
-# もし本番用での実行の場合はシャードBotに交換する。
-if not TEST:
+# もし本番用での実行またはシャードモードの場合はシャードBotに交換する。
+if not TEST or SHARD:
     RT.__bases__ = (commands.AutoShardedBot,)
