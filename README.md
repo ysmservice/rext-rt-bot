@@ -5,7 +5,7 @@ RTのBotで、メインプログラムです。
 ## 要件
 * Python 3.10以上
 * MySQL/MariaDB
-* `requirements.txt`にあるPytohn用ライブラリ全て
+* `requirements.txt`にあるPython用ライブラリ全て
 
 ## 用意
 1. 要件にあるものをまずインストールします。
