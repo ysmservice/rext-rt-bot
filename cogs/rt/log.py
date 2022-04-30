@@ -111,7 +111,7 @@ class RTLog(Cog):
             kwargs=code_block("\n".join(
                 f"{key}\t{'' if value is None else value}"
                 for key, value in ctx.kwargs.items()
-            )) if ctx.kwargs else "...", extra=extra), ctx=ctx
+            )) if ctx.kwargs else "...\n", extra=extra), ctx=ctx
         ))
 
     (Cog.HelpCommand(rtlog)
