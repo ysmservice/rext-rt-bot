@@ -12,6 +12,8 @@ import discord
 
 from discord.ext.fslash import _get as get_kwarg, Context
 
+from aiomysql import Cursor
+
 from rtlib.common.utils import make_error_message
 
 if TYPE_CHECKING:

@@ -135,7 +135,7 @@ class RT(commands.Bot):
         "バックエンドにリクエストをします。"
         return await self.ipcs.request("__IPCS_SERVER__", route, *args, **kwargs)
 
-    async def exists(self, mode: str, id_: int) -> bool:
+    async def exists_all(self, mode: str, id_: int) -> bool:
         "指定されたオブジェクトがRTが見える範囲に存在しているかを確認します。"
         return await self.ipcs.request("__IPCS_SERVER__", "exists", mode, id_)
 
@@ -162,6 +162,10 @@ class RT(commands.Bot):
         await self.ipcs.close(reason="Closing bot")
         self.print("Closed ipcs")
         return await super().close()
+
+    def exists(self, mode: str, id_: int) -> bool:
+        "指定されたIDの存在確認をします。"
+        return getattr(self, f"get_{mode}")(id_) is not None
 
     @property
     def round_latency(self) -> str:

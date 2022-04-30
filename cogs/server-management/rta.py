@@ -57,6 +57,22 @@ class DataManager(DatabaseManager):
             )
             return True
 
+    async def clean(self) -> None:
+        "いらないセーブデータを消します。"
+        await cursor.execute("SELECT * FROM rta;")
+        guild = None
+        for guild_id, channel_id in await cursor.fetchall():
+            if guild is None or guild.id != guild_id:
+                guild = self.bot.get_guild(guild_id)
+            if guild is None:
+                await cursor.execute(
+                    "DELETE FROM rta WHERE GuildID = %s;", (guild_id,)
+                )
+            elif guild.get_channel(channel_id) is None:
+                await cursor.execute(
+                    "DELETE FROM rta WHERE ChannelID = %s;", (channel_id,)
+                )
+
 
 class ImmediateExitContext(Cog.EventContext):
     member: discord.Member
@@ -66,11 +82,11 @@ class ImmediateExitContext(Cog.EventContext):
 IMMEDIATE_EXIT = dict(ja="即抜けRTA", en="Immediate Quit")
 class RTA(Cog):
     def __init__(self, bot: RT):
-        self.db, self.bot = DataManager(bot), bot
+        self.data, self.bot = DataManager(bot), bot
         self.sended: Cacher[str, float] = bot.cachers.acquire(60)
 
     async def cog_load(self):
-        await self.db.prepare_table()
+        await self.data.prepare_table()
 
     FSPARENT = Cog.get_fsparent(cog_load)
 
@@ -86,7 +102,7 @@ class RTA(Cog):
         self, ctx: commands.Context, *,
         channel: Optional[discord.TextChannel] = None
     ):
-        if await self.db.set(ctx.guild.id, (channel := (channel or ctx.channel)).id): # type: ignore
+        if await self.data.set(ctx.guild.id, (channel := (channel or ctx.channel)).id): # type: ignore
             assert isinstance(channel, discord.TextChannel), t(dict(
                 ja="テキストチャンネルでなければいけません。",
                 en="It must be a text channel."
@@ -102,7 +118,7 @@ class RTA(Cog):
 
     @rta.command(description="Show currently Immediate Quit RTA setting")
     async def show(self, ctx: commands.Context):
-        if channel := await self.db.get(ctx.guild.id): # type: ignore
+        if channel := await self.data.get(ctx.guild.id): # type: ignore
             await ctx.reply(t(dict(
                 ja="現在の即抜けRTAのチャンネルは{channel}です。",
                 en="The current channel for the instant exit RTA is {channel}."
@@ -154,7 +170,7 @@ class RTA(Cog):
 
         joined_after = datetime.now(timezone.utc) - member.joined_at
         if joined_after.days == 0 and joined_after.seconds < 60:
-            if (channel := await self.db.get(member.guild.id)) is not None:
+            if (channel := await self.data.get(member.guild.id)) is not None:
                 if isinstance(channel, discord.TextChannel):
                     try:
                         await channel.send(

@@ -10,9 +10,7 @@ if TYPE_CHECKING:
 
 disconnected = False
 def setup(bot: RT):
-    @bot.ipcs.route()
-    def exists(mode: str, id_: int) -> bool:
-        return bool(getattr(bot, f"get_{mode}")(id_))
+    bot.ipcs.set_route(bot.exists)
 
     # バックエンドのイベントを呼び出す。
     @bot.ipcs.listen()

@@ -124,12 +124,15 @@ class General(Cog):
     async def _dayly(self):
         # 掃除をする。
         for key in list(self.bot.cogs.keys()):
+            function = None
             if hasattr(self.bot.cogs[key], "data") \
                     and hasattr(getattr(self.bot.cogs[key], "data"), "clean"):
-                self.bot.loop.create_task(
-                    getattr(getattr(self.bot.cogs[key], "data"), "clean")(),
-                    name="Clean data"
-                )
+                function = getattr(getattr(self.bot.cogs[key], "data"), "clean")
+            elif hasattr(self.bot.cogs[key], "clean") \
+                    and "cursor" in getattr(self.bot.cogs[key], "clean").co_varnames:
+                function = getattr(self.bot.cogs[key], "clean")
+            if function is not None:
+                self.bot.loop.create_task(function(), name="Clean data")
 
     async def cog_unload(self):
         self.status_updater.cancel()
