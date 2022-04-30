@@ -25,7 +25,7 @@ from rtlib.common import set_handler
 
 from data import DATA, CATEGORIES, PREFIXES, SECRET, TEST, SHARD, ADMINS, URL, API_URL, Colors
 
-from .cacher import CacherPool
+from .cacher import CacherPool, Cacher
 from .rtws import setup
 
 if TYPE_CHECKING:
@@ -48,6 +48,7 @@ class RT(commands.Bot):
     Colors = Colors
     log: LogCore
     rtevent: RTEvent
+    exists_caches: Cacher[int, bool]
     URL = URL
     API_URL = API_URL
 
@@ -58,6 +59,7 @@ class RT(commands.Bot):
 
         self.prefixes = {}
         self.language = Caches({}, {})
+        self.ipcs = IpcsClient(str(self.shard_id))
 
         extend_force_slash(self, replace_invalid_annotation_to_str=True,
         first_groups=[discord.app_commands.Group(
@@ -85,6 +87,7 @@ class RT(commands.Bot):
 
     async def setup_hook(self):
         self.cachers = CacherPool()
+        self.exists_caches = self.cachers.acquire(60.0)
         self.print("Prepared cachers")
         self.pool = await create_pool(**SECRET["mysql"])
         self.print("Prepared mysql pool")
@@ -114,7 +117,6 @@ class RT(commands.Bot):
         await self.tree.sync()
         self.print("Command tree was synced")
         self.print("Starting ipcs client...")
-        self.ipcs = IpcsClient(str(self.shard_id))
         self.loop.create_task(self.ipcs.start(
             uri=f"{API_URL.replace('http', 'ws')}/rtws",
             port=DATA["backend"]["port"]
@@ -137,7 +139,12 @@ class RT(commands.Bot):
 
     async def exists_all(self, mode: str, id_: int) -> bool:
         "指定されたオブジェクトがRTが見える範囲に存在しているかを確認します。"
-        return await self.ipcs.request("__IPCS_SERVER__", "exists", mode, id_)
+        value = self.exists_caches.get(id_, False)
+        if value is None:
+            self.exists_caches[id_] = value = await self.ipcs.request(
+                "__IPCS_SERVER__", "exists", mode, id_
+            )
+        return value
 
     async def search_user(self, user_id: int) -> Optional[discord.User]:
         "`get_user`または`fetch_user`のどちらかを使用してユーザーデータの取得を試みます。"

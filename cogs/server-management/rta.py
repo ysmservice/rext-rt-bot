@@ -60,15 +60,14 @@ class DataManager(DatabaseManager):
     async def clean(self) -> None:
         "いらないセーブデータを消します。"
         await cursor.execute("SELECT * FROM rta;")
-        guild = None
+        print(self)
         for guild_id, channel_id in await cursor.fetchall():
-            if guild is None or guild.id != guild_id:
-                guild = self.bot.get_guild(guild_id)
-            if guild is None:
+            print(guild_id, channel_id)
+            if not await self.bot.exists_all("guild", guild_id):
                 await cursor.execute(
                     "DELETE FROM rta WHERE GuildID = %s;", (guild_id,)
                 )
-            elif guild.get_channel(channel_id) is None:
+            elif not await self.bot.exists_all("channel", channel_id):
                 await cursor.execute(
                     "DELETE FROM rta WHERE ChannelID = %s;", (channel_id,)
                 )
