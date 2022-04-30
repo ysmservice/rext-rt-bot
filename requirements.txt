@@ -12,6 +12,8 @@ uvloop; sys_platform != "win32" and implementation_name == "cpython"
 # cogs.individual
 ## reprypt
 reprypt
+# cogs.debug
+psutil
 # cogs.server-management
 ## translator
 deep_translator
