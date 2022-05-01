@@ -33,7 +33,10 @@ class Reprypt(Cog):
                  "en": "The usage is different."}
             )
 
-    @reprypt_.command(aliases=("en", "暗号化"))
+    @reprypt_.command(
+        description="Encrypt text",
+        aliases=("en", "暗号化")
+    )
     @discord.app_commands.describe(
         key="The password required for decryption.",
         content="The text to be encrypted."
@@ -44,7 +47,10 @@ class Reprypt(Cog):
             allowed_mentions=discord.AllowedMentions.none()
         )
 
-    @reprypt_.command(aliases=("de", "復号化"))
+    @reprypt_.command(
+        description="Decrypt text",
+        aliases=("de", "復号化")
+    )
     @discord.app_commands.describe(
         key="The password used for encryption.",
         content="The encrypted text to be decrypted."
