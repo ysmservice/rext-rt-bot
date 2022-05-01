@@ -2,13 +2,15 @@ from typing import Dict
 from aiohttp import ClientSession
 
 
-async def search(user: str):
+async def search(user: str) -> Data:
     async with ClientSession() as session:
         async with session.get(
             "https://api.mojang.com/users/profiles/minecraft/{}".format(user)
         ) as r:
             if r.status == 204:
                 raise NotFound("I can't found that user")
+            else:
+                return Data(await r.json())
             
                 
 class NotFound(Exception):
