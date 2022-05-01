@@ -5,8 +5,7 @@ from typing import Optional
 from discord.ext import commands
 from discord import app_commands
 
-from core.database import DatabaseManager, cursor
-from core import RT, Cog, t
+from core import RT, Cog, t, DatabaseManager, cursor
 
 
 class DataManager(DatabaseManager):
@@ -14,7 +13,7 @@ class DataManager(DatabaseManager):
         self.pool, self.bot = bot.pool, bot
 
     async def prepare_table(self):
-        "Prepare a table."
+        "テーブルを用意します。"
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS Prefix (
                 GuildID BIGINT PRIMARY KEY NOT NULL, Prefix TEXT
@@ -25,7 +24,7 @@ class DataManager(DatabaseManager):
             self.bot.prefixes[row[0]] = row[1]
 
     async def set(self, guild_id: int, prefix: Optional[str] = None):
-        "Set a custom prefix."
+        "プリフィックスを設定します。"
         if prefix is None:
             if guild_id in self.bot.prefixes:
                 await cursor.execute(
@@ -39,6 +38,12 @@ class DataManager(DatabaseManager):
                 (guild_id, prefix, prefix)
             )
             self.bot.prefixes[guild_id] = prefix
+
+    async def clean(self):
+        "お掃除します。"
+        async for guild_id in self.fetchstep(cursor, "SELECT GuildID FROM Prefix;"):
+            if not await self.bot.exists_all("guild", guild_id[0]):
+                await cursor.execute("DELETE FROM Prefix WHERE GuildID = %s;")
 
 
 class Prefix(Cog):

@@ -14,10 +14,11 @@ import discord
 from aiomysql import Pool
 
 from .types_ import CmdGrp, UserMember
-from .database import DatabaseManager, cursor
 from .utils import get_inner_text
 from .help import Help
 from .general import RT, Cog
+
+from rtlib.common.database import DatabaseManager, cursor
 
 from data import EMOJIS, TEST
 
@@ -168,7 +169,7 @@ class DataManager(DatabaseManager):
         "古いデータを消します。\n`.TIMEOUT`秒経過したデータが消去対象です。"
         now = time()
         await cursor.execute("SELECT Id, Time FROM Log;")
-        for row in await cursor.fetchall():
+        async for row in self.fetchstep(cursor, "SELECT Id, Time FROM Log;"):
             if now - row[1] >= self.TIMEOUT:
                 await cursor.execute(
                     "DELETE FROM Log WHERE Id = %s AND Time = %s;",

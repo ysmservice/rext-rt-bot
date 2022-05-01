@@ -11,10 +11,9 @@ import discord
 from datetime import datetime, timezone
 from time import time
 
-from core.database import DatabaseManager, cursor
 from core.cacher import Cacher
 from core.types_ import Channel
-from core import RT, Cog, t
+from core import RT, Cog, t, DatabaseManager, cursor
 
 
 class DataManager(DatabaseManager):
@@ -60,9 +59,7 @@ class DataManager(DatabaseManager):
     async def clean(self) -> None:
         "いらないセーブデータを消します。"
         await cursor.execute("SELECT * FROM rta;")
-        print(self)
-        for guild_id, channel_id in await cursor.fetchall():
-            print(guild_id, channel_id)
+        async for guild_id, channel_id in self.fetchstep(cursor, "SELECT * FROM rta;"):
             if not await self.bot.exists_all("guild", guild_id):
                 await cursor.execute(
                     "DELETE FROM rta WHERE GuildID = %s;", (guild_id,)
