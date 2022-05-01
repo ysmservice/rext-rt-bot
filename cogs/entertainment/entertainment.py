@@ -1,16 +1,20 @@
 # RT - Entertainment
 
 import discord
+from discord import app_commands
 from discord.ext import commands
+
 from core import RT, Cog
+
 from rtutil.minecraft import search, NotFound
 
 class Entertainment(Cog):
     def __init__(self, bot: RT):
         self.bot = bot
         
-    @commands.command()
-    async def minecraft(self, user: str):
+    @commands.command(description="Search minecraft user")
+    @app_commands.describe(user="Minecraft user id")
+    async def minecraft(self, ctx, user: str):
         try:
             result = await search(user)
         except NotFound:
