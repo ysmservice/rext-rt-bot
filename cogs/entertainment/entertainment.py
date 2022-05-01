@@ -1,11 +1,11 @@
-# RT - Minecraft search
+# RT - entertainment
 
 import discord
 from discord.ext import commands
 from core import RT, Cog
 from rtutil.minecraft import search, NotFound
 
-class MinecraftSearch(Cog):
+class Entertainment(Cog):
     def __init__(self, bot: RT):
         self.bot = bot
         
