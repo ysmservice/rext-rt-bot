@@ -24,7 +24,7 @@ class Entertainment(Cog):
         try:
             result = await search(self.session, user)
         except NotFound:
-            await ctx.send(t(ja="そのユーザーは見つかりません", en="I can't found that user"))
+            await ctx.send(t(ja="そのユーザーは見つかりません", en="I can't found that user"), ctx)
         else:
             embed = discord.Embed(title=result.name)
             embed.add_field(name="UUID", value=result.id)
