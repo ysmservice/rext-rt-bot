@@ -1,9 +1,11 @@
+# rtutil - Minecraft User
+
 from dataclasses import dataclass
 
 from aiohttp import ClientSession
 
 
-async def search(session: ClientSession, user: str) -> Data:
+async def search(session: ClientSession, user: str) -> MinecraftUserData:
     async with session.get(
         "https://api.mojang.com/users/profiles/minecraft/{}".format(user)
     ) as r:
