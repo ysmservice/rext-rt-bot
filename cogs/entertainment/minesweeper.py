@@ -43,14 +43,15 @@ class MinesweeperXYSelect(discord.ui.Select):
                 content=code_block(self.view.game.get(" "))
                     if result == 200
                     else "{}\n{}".format(
-                        t({"ja": "あなたの負けです。", "en": "You lose"}, interaction)
+                        t({"ja": "あなたの負けです。", "en": "You lose."}, interaction)
                         if result == 410
                         else t(
-                            {"ja": "あなたの勝ちです。", "en": "You won"},
+                            {"ja": "あなたの勝ちです。", "en": "You won."},
                             interaction
                         ),
                         code_block(self.view.game.get_answer(" "))
-                    )
+                    ),
+                view=None
             )
 
 
