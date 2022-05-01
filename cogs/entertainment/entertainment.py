@@ -6,7 +6,7 @@ from discord.ext import commands
 
 from aiohttp import ClientSession
 
-from core import RT, Cog, HelpCommand
+from core import RT, Cog, HelpCommand, t
 
 from rtutil.minecraft import search, NotFound
 
@@ -21,7 +21,7 @@ class Entertainment(Cog):
             async with ClientSession() as session:
                 result = await search(session, user)
         except NotFound:
-            await ctx.send("I can't found that user")
+            await ctx.send(t(ja="そのユーザーは見つかりません", en="I can't found that user"))
         else:
             embed = discord.Embed(title=result.name)
             embed.add_field(name="UUID", value=result.id)
