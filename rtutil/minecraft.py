@@ -1,36 +1,27 @@
-from typing import Dict
+from dataclasses import dataclass
+
 from aiohttp import ClientSession
 
 
-async def search(user: str) -> Data:
-    async with ClientSession() as session:
-        async with session.get(
-            "https://api.mojang.com/users/profiles/minecraft/{}".format(user)
-        ) as r:
-            if r.status == 204:
-                raise NotFound("I can't found that user")
-            else:
-                return Data(await r.json())
+async def search(session: ClientSession, user: str) -> Data:
+    async with session.get(
+        "https://api.mojang.com/users/profiles/minecraft/{}".format(user)
+    ) as r:
+        if r.status == 204:
+            raise NotFound("I can't found that user")
+        else:
+            data = await r.json()
+            return MinecraftUserData(data["name"],
+                                     data["id"],
+                                     f"https://minecraft.tools/en/skins/getskin.php?name={user}")
             
                 
 class NotFound(Exception):
     pass
 
 
-class Data:
-    def __init__(self, data: Dict[str, str]):
-        self.data = data
-        
-    @property
-    def name(self) -> str:
-        return self.data["name"]
-    
-    @property
-    def id(self) -> str:
-        return self.data["id"]
-    
-    @property
-    def skin(self) -> str:
-        return "https://minecraft.tools/en/skins/getskin.php?name={}".format(
-            self.name
-        )
+@dataclass
+class MinecraftUserData:
+    name: str
+    id: str
+    skin: str
