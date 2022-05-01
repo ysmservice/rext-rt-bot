@@ -53,6 +53,7 @@ class MinesweeperXYSelect(discord.ui.Select):
                     ),
                 view=None
             )
+        self.set_message(interaction)
 
 
 class MinesweeperView(TimeoutView):
@@ -80,11 +81,12 @@ class MinesweeperCog(Cog, name="Minesweeper"):
     )
     async def minesweeper(self, ctx: commands.Context):
         self.games[ctx.author.id] = Minesweeper(9, 9, 11)
-        await ctx.reply(
-            code_block(self.games[ctx.author.id].get(" ")), view=MinesweeperView(
-                self.games[ctx.author.id], 9, 9
-            )
+        view = MinesweeperView(
+            self.games[ctx.author.id], 9, 9
         )
+        view.set_message(await ctx.reply(
+            code_block(self.games[ctx.author.id].get(" ")), view=view
+        ))
 
     (Cog.HelpCommand(minesweeper)
         .set_description(ja="マインスイーパを遊びます。", en="Play minesweeper")
