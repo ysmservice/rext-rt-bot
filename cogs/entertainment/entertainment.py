@@ -10,16 +10,19 @@ from core import RT, Cog, HelpCommand, t
 
 from rtutil.minecraft import search, NotFound
 
+
 class Entertainment(Cog):
     def __init__(self, bot: RT):
         self.bot = bot
+    
+    async def cog_load(self):
+        self.session: ClientSession = ClientSession()
         
     @commands.command(description="Search minecraft user")
     @app_commands.describe(user="Minecraft user name")
     async def minecraft(self, ctx, *, user: str):
         try:
-            async with ClientSession() as session:
-                result = await search(session, user)
+            result = await search(self.session, user)
         except NotFound:
             await ctx.send(t(ja="そのユーザーは見つかりません", en="I can't found that user"))
         else:
