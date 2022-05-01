@@ -1,4 +1,4 @@
-# RT - entertainment
+# RT - Entertainment
 
 import discord
 from discord.ext import commands
