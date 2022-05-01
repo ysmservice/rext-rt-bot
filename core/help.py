@@ -6,7 +6,9 @@ from typing import TYPE_CHECKING, TypeVar, TypeAlias, Literal
 
 from discord.ext.fslash import _get
 
-from .utils import get_inner_text, gettext, cleantext, make_default, concat_text, code_block
+from rtlib.common.utils import code_block
+
+from .utils import get_inner_text, gettext, cleantext, make_default, concat_text
 from .types_ import CmdGrp, Text
 
 if TYPE_CHECKING:

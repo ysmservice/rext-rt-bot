@@ -8,9 +8,9 @@ from discord.ext.commands import Cog as OriginalCog
 from discord.ext.fslash import is_fslash
 import discord
 
-from rtlib.common.utils import make_error_message
+from rtlib.common.utils import make_error_message, code_block
 
-from .utils import code_block, get_fsparent
+from .utils import get_fsparent
 from .help import Help, HelpCommand, Text, gettext
 from .bot import RT
 

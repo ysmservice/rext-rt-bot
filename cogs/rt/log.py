@@ -8,9 +8,11 @@ from discord.ext import commands
 import discord
 
 from core.views import BasePage, PageMode
-from core.utils import get_name_and_id_str, truncate, code_block
+from core.utils import get_name_and_id_str, truncate
 from core.log import LogData
 from core import RT, Cog, t
+
+from rtlib.common.utils import code_block
 
 
 class LogViewerView(BasePage):

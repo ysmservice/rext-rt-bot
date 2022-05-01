@@ -11,9 +11,11 @@ import discord
 from jishaku.functools import executor_function
 import psutil
 
-from core.utils import separate, set_page, code_block
+from core.utils import separate, set_page
 from core.views import EmbedPage
 from core import RT, Cog, t
+
+from rtlib.common.utils import code_block
 
 
 class Admin(Cog):

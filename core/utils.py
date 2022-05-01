@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 
 __all__ = (
-    "get_inner_text", "separate", "separate_from_list", "set_page", "code_block",
+    "get_inner_text", "separate", "separate_from_list", "set_page",
     "to_dict_for_dataclass", "get_name_and_id_str", "gettext", "cleantext", "quick_log",
     "make_default", "get_kwarg", "truncate", "unwrap", "concat_text", "quick_invoke_command",
     "get_fsparent"
@@ -83,11 +83,6 @@ def separate(
         extracted = extractor(text)
         text = text.replace(extracted, "", 1)
         yield extracted
-
-
-def code_block(code: str, type_: str = "") -> str:
-    "渡された文字列をコードブロックで囲みます。"
-    return f"```{type_}\n{code}\n```"
 
 
 def truncate(text: str, max_: int = 255, end: str = "...") -> str:
