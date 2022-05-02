@@ -28,8 +28,9 @@ class Entertainment(Cog):
                 dict(
                     ja="そのユーザーは見つかりません",
                     en="I can't found that user"
-                )
-            ), ctx)
+                ),
+                ctx
+            ))
         else:
             embed = discord.Embed(title=result.name)
             embed.add_field(name="UUID", value=result.id)
