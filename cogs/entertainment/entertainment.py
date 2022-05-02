@@ -6,7 +6,7 @@ from discord.ext import commands
 
 from aiohttp import ClientSession
 
-from core import RT, Cog, HelpCommand, t
+from core import RT, Cog, t
 
 from rtutil.minecraft import search, NotFound
 
@@ -31,7 +31,7 @@ class Entertainment(Cog):
             embed.set_image(url=result.skin)
             await ctx.send(embed=embed)
             
-    HelpCommand(minecraft) \
+    Cog.HelpCommand(minecraft) \
         .set_description(ja="マイクラユーザー検索", en="minecraft user search") \
         .add_arg(
             "user",
