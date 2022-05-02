@@ -16,7 +16,7 @@ class Entertainment(Cog):
         self.bot = bot
     
     async def cog_load(self):
-        self.session: ClientSession = ClientSession()
+        self.session = ClientSession()
         
     @commands.command(description="Search minecraft user")
     @app_commands.describe(user="Minecraft user name")
