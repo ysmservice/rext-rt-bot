@@ -44,4 +44,4 @@ class Entertainment(Cog):
             
 
 async def setup(bot: RT):
-    await bot.add_cog(MinecraftSearch(bot))
+    await bot.add_cog(Entertainment(bot))
