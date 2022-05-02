@@ -5,6 +5,17 @@ from dataclasses import dataclass
 from aiohttp import ClientSession
 
 
+class NotFound(Exception):
+    pass
+
+
+@dataclass
+class MinecraftUserData:
+    name: str
+    id: str
+    skin: str
+
+
 async def search(session: ClientSession, user: str) -> MinecraftUserData:
     async with session.get(
         "https://api.mojang.com/users/profiles/minecraft/{}".format(user)
@@ -18,14 +29,3 @@ async def search(session: ClientSession, user: str) -> MinecraftUserData:
                 data["id"],
                 f"https://minecraft.tools/en/skins/getskin.php?name={user}"
             )
-            
-                
-class NotFound(Exception):
-    pass
-
-
-@dataclass
-class MinecraftUserData:
-    name: str
-    id: str
-    skin: str
