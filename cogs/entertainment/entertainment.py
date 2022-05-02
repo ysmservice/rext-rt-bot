@@ -32,7 +32,7 @@ class Entertainment(Cog):
             await ctx.send(embed=embed)
             
     HelpCommand(minecraft) \
-        .set_description(ja="マイクラユーザー検索", en="minecraft user search)
+        .set_description(ja="マイクラユーザー検索", en="minecraft user search")
         .add_arg(
             "user",
             "str",
