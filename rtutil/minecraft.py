@@ -13,9 +13,11 @@ async def search(session: ClientSession, user: str) -> MinecraftUserData:
             raise NotFound("I can't found that user")
         else:
             data = await r.json()
-            return MinecraftUserData(data["name"],
-                                     data["id"],
-                                     f"https://minecraft.tools/en/skins/getskin.php?name={user}")
+            return MinecraftUserData(
+                data["name"],
+                data["id"],
+                f"https://minecraft.tools/en/skins/getskin.php?name={user}"
+            )
             
                 
 class NotFound(Exception):
