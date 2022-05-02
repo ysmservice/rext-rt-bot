@@ -32,7 +32,7 @@ class Entertainment(Cog):
                 ctx
             ))
         else:
-            embed = discord.Embed(title=result.name)
+            embed = Cog.Embed(title=result.name)
             embed.add_field(name="UUID", value=result.id)
             embed.set_image(url=result.skin)
             await ctx.send(embed=embed)
