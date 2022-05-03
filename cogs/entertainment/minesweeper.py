@@ -51,9 +51,9 @@ class MinesweeperXYSelect(discord.ui.Select):
                         ),
                         code_block(self.view.game.get_answer(" "))
                     ),
-                view=None
+                **{} if result == 200 else {"view": None}
             )
-        self.set_message(interaction)
+        self.view.set_message(interaction)
 
 
 class MinesweeperView(TimeoutView):
@@ -84,7 +84,7 @@ class MinesweeperCog(Cog, name="Minesweeper"):
         view = MinesweeperView(
             self.games[ctx.author.id], 9, 9
         )
-        view.set_message(await ctx.reply(
+        view.set_message(ctx, await ctx.reply(
             code_block(self.games[ctx.author.id].get(" ")), view=view
         ))
 

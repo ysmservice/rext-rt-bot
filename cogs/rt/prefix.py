@@ -67,7 +67,7 @@ class Prefix(Cog):
                 description=t(dict(
                     ja="このサーバーのカスタムプリフィックスを未設定にしました。",
                     en="Unset custom prefixes on this server."
-                ))
+                ), ctx)
             ))
         else:
             await ctx.reply(embed=self.embed(

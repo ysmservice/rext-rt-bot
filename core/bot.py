@@ -11,7 +11,8 @@ from os import listdir
 from discord.ext import commands
 import discord
 
-from discord.ext.fslash import extend_force_slash, InteractionResponseMode
+from discord.ext.fslash import extend_force_slash
+from discord.ext.fslash.types_ import InteractionResponseMode
 
 from ipcs.client import logger
 from ipcs import IpcsClient
