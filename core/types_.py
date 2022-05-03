@@ -18,6 +18,10 @@ CmdGrp: TypeAlias = Union[commands.Command, commands.Group]
 Text: TypeAlias = dict[str, str]
 UserMember: TypeAlias = discord.User | discord.Member
 Channel: TypeAlias = discord.abc.GuildChannel | discord.Thread | discord.abc.PrivateChannel
+NameIdObj: TypeAlias = discord.User | discord.Member | discord.abc.GuildChannel \
+    | discord.Thread | discord.Role | discord.ScheduledEvent
+MentionIdObj: TypeAlias = discord.User | discord.Member | discord.abc.GuildChannel \
+    | discord.Thread | discord.Role
 
 
 class CommandInfo(TypedDict):

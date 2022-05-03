@@ -194,6 +194,7 @@ class LogCore(Cog):
 
     def __init__(self, bot: RT):
         self.bot, self.data = bot, DataManager(bot.pool)
+        self.bot.log = self
         self.bot.rtevent.set(self.on_dispatch)
 
     async def cog_load(self):

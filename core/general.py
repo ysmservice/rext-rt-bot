@@ -10,14 +10,15 @@ import discord
 
 from rtlib.common.utils import make_error_message, code_block
 
-from .utils import get_fsparent
-from .help import Help, HelpCommand, Text, gettext
+from .utils import get_fsparent, gettext
+from .types_ import NameIdObj, MentionIdObj
 from .bot import RT
 
 from data import Colors
 
 if TYPE_CHECKING:
     from .rtevent import EventContext
+    from .help import Help, HelpCommand, Text
 
 
 __all__ = ("RT", "Cog", "t", "cast", "Embed")
@@ -36,7 +37,7 @@ def _get_client(obj):
     return obj._state._get_client()
 
 
-def t(text: Text, ctx: Any = None, **kwargs) -> str:
+def t(text: Text, ctx: Any, **kwargs) -> str:
     """Extracts strings in the correct language from a dictionary of language code keys and their corresponding strings, based on information such as the `ctx` guild passed in.
     You can use keyword arguments to exchange strings like f-string."""
     # Extract client
@@ -81,7 +82,8 @@ class Cog(OriginalCog):
     "Extended cog"
 
     get_fsparent = staticmethod(get_fsparent)
-    Help, HelpCommand = Help, HelpCommand
+    Help: type[Help]
+    HelpCommand: type[HelpCommand]
     Embed = Embed
     ERRORS = {
         "WRONG_WAY": lambda ctx: t(dict(
@@ -96,10 +98,12 @@ class Cog(OriginalCog):
     bot: RT
 
     @staticmethod
-    def mention_and_id(
-        obj: discord.User | discord.Member | discord.abc.GuildChannel | discord.Thread
-    ) -> str:
+    def mention_and_id(obj: MentionIdObj) -> str:
         return f"{obj.mention} (`{obj.id}`)"
+
+    @staticmethod
+    def name_and_id(obj: NameIdObj) -> str:
+        return f"{obj.name} (`{obj.id}`)"
 
     def embed(self, **kwargs) -> Embed:
         "Make embed and set title to the cog name."

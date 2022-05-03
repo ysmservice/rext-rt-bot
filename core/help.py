@@ -2,20 +2,29 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar, TypeAlias, Literal
+from typing import TYPE_CHECKING, TypeVar, TypeAlias, Literal, Optional
+
+from collections import defaultdict
+
+from discord.ext import commands
 
 from discord.ext.fslash import _get
 
 from rtlib.common.utils import code_block
 
-from .utils import get_inner_text, gettext, cleantext, make_default, concat_text
+from .utils import (
+    get_kwarg, get_fsparent, get_inner_text, gettext, cleantext,
+    make_default, concat_text
+)
 from .types_ import CmdGrp, Text
+from .general import Cog
+from .bot import RT
 
 if TYPE_CHECKING:
     from .rtevent import EventContext
 
 
-__all__ = ("Help", "CONV", "ANNOTATIONS", "OPTIONS", "EXTRAS", "COMMAND_TYPES")
+__all__ = ("Help", "HelpCore", "CONV", "ANNOTATIONS", "OPTIONS", "EXTRAS", "COMMAND_TYPES")
 
 
 CONV = {"ja": "のメンションか名前またはID", "en": " mention, name or id"}
@@ -91,9 +100,10 @@ class Help:
             for key, text in self.extras.items()
         )) if self.extras else ""
 
-    def to_str(self, language: str) -> str:
+    def to_str(self, language: str, first: bool = False) -> str:
         return "".join((
-            f"**{self.title}**\n{gettext(self.description, language)}",
+            "" if first else f"**{self.title}**\n",
+            f"{gettext(self.description, language)}",
             f"\n\n{self.extras_text(language)}"
         ))
 
@@ -101,7 +111,7 @@ class Help:
         return "\n\n".join(self.get_str_list(language))
 
     def get_str_list(self, language: str) -> list[str]:
-        return [f"{self.to_str(language)}\n\n"] + [
+        return [f"{self.to_str(language, True)}\n\n"] + [
             f"{h.to_str(language)}\n\n" for h in self.sub
         ]
 
@@ -211,11 +221,69 @@ class HelpCommand(Help):
         self.set_extra("RTEvent", **detail)
         return self
 
-    def to_str(self, language: str) -> str:
+    def to_str(self, language: str, first = False) -> str:
         return "".join((
-            f"**{self.title}**\n\n" if self.command.parent else "",
+            f"**{self.title}**\n\n" if self.command.parent or first else "",
             f"{gettext(self.description, language)}\n\n**#** ",
             f"{get_inner_text(EXTRAS, 'How', language)}\n",
             self.full_qualified(language), self.args_text(language, "\n\n"),
             self.extras_text(language, "\n\n")
         ))
+
+
+Cog.Help = Help
+Cog.HelpCommand = HelpCommand
+
+
+class HelpCore(Cog):
+    def __init__(self, bot: RT):
+        self.bot = bot
+        self.bot.help_ = self
+        self.data: defaultdict[str, dict[str, Cog.Help]] = defaultdict(dict)
+
+    @commands.Cog.listener()
+    async def on_load(self):
+        await self.aioload()
+
+    def set_help(self, help_: Help) -> None:
+        "ヘルプを追加します。"
+        self.data[help_.category][help_.title] = help_
+
+    def make_other_command_help(self, command: commands.Command | commands.Group) -> Cog.Help:
+        "`HelpCommand`が用意されていないコマンドから自動でヘルプオブジェクトを作る。"
+        assert command.callback.__doc__ is not None or command.description
+        return Cog.HelpCommand(command, False) \
+            .set_description(**make_default(command.callback.__doc__ or command.description))
+
+    async def aioload(self):
+        "ヘルプを非同期に読み込みます。"
+        await self.bot.loop.run_in_executor(None, self.load)
+
+    def load(self):
+        "ヘルプを読み込む。"
+        self.data = defaultdict(dict)
+        for command in self.bot.commands:
+            value: Optional[Cog.Help] = getattr(command.callback, "__help__", None)
+            if value is not None and not getattr(command.callback, "__raw_help__", False):
+                self.data[value.category][command.name] = value
+                if self.data[value.category][command.name].category == "Other":
+                    if command.cog is not None:
+                        category = get_fsparent(command.cog.__class__)
+                        self.data[category][command.name] = \
+                            self.data[value.category][command.name]
+                        del self.data[value.category][command.name]
+                        self.data[category][command.name].set_category(category)
+            elif (command.callback.__doc__ or command.description) \
+                    and get_kwarg(command, "category", None) is None:
+                # ヘルプオブジェクトが実装されていないものは自動生成を行う。
+                self.data["Other"][command.name] = self.make_other_command_help(command)
+                if isinstance(command, commands.Group):
+                    for target in command.walk_commands():
+                        self.data["Other"][command.name].add_sub(
+                            self.make_other_command_help(target)
+                        )
+        self.bot.dispatch("help_load")
+
+
+async def setup(bot):
+    await bot.add_cog(HelpCore(bot))

@@ -31,6 +31,7 @@ from .rtws import setup
 if TYPE_CHECKING:
     from .log import LogCore
     from .rtevent import RTEvent
+    from .help import HelpCore
 
 
 __all__ = ("RT",)
@@ -49,6 +50,7 @@ class RT(commands.Bot):
     log: LogCore
     rtevent: RTEvent
     exists_caches: Cacher[int, bool]
+    help_: HelpCore
     URL = URL
     API_URL = API_URL
 
@@ -96,7 +98,7 @@ class RT(commands.Bot):
 
         await self.load_extension("core.rtevent")
         await self.load_extension("core.log")
-        self.log = self.cogs["LogCore"] # type: ignore
+        await self.load_extension("core.help")
         await self.load_extension("jishaku")
         for path in listdir("cogs"):
             path = f"cogs/{path}"

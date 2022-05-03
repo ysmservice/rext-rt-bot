@@ -10,13 +10,12 @@ from collections import defaultdict
 from discord.ext import commands
 import discord
 
-from core.views import TimeoutView, EmbedPage, NoEditEmbedPage, check, separate_to_embeds
-from core.utils import get_inner_text, separate_from_list, set_page, get_kwarg, get_fsparent
-from core.types_ import UserMember
-from core.help import make_default
-from core import RT, Cog, t
-
 from data import get_category
+
+from core.views import TimeoutView, EmbedPage, NoEditEmbedPage, check, separate_to_embeds
+from core.utils import get_inner_text, separate_from_list, set_page
+from core.types_ import UserMember
+from core import RT, Cog, t
 
 
 FIRST_OF_HELP = {
@@ -67,7 +66,7 @@ class HelpView(TimeoutView):
     "ヘルプのカテゴリーやコマンドの選択用のセレクトのViewです。"
 
     def __init__(
-        self, cog: Help, language: str, parts: EmbedParts,
+        self, cog: HelpCog, language: str, parts: EmbedParts,
         target: UserMember, *args, **kwargs
     ):
         self.cog, self.language = cog, language
@@ -99,14 +98,14 @@ class HelpView(TimeoutView):
 
         self.add_item(HelpSelect("category", [
             (get_category(category, language), category, category)
-            for category in self.cog.data.keys()
+            for category in self.cog.bot.help_.data.keys()
         ], self.parts.category_name, self.parts.command_name, placeholder=t(dict(
             ja="カテゴリー", en="Category"
         ), target)))
         if self.parts.category_name is not None:
             self.add_item(HelpSelect("command", [
                 (name, detail.headline.get(language, "..."), name)
-                for name, detail in self.cog.data[self.parts.category_name].items() # type: ignore
+                for name, detail in self.cog.bot.help_.data[self.parts.category_name].items()
             ], self.parts.category_name, self.parts.command_name, placeholder=t(dict(
                 ja="コマンド", en="Command"
             ), target)))
@@ -118,49 +117,9 @@ RESULT_TYPES = {
 }
 
 
-class Help(Cog):
+class HelpCog(Cog, name="Help"):
     def __init__(self, bot: RT):
         self.bot = bot
-        self.data: defaultdict[str, dict[str, Cog.Help]] = defaultdict(dict)
-
-    @commands.Cog.listener()
-    async def on_load(self):
-        await self.aioload()
-
-    def make_other_command_help(self, command: commands.Command | commands.Group) -> Cog.Help:
-        "`HelpCommand`が用意されていないコマンドから自動でヘルプオブジェクトを作る。"
-        assert command.callback.__doc__ is not None or command.description
-        return Cog.HelpCommand(command, False) \
-            .set_description(**make_default(command.callback.__doc__ or command.description))
-
-    async def aioload(self):
-        "ヘルプを非同期に読み込みます。"
-        await self.bot.loop.run_in_executor(None, self.load)
-
-    def load(self):
-        "ヘルプを読み込む。"
-        self.data = defaultdict(dict)
-        for command in self.bot.commands:
-            value: Optional[Cog.Help] = getattr(command.callback, "__help__", None)
-            if value is not None and not getattr(command.callback, "__raw_help__", False):
-                self.data[value.category][command.name] = value
-                if self.data[value.category][command.name].category == "Other":
-                    if command.cog is not None:
-                        category = get_fsparent(command.cog.__class__)
-                        self.data[category][command.name] = \
-                            self.data[value.category][command.name]
-                        del self.data[value.category][command.name]
-                        self.data[category][command.name].set_category(category)
-            elif (command.callback.__doc__ or command.description) \
-                    and get_kwarg(command, "category", None) is None:
-                # ヘルプオブジェクトが実装されていないものは自動生成を行う。
-                self.data["Other"][command.name] = self.make_other_command_help(command)
-                if isinstance(command, commands.Group):
-                    for target in command.walk_commands():
-                        self.data["Other"][command.name].add_sub(
-                            self.make_other_command_help(target)
-                        )
-        self.bot.dispatch("help_load")
 
     def make_parts(
         self, language: str, category_name: Optional[str] = None,
@@ -174,16 +133,16 @@ class Help(Cog):
             level = 2
             title = command_name
             description = list(separate_from_list(
-                self.data[category_name][command_name].get_str_list(language)
+                self.bot.help_.data[category_name][command_name].get_str_list(language)
             ))
             category, command = category_name, command_name
         elif category_name is not None:
             level = 1
             description = "\n".join(
                 f"`{name}` {help_.headline.get(language, '...')}"
-                for name, help_ in list(self.data[category_name].items())
+                for name, help_ in list(self.bot.help_.data[category_name].items())
             )
-            title = category_name
+            title = get_category(category_name, language)
             category = category_name
         return EmbedParts(
             level, title, description, category, command,
@@ -197,13 +156,13 @@ class Help(Cog):
         ), ctx)
 
     @commands.command(
-        aliases=("h", "ヘルプ", "助けて", "へ", "HelpMe,RITSUUUUUU!!"),
+        "help", aliases=("h", "ヘルプ", "助けて", "へ", "HelpMe,RITSUUUUUU!!"),
         description="Displays how to use RT."
     )
     @discord.app_commands.describe(word="Search word or command name")
-    async def help(self, ctx: commands.Context, *, word: Optional[str] = None) -> None:
+    async def help_(self, ctx: commands.Context, *, word: Optional[str] = None) -> None:
         language = self.bot.get_language("user", ctx.author.id)
-        found, category, command = False, None, None
+        found, category, command_name = False, None, None
 
         if word is None:
             found = True
@@ -211,24 +170,24 @@ class Help(Cog):
             # ヘルプを検索する。全一致時は即終了する。
             result: defaultdict[Literal["contain", "detail_contain"], list[tuple[str, str]]] = \
                 defaultdict(list)
-            for category in list(self.data.keys()):
+            for category in list(self.bot.help_.data.keys()):
                 if category == word:
-                    command = None; found = True; break
-                for command, detail in list(self.data[category].items()):
-                    if command == word:
+                    command_name = None; found = True; break
+                for command_name, detail in list(self.bot.help_.data[category].items()):
+                    if command_name == word:
                         found = True; break
-                    if word in command:
-                        result["contain"].append((category, command))
+                    if word in command_name:
+                        result["contain"].append((category, command_name))
                     if word in detail.description.get(language, "...") \
                             or any(word in extra for extra in list(detail.extras.values())):
-                        result["detail_contain"].append((category, command))
+                        result["detail_contain"].append((category, command_name))
                 else: continue
                 break
 
         if found:
             # 全一致した場合
             view = HelpView(self, language, self.make_parts(
-                language, category, command
+                language, category, command_name
             ), ctx.author)
             view.set_message(ctx, await ctx.reply(embed=view.page.embeds[0], view=view))
         else:
@@ -238,7 +197,8 @@ class Help(Cog):
                     f"**{get_inner_text(RESULT_TYPES, key, language)}**", "\n".join(
                         f"`{name}` {headline}"
                         for name, headline in map(
-                            lambda x: (x[1], self.data[x[0]][x[1]].headline.get(language, "...")),
+                            lambda x: (x[1], self.bot.help_.data[x[0]][x[1]] \
+                                .headline.get(language, "...")),
                             result[key] # type: ignore
                         )
                     ) or "..."
@@ -250,7 +210,7 @@ class Help(Cog):
             else:
                 await ctx.reply(embed=view.embeds[0])
 
-    Cog.HelpCommand(help) \
+    Cog.HelpCommand(help_) \
         .add_arg(
             "word", "str", "Optional",
             ja="検索ワードまたはコマンド名", en="Search word or command name"
@@ -260,4 +220,4 @@ class Help(Cog):
 
 
 async def setup(bot):
-    await bot.add_cog(Help(bot))
+    await bot.add_cog(HelpCog(bot))
