@@ -90,7 +90,7 @@ class Prefix(Cog):
             ja="設定するカスタムプリフィックスです。\n未入力の場合は設定解除として扱われます。",
             en="Custom prefix to be set. \nIf not entered, the setting is treated as cancelled."
         ) \
-        .update_headline(ja="カスタムプリフィックスを設定します。")
+        .merge_headline(ja="カスタムプリフィックスを設定します。")
 
 
 async def setup(bot: RT):

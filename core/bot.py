@@ -30,6 +30,7 @@ from data import DATA, CATEGORIES, PREFIXES, SECRET, TEST, SHARD, ADMINS, URL, A
 
 from .cacher import CacherPool, Cacher
 from .rtws import setup
+from . import tdpocket
 
 if TYPE_CHECKING:
     from .log import LogCore
@@ -103,6 +104,7 @@ class RT(commands.Bot):
         await self.load_extension("core.log")
         await self.load_extension("core.help")
         await self.load_extension("jishaku")
+        tdpocket.bot = self
         for path in listdir("cogs"):
             path = f"cogs/{path}"
             if isdir(path):
@@ -137,6 +139,20 @@ class RT(commands.Bot):
     def get_language(self, mode: Literal["guild", "user"], id_: int) -> str:
         "指定されたユーザーまたはサーバーの言語設定を取得します。"
         return getattr(self.language, mode).get(id_, "en")
+
+    def search_language(self, guild_id: int | None, user_id: int | None) -> str:
+        "ユーザーの言語設定を探して見つからない場合はサーバーの言語設定を`.get_language`で探します。"
+        if guild_id is not None and user_id is not None:
+            language = self.language.user.get(user_id)
+            if language is None:
+                language = self.get_language("guild", guild_id)
+            return language
+        if guild_id is None and user_id is not None:
+            return self.get_language("user", user_id)
+        elif guild_id is not None and user_id is None:
+            return self.get_language("guild", guild_id)
+        else:
+            return "en"
 
     async def request(self, route: str, *args, **kwargs) -> Any:
         "バックエンドにリクエストをします。"

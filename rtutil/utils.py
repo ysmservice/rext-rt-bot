@@ -1,6 +1,6 @@
 # rtutil - Utils
 
-from typing import Optional
+from typing import Optional, Any
 from collections.abc import Callable, Iterable, Iterator, Sequence
 
 import discord
@@ -8,7 +8,13 @@ import discord
 from data import TEST, CANARY, Colors
 
 
-__all__ = ("set_page", "webhook_send", "artificially_send")
+__all__ = ("unwrap_or", "set_page", "webhook_send", "artificially_send")
+
+
+# discord.py系
+def unwrap_or(obj: object | None, attr: str, default: Any = None):
+    "オブジェクトから指定された属性を取り出すことを試みます。"
+    return getattr(obj, attr, default)
 
 
 # 埋め込み系

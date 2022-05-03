@@ -123,7 +123,7 @@ class RTLog(Cog):
         ))
 
     (Cog.HelpCommand(rtlog)
-        .update_headline(ja="RTのログの管理コマンドです。")
+        .merge_headline(ja="RTのログの管理コマンドです。")
         .set_description(
             ja="このコマンドは、RTのログを見たり消したりするためのコマンドです。\nRTのログは、実行されたコマンドや裏で行われた処理の内容と結果を記録したものです。",
             en="This command can be used to see RT log and clear RT log.\nRT's logs are a record of the contents and results of the commands executed and the processing that took place behind the scenes."

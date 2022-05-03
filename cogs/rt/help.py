@@ -218,7 +218,7 @@ class HelpCog(Cog, name="Help"):
             ja="検索ワードまたはコマンド名", en="Search word or command name"
         ) \
         .set_description(ja="RTの使い方を表示するヘルプコマンドです。", en="Help command to see how to use RT.") \
-        .update_headline(ja="RTの使用方法を表示します。")
+        .merge_headline(ja="RTの使用方法を表示します。")
 
 
 async def setup(bot):

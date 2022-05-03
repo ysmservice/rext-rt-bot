@@ -5,18 +5,24 @@ from dataclasses import dataclass
 from aiohttp import ClientSession
 
 
+__all__ = ("NotFound", "MinecraftUserData", "search")
+
+
 class NotFound(Exception):
-    pass
+    "Minecraftのユーザー検索に失敗した際に発生します。"
 
 
 @dataclass
 class MinecraftUserData:
+    "Minecraftのユーザーのデータを格納するためのデータクラスです。"
+
     name: str
     id: str
     skin: str
 
 
 async def search(session: ClientSession, user: str) -> MinecraftUserData:
+    "Minecraftのユーザーを検索します。"
     async with session.get(
         "https://api.mojang.com/users/profiles/minecraft/{}".format(user)
     ) as r:

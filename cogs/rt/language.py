@@ -141,7 +141,7 @@ class Language(Cog):
             dict(ja="Your English", en="Your 日本語"),
             dict(ja="あなたの言語を英語に設定します。", en="Set your language as Japanese.")
         ) \
-        .update_headline(ja="言語設定を変更します。")
+        .merge_headline(ja="言語設定を変更します。")
 
 
 async def setup(bot):

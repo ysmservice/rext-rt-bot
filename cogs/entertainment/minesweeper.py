@@ -91,7 +91,7 @@ class MinesweeperCog(Cog, name="Minesweeper"):
 
     (Cog.HelpCommand(minesweeper)
         .set_description(ja="マインスイーパを遊びます。", en="Play minesweeper")
-        .update_headline(ja="マインスイーパ"))
+        .merge_headline(ja="マインスイーパ"))
 
 
 async def setup(bot):

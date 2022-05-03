@@ -66,7 +66,7 @@ class Entertainment(Cog):
             ja="マイクラのユーザ名",
             en="Minecraft user name"
         )
-        .update_headline(ja="マイクラのユーザー検索をします"))
+        .merge_headline(ja="マイクラのユーザー検索をします"))
 
     async def jin(self) -> AsyncIterator[JinData]:
         "オレ的ゲーム速報＠刃のスクレイピングをします。"
@@ -103,7 +103,7 @@ class Entertainment(Cog):
         await EmbedPage(embeds).first_reply(ctx)
 
     (Cog.HelpCommand(jin_)
-        .update_headline(ja=jin_.description)
+        .merge_headline(ja=jin_.description)
         .set_description(
             ja="[オレ的ゲーム速報＠刃](http://jin115.com)の最新のニュースを表示します。",
             en="View the latest news from [My Style Game News @ Blade](http://jin115.com). (language is japanese)"
@@ -167,7 +167,7 @@ class Entertainment(Cog):
             await remove(path)
 
     (Cog.HelpCommand(game)
-        .update_headline(ja="ゲームソフトのコラ画像を作ります。")
+        .merge_headline(ja="ゲームソフトのコラ画像を作ります。")
         .set_description(
             ja="ゲームソフトのコラ画像を作ります。\n渡された画像をゲームソフトのケースっぽくします。\n画像を添付してください。",
             en="Make a collage image of a game software.\nMake the image passed to you look like a game software case.\nPlease attach picture."
@@ -227,7 +227,7 @@ class Entertainment(Cog):
                 break
 
     (Cog.HelpCommand(fortune)
-        .update_headline(ja="おみくじを引きます。")
+        .merge_headline(ja="おみくじを引きます。")
         .set_description(
             ja="おみくじを引きます。", en="Do omikuji (fortune telling)."
         ))

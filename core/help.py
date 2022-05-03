@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypeVar, TypeAlias, Literal, Optional
+from collections.abc import Iterator
 
 from collections import defaultdict
+from itertools import chain
 
 from discord.ext import commands
+from discord.app_commands import Command
 
-from discord.ext.fslash import _get
+from discord.ext.fslash import _get, groups
 
 from rtlib.common.utils import code_block
 
@@ -16,6 +19,7 @@ from .utils import (
     get_kwarg, get_fsparent, get_inner_text, gettext, cleantext,
     make_default, concat_text
 )
+from . import tdpocket
 from .types_ import CmdGrp, Text
 from .general import Cog
 from .bot import RT
@@ -71,36 +75,44 @@ class Help:
     gettext = staticmethod(gettext)
 
     def set_title(self: SelfT, title: str) -> SelfT:
+        "タイトルを設定します。"
         self.title = title
         return self
 
     def set_description(self: SelfT, **text: str) -> SelfT:
+        "説明を設定します。"
         self.description = cleantext(text)
         return self
 
     def set_category(self: SelfT, category: str) -> SelfT:
+        "カテゴリーを設定します。"
         self.category = category
         return self
 
     def set_extra(self: SelfT, name: str, **detail: str) -> SelfT:
+        "Extraを設定します。 e.g. Notes"
         self.extras[name] = cleantext(detail)
         return self
 
     def set_headline(self: SelfT, **headline: str) -> SelfT:
+        "見出しを設定します。"
         self.headline = cleantext(headline)
         return self
 
-    def update_headline(self: SelfT, **headline: str) -> SelfT:
+    def merge_headline(self: SelfT, **headline: str) -> SelfT:
+        "見出しをマージします。"
         self.headline.update(cleantext(headline))
         return self
 
     def extras_text(self, language: str, first: str = "") -> str:
+        "Extraの文字列を作ります。"
         return "{}{}".format(first, "\n\n".join(
             f"**#** {gettext(EXTRAS.get(key, make_default(key)), language)}\n{gettext(text, language)}"
             for key, text in self.extras.items()
         )) if self.extras else ""
 
     def to_str(self, language: str, first: bool = False) -> str:
+        "ヘルプを文字列にします。"
         return "".join((
             "" if first else f"**{self.title}**\n",
             f"{gettext(self.description, language)}",
@@ -108,14 +120,17 @@ class Help:
         ))
 
     def get_full_str(self, language: str) -> str:
+        "サブコマンドを含めてヘルプを文字列にします。"
         return "\n\n".join(self.get_str_list(language))
 
-    def get_str_list(self, language: str) -> list[str]:
-        return [f"{self.to_str(language, True)}\n\n"] + [
+    def get_str_list(self, language: str) -> Iterator[str]:
+        "このヘルプとサブコマンドのヘルプの文字列のリストを作ります。"
+        return chain(f"{self.to_str(language, True)}\n\n", (
             f"{h.to_str(language)}\n\n" for h in self.sub
-        ]
+        ))
 
     def add_sub(self: SelfT, sub: Help) -> SelfT:
+        "サブコマンドを設定します。"
         self.sub.append(sub)
         return self
 
@@ -128,11 +143,11 @@ SelfCmdT = TypeVar("SelfCmdT", bound="HelpCommand")
 class HelpCommand(Help):
     "ヘルプオブジェクトを継承したコマンドから簡単にヘルプを構成できるようにしたヘルプオブジェクトです。"
 
-    def __init__(self, command: CmdGrp, set_help: bool = True):
+    def __init__(self, command: CmdGrp, set_help: bool = True, **kwargs):
         self.command = command
         self.fsparent = _get(command, "fsparent", None)
         self.args: list[tuple[str, Text, Text | None, Text]] = []
-        super().__init__()
+        super().__init__(**kwargs)
         # ここ以降はコマンドからの自動設定です。
         if set_help: setattr(self.command._callback, "__help__", self)
         else: setattr(self.command._callback, "__raw_help__", self)
@@ -148,6 +163,7 @@ class HelpCommand(Help):
         option: str | tuple[str, str] | Text | None = None,
         **detail: str
     ) -> SelfCmdT:
+        "引数の説明を追加します。"
         if isinstance(annotation, str):
             annotation = ANNOTATIONS.get(annotation, annotation)
         if isinstance(option, str):
@@ -161,24 +177,24 @@ class HelpCommand(Help):
         ))
         return self
 
-    def set_args(self, **kwargs: tuple):
-        for key, value in kwargs.items():
-            self.add_arg(key, *value[:-1], **value[-1])
-
     @property
     def message_qualified(self) -> str:
+        "コマンドの引数を含めた形式の文字列を作ります。"
         return f"rt!{self.command.qualified_name}"
 
     @property
     def slash_qualified(self) -> str:
+        "スラッシュコマンドの引数を含めた形式の文字列を作ります。"
         return self.message_qualified.replace(
             "rt!", f"/{'' if self.fsparent is None else f'{self.fsparent} '}"
         )
 
     def get_type_text(self, type_: CmdType, language: str):
+        "コマンドの種類を文字列にします。"
         return get_inner_text(COMMAND_TYPES, type_, language)
 
     def full_qualified(self, language: str, args: dict[CmdType, Text] = {}) -> str:
+        "コマンドの引数を含めた形式を作ります。"
         return "\n".join(("".join((
             f"{self.get_type_text(t, language)}: `{getattr(self, f'{t}_qualified')}",
             f" {get_inner_text(args, t, language)}" if args else (
@@ -187,6 +203,7 @@ class HelpCommand(Help):
         )) for t in ("message", "slash")))
 
     def set_examples(self: SelfCmdT, args: Text, detail: Text) -> SelfCmdT:
+        "簡単に使用例をヘルプのExtraに登録するためのものです。"
         data = concat_text({
             key: self.full_qualified(
                 key, {"message": args, "slash": args}
@@ -199,6 +216,7 @@ class HelpCommand(Help):
         return self
 
     def args_text(self, language: str, first: str = "") -> str:
+        "引数の説明の文字列を作ります。"
         return "{}{}".format(first, "\n".join("".join((
             f"{name} : ", gettext(annotation, language),
             "" if option is None else f", {gettext(option, language)}",
@@ -211,6 +229,7 @@ class HelpCommand(Help):
         self: SelfCmdT, ctx: type[EventContext],
         event_name: str, **detail: str
     ) -> SelfCmdT:
+        "RTイベントの説明を入れます。"
         detail = concat_text(concat_text(
             make_default(f"EventName: `{event_name}`"), detail, "\n"
         ), make_default(

@@ -126,7 +126,7 @@ class RTA(Cog):
 
     (Cog.HelpCommand(rta)
         .set_description(ja="即抜けRTA通知用のコマンドです", en="Set channel which recording the leaving RTA.")
-        .update_headline(ja="即抜けrta機能を設定します")
+        .merge_headline(ja="即抜けrta機能を設定します")
         .set_rtevent(ImmediateExitContext, "on_immediate_quit",
             ja="即抜けRTAの通知時に呼ばれるイベントです。",
             en="This event is called at the time of notification of an immediate quit RTA."

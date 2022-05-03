@@ -22,6 +22,8 @@ from rtutil.views import EmbedPage
 
 from data import SETTING_NOTFOUND, SET_ALIASES, ADD_ALIASES, REMOVE_ALIASES, SHOW_ALIASES
 
+from .__init__ import FSPARENT
+
 
 class Timing(TypedDict):
     "AFKオートメーションのAFK設定をするタイミングのデータの型です。"
@@ -256,14 +258,14 @@ class AFK(Cog, DataManager):
 
     @commands.group(
         aliases=("留守番",), description="Reply absence notification message the AFK",
-        fsparent="individual"
+        fsparent=FSPARENT
     )
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def afk(self, ctx: commands.Context):
         await self.group_index(ctx)
 
     AFK_HELP = (Cog.HelpCommand(afk)
-        .update_headline(ja="メンション時に自動返信をする。")
+        .merge_headline(ja="メンション時に自動返信をする。")
         .set_description(
             ja="""メンションされた際に特定のメッセージを返信するように設定します。
                 その設定は何かしらメッセージを送信すると解除されます。

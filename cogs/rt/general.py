@@ -114,7 +114,7 @@ class General(Cog):
             "Notes", ja="200msを超えている場合は通信が遅いです。",
             en="If it exceeds 200 ms, communication is slow."
         ) \
-        .update_headline(ja="RTのレイテンシを表示します。")
+        .merge_headline(ja="RTのレイテンシを表示します。")
 
     @commands.command(description="Displays info of RT.")
     async def info(self, ctx: commands.Context):
@@ -122,7 +122,7 @@ class General(Cog):
 
     Cog.HelpCommand(info) \
         .set_description(ja="RTの情報を表示します。", en="Displays info of RT.") \
-        .update_headline(ja="RTの情報を表示します。")
+        .merge_headline(ja="RTの情報を表示します。")
 
     async def clean(self):
         "セーブデータの掃除を行います。"

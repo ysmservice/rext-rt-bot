@@ -95,7 +95,7 @@ class Translator(Cog):
 
     (Cog.HelpCommand(translate_)
         .set_description(ja="翻訳をします。", en="Do translation.")
-        .update_headline(ja="翻訳をします。")
+        .merge_headline(ja="翻訳をします。")
         .add_arg("language", "str",
             ja="翻訳先の言語コードです。\n下にある`メモ`に使用可能だと思われているコードが書いてあります。",
             en="The language code of the language you are translating to.\nThe `Notes` below lists the possible language codes.")
@@ -109,7 +109,9 @@ class Translator(Cog):
         中国語(繁体字)\tzh-TW
         韓国語\tko
         アラビア語\tar
-        ```""", en="""Language Code:
+        ```
+        また、右クリック等ででてくるコンテキストメニューのアプリの項目からメッセージを指定して翻訳することもできます。""",
+        en="""Language Code:
         ```
         Automatic\tauto
         Japanese\tja
@@ -119,7 +121,8 @@ class Translator(Cog):
         Korean\tko
         Arabic(アラビア語)`\tar
         Arabic\tar
-        ```"""))
+        ```
+        You can also translate a message by specifying the message from the application item in the context menu that appears by right-clicking, etc."""))
 
 
 async def setup(bot):

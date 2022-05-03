@@ -37,7 +37,7 @@ class Admin(Cog):
     async def reload(self, ctx: commands.Context, *, choice: Literal["help"]):
         if choice == "help":
             await ctx.typing()
-            await self.bot.cogs["Help"].aioload() # type: ignore
+            await self.bot.cogs["HelpCore"].aioload() # type: ignore
         else:
             return await ctx.reply(t(dict(
                 ja="何をすれば良いかわかりません。", en="I don't know what to do."
