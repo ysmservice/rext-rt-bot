@@ -296,7 +296,7 @@ class DiscordLog(Cog):
         embed = Cog.Embed(
             t({"ja": "サーバーの情報更新", "en": "Server information updated"}, logc.guild)
         )
-        if before.name == after.name:
+        if before.name == after.name and before.name:
             self.caches[logc].append(
                 embed.add_field(name=t(BEFORE_TEXT, logc.guild), value=before.name)
                     .add_field(name=t(AFTER_TEXT, logc.guild), value=after.name)
@@ -409,7 +409,7 @@ class DiscordLog(Cog):
                 {"ja": "メッセージの編集", "en": "Edit Message"}, after.guild,
                 description=after.jump_url
             )
-            if before.content != after.content:
+            if before.content != after.content and (before.content or after.content):
                 embed.add_field(
                     name=t(BEFORE_TEXT, logc.guild), value=before.content
                 ).add_field(
