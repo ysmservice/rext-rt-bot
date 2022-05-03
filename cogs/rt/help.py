@@ -13,7 +13,7 @@ import discord
 from data import get_category
 
 from core.views import TimeoutView, EmbedPage, NoEditEmbedPage, check, separate_to_embeds
-from core.utils import get_inner_text, separate_from_list, set_page
+from core.utils import get_inner_text, separate_from_iterable, set_page
 from core.types_ import UserMember
 from core import RT, Cog, t
 
@@ -132,7 +132,7 @@ class HelpCog(Cog, name="Help"):
         if command_name is not None and category_name is not None:
             level = 2
             title = command_name
-            description = list(separate_from_list(
+            description = list(separate_from_iterable(
                 self.bot.help_.data[category_name][command_name].get_str_list(language)
             ))
             category, command = category_name, command_name

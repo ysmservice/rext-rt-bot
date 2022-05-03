@@ -15,7 +15,7 @@ from aiomysql import Pool
 from orjson import loads, dumps
 
 from core.converters import DayOfWeekTimeConverter, TimeConverter, DateTimeFormatNotSatisfiable
-from core.utils import set_page, separate_from_list, artificially_send
+from core.utils import set_page, separate_from_iterable, artificially_send
 from core.cacher import Cacher
 from core.views import EmbedPage
 from core import RT, Cog, t, DatabaseManager, cursor
@@ -135,13 +135,13 @@ class DataManager(DatabaseManager):
         }
         await cursor.execute(
             "INSERT INTO AutoAfk VALUES (%s, %s, %s, %s);",
-            (user_id, automation.id_, dumps(automation.timing), automation.content)
+            (user_id, automation.id_, dumps(automation.timing).decode(), automation.content)
         )
 
     async def remove_automation(self, user_id: int, id_: str) -> None:
         "AFKオートメーションのデータを削除します。"
         try:
-            assert await self.check_exists(user_id, id_, cursor=cursor), SETTING_NOTFOUND
+            assert await self.check_exists(user_id, id_, cursor=cursor) + 1, SETTING_NOTFOUND
         except AssertionError:
             await cursor.execute(
                 "DELETE FROM AutoAfk WHERE UserID = %s AND Id = %s;",
@@ -390,9 +390,9 @@ class AFK(Cog, DataManager):
                     "AFK Automation",
                     description=text
                 )
-                for text in separate_from_list((
-                    "{}{}".format(
-                        f"`{automation.id_}`: {automation.timing['mode']} - {automation.timing['data']}",
+                for text in separate_from_iterable((
+                    "{}\n{}".format(
+                        f"`{automation.id_}` - `{automation.timing['mode']}` - {automation.timing['data']}",
                         f"　　{automation.content}"
                     ) for automation in automations
                 ))

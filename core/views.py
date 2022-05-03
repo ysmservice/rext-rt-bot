@@ -196,9 +196,9 @@ class EmbedPage(BasePage):
     ) -> None:
         "一番最初の返信をします。"
         if len(self.embeds) > 1:
-            self.set_message(ctx, await ctx.reply(embeds=self.embeds[0], view=self)) # type: ignore
+            self.set_message(ctx, await ctx.reply(embed=self.embeds[0], view=self)) # type: ignore
         elif self.embeds:
-            await ctx.reply(embeds=self.embeds[0])
+            await ctx.reply(embed=self.embeds[0])
         else:
             await ctx.reply(t(if_none, ctx))
 

@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 
 __all__ = (
-    "get_inner_text", "separate", "separate_from_list", "set_page",
+    "get_inner_text", "separate", "separate_from_iterable", "set_page",
     "get_name_and_id_str", "gettext", "cleantext", "quick_log",
     "make_default", "get_kwarg", "truncate", "unwrap", "concat_text", "quick_invoke_command",
     "get_fsparent", "webhook_send", "artificially_send"
@@ -175,7 +175,7 @@ async def unwrap(
 
 
 # 埋め込み関連
-def separate_from_list(texts: Iterable[str], max_: int = 2000, join: str = "") -> Iterator[str]:
+def separate_from_iterable(texts: Iterable[str], max_: int = 2000, join: str = "") -> Iterator[str]:
     "渡された文字列のリストを特定の文字数のタイミングで分割します。"
     length, tentative = 0, ""
     for text in texts:
