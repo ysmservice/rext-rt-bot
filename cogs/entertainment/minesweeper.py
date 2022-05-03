@@ -6,11 +6,12 @@ from discord.ext import commands
 import discord
 
 from core.cacher import Cacher
-from core.views import TimeoutView
 from core import Cog, RT, t
 
-from rtutil.minesweeper import Minesweeper
 from rtlib.common.utils import code_block
+
+from rtutil.minesweeper import Minesweeper
+from rtutil.views import TimeoutView
 
 
 class MinesweeperXYSelect(discord.ui.Select):

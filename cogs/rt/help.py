@@ -12,10 +12,12 @@ import discord
 
 from data import get_category
 
-from core.views import TimeoutView, EmbedPage, NoEditEmbedPage, check, separate_to_embeds
-from core.utils import get_inner_text, separate_from_iterable, set_page
+from core.utils import get_inner_text
 from core.types_ import UserMember
 from core import RT, Cog, t
+
+from rtutil.views import TimeoutView, EmbedPage, NoEditEmbedPage, check, separate_to_embeds
+from rtutil.utils import separate_from_iterable, set_page
 
 
 FIRST_OF_HELP = {

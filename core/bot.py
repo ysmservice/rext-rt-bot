@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal, Optional, Any
 
+from functools import wraps
 from dataclasses import dataclass
 from os.path import isdir
 from os import listdir
@@ -14,12 +15,13 @@ import discord
 from discord.ext.fslash import extend_force_slash
 from discord.ext.fslash.types_ import InteractionResponseMode
 
+from jishaku.features.baseclass import Feature
+
 from ipcs.client import logger
 from ipcs import IpcsClient
 
 from aiomysql import create_pool
 from aiohttp import ClientSession
-
 from orjson import dumps
 
 from rtlib.common import set_handler
@@ -191,3 +193,13 @@ class RT(commands.Bot):
 # もし本番用での実行またはシャードモードの場合はシャードBotに交換する。
 if not TEST or SHARD:
     RT.__bases__ = (commands.AutoShardedBot,)
+
+
+# Jishakuのコマンドの説明にドキュメンテーションにあるものを入れるようにする。
+_original_fc_convert = Feature.Command.convert
+@wraps(_original_fc_convert)
+def _new_fc_convert(*args, **kwargs):
+    command = _original_fc_convert(*args, **kwargs)
+    command.description = command.short_doc
+    return command
+Feature.Command.convert = _new_fc_convert

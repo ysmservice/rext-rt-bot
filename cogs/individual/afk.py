@@ -13,11 +13,12 @@ import discord
 
 from orjson import loads, dumps
 
-from core.converters import DayOfWeekTimeConverter, TimeConverter, DateTimeFormatNotSatisfiable
-from core.utils import set_page, separate_from_iterable, artificially_send
 from core.cacher import Cacher
-from core.views import EmbedPage
 from core import RT, Cog, t, DatabaseManager, cursor
+
+from rtutil.converters import DayOfWeekTimeConverter, TimeConverter, DateTimeFormatNotSatisfiable
+from rtutil.utils import set_page, separate_from_iterable, artificially_send
+from rtutil.views import EmbedPage
 
 from data import SETTING_NOTFOUND, SET_ALIASES, ADD_ALIASES, REMOVE_ALIASES, SHOW_ALIASES
 

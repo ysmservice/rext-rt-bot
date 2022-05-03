@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar, Optional, Any
-from collections.abc import Coroutine, Callable, Iterator, Iterable, Sequence
+from typing import TYPE_CHECKING, Any
+from collections.abc import Callable, Iterator
 
 from inspect import cleandoc, getfile
 
@@ -12,21 +12,16 @@ import discord
 
 from discord.ext.fslash import _get as get_kwarg, Context
 
-from rtlib.common.utils import make_error_message
-
-from data import TEST, CANARY, Colors
 
 if TYPE_CHECKING:
-    from .types_ import Text, Feature, CmdGrp
-    from .log import Target
+    from .types_ import Text, CmdGrp
     from .bot import RT
 
 
 __all__ = (
-    "get_inner_text", "separate", "separate_from_iterable", "set_page",
-    "get_name_and_id_str", "gettext", "cleantext", "quick_log",
-    "make_default", "get_kwarg", "truncate", "unwrap", "concat_text", "quick_invoke_command",
-    "get_fsparent", "webhook_send", "artificially_send"
+    "get_inner_text", "separate", "gettext", "cleantext", "make_default",
+    "get_kwarg", "truncate", "concat_text", "quick_invoke_command",
+    "get_fsparent",
 )
 
 
@@ -118,129 +113,3 @@ async def quick_invoke_command(
         bot.dispatch("command_error", ctx, e)
         return False
     else: return True
-
-
-def quick_log(
-    self: commands.Cog, feature: Feature, detail: Text,
-    target: Target, status: str, more_detail: Optional[Text] = None
-) -> None:
-    "簡単にログ出力を行います。"
-    bot: RT = getattr(self, "bot")
-    bot.loop.create_task(bot.log(bot.log.LogData.quick_make(
-        feature, status, target, getattr(self, "t")(
-            detail if more_detail is None else concat_text(detail, more_detail, "\n"),
-            target
-        )
-    )), name="RT Log")
-
-
-UPReT = TypeVar("UPReT")
-async def unwrap(
-    self: commands.Cog, feature: Feature, target: Target,
-    coro: Coroutine[Any, Any, UPReT], content: Text, before: Any = None,
-    do_success_log: bool = False, do_raise: bool = False
-) -> UPReT | Exception:
-    "渡されたをtryでラップして実行をします。\n失敗した場合はRTログに流します。"
-    make_response = lambda data: quick_log(
-        self, feature, content, target, data.pop("status", "ERROR"), data
-    )
-    try:
-        data = await coro
-    except discord.Forbidden as e:
-        make_response(dict(
-            ja="権限がないため処理を完了することができませんでした。",
-            en="The process could not be completed due to lack of permissions."
-        ))
-        return e
-    except discord.NotFound as e:
-        make_response(dict(
-            ja=f"{before}が見つかりませんでした。",
-            en=f"{before} was not found."
-        ))
-        return e
-    except Exception as e:
-        error = make_error_message(e)
-        make_response(dict(
-            ja=f"内部エラーが発生したため処理を完了することができませんでした。\nエラー全文：\n{error}",
-            en=f"Processing could not be completed due to an internal error.\nFUll text of error:\n{error}"
-        ))
-        if do_raise: raise
-        return e
-    else:
-        if do_success_log is not None:
-            d = {}
-            d["status"] = "SUCCESS"
-            make_response(d)
-        return data
-
-
-# 埋め込み関連
-def separate_from_iterable(texts: Iterable[str], max_: int = 2000, join: str = "") -> Iterator[str]:
-    "渡された文字列のリストを特定の文字数のタイミングで分割します。"
-    length, tentative = 0, ""
-    for text in texts:
-        length += len(text)
-        if length >= max_:
-            yield f"{tentative}{join}"
-            length, tentative = 0, ""
-        tentative += text
-    if tentative:
-        yield tentative
-
-
-def set_page(
-    embeds: Sequence[discord.Embed], adjustment: Callable[[int, int], str] \
-        = lambda i, length: f"{i}/{length}", length: Optional[int] = None
-):
-    "渡された埋め込み達にページを追記します。"
-    length = length or len(embeds)
-    for i, embed in enumerate(embeds, 1):
-        embed.set_footer(text="".join((
-            embed.footer.text or "", "" if embed.footer.text is None else " ",
-            adjustment(i, length)
-        )))
-
-
-def get_name_and_id_str(obj: discord.abc.Snowflake):
-    "渡されたオブジェクトの名前とIDが書き込まれた文字列を作ります。"
-    return f"{obj} (`{obj.id}`)"
-
-
-if CANARY:
-    WEBHOOK_NAME = "R2-Tool"
-elif TEST:
-    WEBHOOK_NAME = "R3-Tool"
-else:
-    WEBHOOK_NAME = "RT-Tool"
-
-
-async def webhook_send(
-    channel: discord.TextChannel, member: discord.Member,
-    *args, **kwargs
-) -> discord.WebhookMessage:
-    "指定されたメンバーの名前とアイコンを使ってWebhookでメッセージを送信します。"
-    kwargs.setdefault("username", member.display_name)
-    kwargs.setdefault("avatar_url", getattr(member.display_avatar, "url", ""))
-    if (webhook := discord.utils.get(await channel.webhooks(), name=WEBHOOK_NAME)) is None:
-        webhook = await channel.create_webhook(name=WEBHOOK_NAME, reason="For RT Tool")
-    return await webhook.send(*args, **kwargs)
-
-
-async def artificially_send(
-    channel: discord.TextChannel | discord.Thread,
-    member: discord.Member, content: str | None,
-    *args, additional_name: str = "", **kwargs
-) -> discord.WebhookMessage | discord.Message:
-    "Webhookまたは埋め込みの送信で、あたかも渡されたメンバーが送信したメッセージのように、メッセージを送信します。"
-    name = f"{member.display_name}{additional_name}"
-    if isinstance(channel, discord.Thread):
-        kwargs.setdefault("embeds", [])
-        kwargs["embeds"].insert(0, discord.Embed(
-            description=content, color=Colors.normal
-        ).set_author(
-            name=name, icon_url=getattr(member.display_avatar, "url", "")
-        ))
-        return await channel.send(*args, **kwargs)
-    else:
-        kwargs["username"] = name
-        return await webhook_send(channel, member, content, *args, **kwargs)

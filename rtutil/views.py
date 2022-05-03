@@ -10,10 +10,9 @@ import discord
 
 from discord.ext.fslash import Context
 
-from .types_ import Text
-from .utils import separate
-
-from .__init__ import t
+from core.types_ import Text
+from core.utils import separate
+from core import t
 
 
 __all__ = (
@@ -111,7 +110,7 @@ class BasePage(TimeoutView):
     async def left(self, interaction: discord.Interaction, _):
         await self.on_turn("l", interaction)
 
-    @discord.ui.button(label="0", custom_id="BPViewCounter")
+    @discord.ui.button(label="1", custom_id="BPViewCounter")
     async def counter(self, interaction: discord.Interaction, _):
         await interaction.response.send_message(t(dict(
                 ja="へんじがない。ただの　しかばね　のようだ。", en="Kara Kara Kara no Kara"
@@ -145,7 +144,7 @@ class EmbedPage(BasePage):
         if select:
             self.select = discord.ui.Select()
             self.select.callback = self.on_select
-            for i in range(len(embeds)):
+            for i in range(1, len(embeds)+1):
                 self.select.add_option(label=f"{i} Page", value=str(i))
             self.add_item(self.select)
 

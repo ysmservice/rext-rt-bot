@@ -3,21 +3,22 @@
 from __future__ import annotations
 
 from typing import ParamSpec, TypeVar, Optional, Any
-from collections.abc import Callable, Coroutine, Sequence
+from collections.abc import Callable, Coroutine
 
 from functools import wraps
 
 from discord.ext import commands, tasks
 import discord
 
-from core.utils import get_name_and_id_str, truncate, make_default, concat_text
+from core.utils import truncate, make_default, concat_text
 from core.types_ import Text
-from core.views import BasePage, PageMode
 from core.cacher import Cacher
 from core.log import LogData
 from core import RT, Cog, t
 
 from rtlib.common.utils import code_block
+
+from rtutil.views import BasePage, PageMode
 
 
 class LogViewerView(BasePage):
@@ -113,8 +114,8 @@ class RTLog(Cog):
             ctx.guild or ctx.author, t(dict(
                 ja="実行者：{author}\nチャンネル：{channel}\nコマンドの引数：\n{kwargs}{extra}",
                 en="User:{author}\nChannel: {channel}\nCommand Arguments:\n{kwargs}{extra}"
-            ), ctx.guild, author=get_name_and_id_str(ctx.author),
-            channel=get_name_and_id_str(ctx.channel),
+            ), ctx.guild, author=self.name_and_id(ctx.author),
+            channel=self.name_and_id(ctx.channel), # type: ignore
             kwargs=code_block("\n".join(
                 f"{key}\t{'' if value is None else value}"
                 for key, value in ctx.kwargs.items()

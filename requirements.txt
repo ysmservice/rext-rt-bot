@@ -17,3 +17,8 @@ psutil
 # cogs.server-management
 ## translator
 deep_translator
+# cogs.entertainment
+## __init__
+bs4
+lxml
+pillow

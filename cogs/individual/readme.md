@@ -3,3 +3,4 @@
 
 ## マップ
 * `reprypt.py` repryptを使った暗号/復号コマンド
+* `afk.py` AFK機能
