@@ -3,6 +3,8 @@
 from typing import TypedDict, Literal
 from collections.abc import AsyncIterator
 
+from random import randint
+
 from discord.ext import commands
 import discord
 
@@ -173,6 +175,62 @@ class Entertainment(Cog):
         .add_arg("mode", "Choice",
             ja="どのゲーム機にするかです。\n`switch`: スイッチ\n`ps4`: Play Station 4",
             en="Which game console do you want to use? \n`switch`: switch\n`ps4`: Play Station 4"))
+
+    FORTUNES = {
+        "ja": {
+            "超吉": (100, 101),
+            "大大大吉": (98, 100),
+            "大大吉": (96, 98),
+            "大吉": (75, 96),
+            "中吉": (65, 75),
+            "小吉": (40, 65),
+            "吉": (20, 40),
+            "末吉": (10, 20),
+            "凶": (4, 10),
+            "大凶": (0, 4)
+        },
+        "en": {
+            "Great nice good luck": (100, 101),
+            "Great nice big luck": (98, 100),
+            "Great big luck": (96, 98),
+            "Big nice": (75, 96),
+            "Medium nice": (65, 75),
+            "Nice": (40, 65),
+            "Good": (20, 40),
+            "Ok": (10, 20),
+            "Bad": (4, 10),
+            "So bad": (0, 4)
+        }
+    }
+
+    @commands.command(
+        aliases=("おみくじ", "omikuji", "cookie", "luck", "oj"),
+        description="Do omikuji (fortune telling).", fsparent=FSPARENT
+    )
+    async def fortune(self, ctx):
+        i = randint(0, 100)
+        for key, value in self.FORTUNES[self.bot.get_language("user", ctx.author.id)].items():
+            if value[0] <= i < value[1]:
+                await ctx.reply(
+                    embed=Cog.Embed(
+                        title=t(dict(ja="おみくじ", en="Omikuji (fortune telling)"), ctx),
+                        description=t(dict(
+                            ja="あなたの運勢は`{key}`です。", en="Your fortune today: `{key}`"
+                        ), ctx, key=key)
+                    ).set_footer(
+                        text=t(dict(
+                            ja="何回でもできますが、もちろんわかってますよね？",
+                            en="You can do it as many times as you want, but of course you know what I mean."
+                        ), ctx)
+                    )
+                )
+                break
+
+    (Cog.HelpCommand(fortune)
+        .update_headline(ja="おみくじを引きます。")
+        .set_description(
+            ja="おみくじを引きます。", en="Do omikuji (fortune telling)."
+        ))
 
 
 async def setup(bot: RT):
