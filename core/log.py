@@ -61,7 +61,7 @@ RESULT_TEXT = {
 }
 
 
-Target: TypeAlias = discord.Guild | UserMember
+Target: TypeAlias = discord.Guild | UserMember | int
 Feature: TypeAlias = CmdGrp | tuple[str, str]
 @dataclass
 class LogData:
@@ -94,7 +94,8 @@ class LogData:
             category = help_.category if help_ else "Other"
         kwargs["target"] = target
         return cls(
-            target.id, IdType.GUILD if isinstance(target, discord.Guild) else IdType.USER,
+            getattr(target, "id", target), # type: ignore
+            IdType.GUILD if isinstance(target, discord.Guild) else IdType.USER,
             getattr(ProcessType, process_type) if isinstance(process_type, str) else process_type,
             getattr(ResultType, result_type) if isinstance(result_type, str) else result_type,
             int(time_ or time()), category, name, detail, **kwargs
@@ -210,7 +211,6 @@ class LogCore(Cog):
 
     async def __call__(self, data: LogData):
         self.bot.dispatch("log", data)
-        self.bot.rtevent.dispatch("on_log", data)
         await self.data.add(data)
 
 

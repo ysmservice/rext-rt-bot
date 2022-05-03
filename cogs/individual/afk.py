@@ -11,7 +11,6 @@ from datetime import datetime
 from discord.ext import commands, tasks
 import discord
 
-from aiomysql import Pool
 from orjson import loads, dumps
 
 from core.converters import DayOfWeekTimeConverter, TimeConverter, DateTimeFormatNotSatisfiable
@@ -49,8 +48,9 @@ class DataManager(DatabaseManager):
 
     MAX_AUTOMATIONS = 30
 
-    def __init__(self, pool: Pool):
-        self.pool = pool
+    def __init__(self, bot: RT):
+        self.bot = bot
+        self.pool = self.bot.pool
 
     async def prepare_table(self):
         "テーブルを用意します。"
@@ -148,6 +148,11 @@ class DataManager(DatabaseManager):
                 (user_id, id_)
             )
 
+    async def clean(self) -> None:
+        "掃除をします。"
+        await self.clean_data(cursor, "AutoAfk", "UserID")
+        await self.clean_data(cursor, "afk", "UserID")
+
 
 @dataclass
 class Caches:
@@ -171,7 +176,9 @@ class AFK(Cog, DataManager):
             self.bot.cachers.acquire(15.0)
         )
         self.automation_loop.start()
-        super(Cog, self).__init__(self.bot.pool) # type: ignore
+        super(Cog, self).__init__(self.bot) # type: ignore
+
+    SUBJECT = {"ja": "AFKの設定", "en": "Set afk"}
 
     async def cog_load(self):
         await self.prepare_table()
@@ -234,6 +241,12 @@ class AFK(Cog, DataManager):
             if automation.timing["mode"] == "time":
                 if automation.timing["data"] in now:
                     await self.set_(automation.user_id, automation.content)
+                    self.bot.rtevent.dispatch("on_afk_automation", Cog.EventContext(
+                        self.bot, automation.user_id, subject=self.SUBJECT, detail={
+                            "ja": f"設定名：{automation.id_}",
+                            "en": f"SettingName: {automation.id_}"
+                        }, feature=self.afk
+                    ))
                     did.append(automation.user_id)
         del did
 

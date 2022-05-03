@@ -41,7 +41,7 @@ def t(text: Text, ctx: Any, **kwargs) -> str:
     """Extracts strings in the correct language from a dictionary of language code keys and their corresponding strings, based on information such as the `ctx` guild passed in.
     You can use keyword arguments to exchange strings like f-string."""
     # Extract client
-    client: Optional[RT] = None
+    client: Optional[RT] = kwargs.pop("client", None)
     user, gu = False, False
     if isinstance(ctx, (discord.User, discord.Member, discord.Object)):
         client = _get_client(ctx) # type: ignore
@@ -59,6 +59,9 @@ def t(text: Text, ctx: Any, **kwargs) -> str:
     # Extract correct text
     if client is None:
         text = gettext(text, "en") # type: ignore
+    elif isinstance(ctx, int):
+        language = client.language.user.get(ctx) or \
+            client.language.guild.get(ctx)
     else:
         language = None
         if user:

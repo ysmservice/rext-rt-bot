@@ -25,8 +25,10 @@ __all__ = ("EventContext", "OnErrorContext", "RTEvent")
 class EventContext:
     "イベントデータを格納する`Context`のベースです。"
 
+    event: str
+
     def __init__(
-        self, target: Optional[Target] = None, status: str = "SUCCESS",
+        self, bot: RT, target: Optional[Target | int] = None, status: str = "SUCCESS",
         subject: str | Text = "", detail: str | Text = "",
         feature: Feature = ("Unknown", "..."),
         log: bool = True, **kwargs
@@ -38,9 +40,9 @@ class EventContext:
         self.log, self.status, self.target = log, status, target
         # 文字列はもし辞書の場合は`t`を通す。
         if isinstance(subject, dict):
-            subject = t(subject, target)
+            subject = t(subject, target, client=bot)
         if isinstance(detail, dict):
-            detail = t(detail, target)
+            detail = t(detail, target, client=bot)
         self.detail = "{}{}".format(
             f"{subject}\n" if subject and detail else "",
             detail
@@ -51,7 +53,7 @@ class EventContext:
         "格納されているデータを辞書にします。"
         return {
             key: value for key, value in self.__dict__.items()
-            if key in self.keys or key in ("status", "detail", "target", "feature")
+            if key in self.keys or key in ("event", "status", "detail", "target", "feature")
         }
 
     def dumps(self) -> str:
@@ -96,7 +98,7 @@ class RTEvent(Cog):
             async def new_(*args, **kwargs):
                 try: return await original(*args, **kwargs)
                 except Exception as e:
-                    self.dispatch("on_error", OnErrorContext(error=e, function=original))
+                    self.dispatch("on_error", OnErrorContext(self.bot, error=e, function=original))
             function = new_
         else:
             original = function
@@ -104,7 +106,7 @@ class RTEvent(Cog):
             def new(*args, **kwargs):
                 try: return original(*args, **kwargs)
                 except Exception as e:
-                    self.dispatch("on_error", OnErrorContext(error=e, function=original))
+                    self.dispatch("on_error", OnErrorContext(self.bot, error=e, function=original))
             function = new
         setattr(function, "__is_coroutine__", is_coro)
         setattr(function, "__event_name__", event_name)
@@ -121,12 +123,13 @@ class RTEvent(Cog):
                     break
             else: raise KeyError("イベントが見つかりませんでした。: %s" % target)
 
-    def dispatch(self, event: str, *args, **kwargs) -> None:
+    def dispatch(self, event: str, context: EventContext) -> None:
         "イベントを実行します。"
+        context.event = event
         if event != "on_dispatch":
-            self.dispatch("on_dispatch", event, args, kwargs)
+            self.dispatch("on_dispatch", context)
         for function in self.listeners[event]:
-            coro = function(*args, **kwargs)
+            coro = function(context)
             if getattr(function, "__is_coroutine__"):
                 create_task(coro, name=f"Run RTEvent: {event}")
 

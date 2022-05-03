@@ -181,15 +181,15 @@ class RTA(Cog):
                         )
                     except discord.Forbidden:
                         self.bot.rtevent.dispatch("on_immediate_quit", ImmediateExitContext(
-                            member.guild, "ERROR", self.SUBJECT, Cog.FORBIDDEN, self.rta
+                            self.bot, member.guild, "ERROR", self.SUBJECT, Cog.FORBIDDEN, self.rta
                         ))
                     except Exception as e:
                         self.bot.rtevent.dispatch("on_immediate_quit", ImmediateExitContext(
-                            member.guild, "ERROR", self.SUBJECT, self.error_to_text(e), self.rta
+                            self.bot, member.guild, "ERROR", self.SUBJECT, self.error_to_text(e), self.rta
                         ))
                     else:
                         self.bot.rtevent.dispatch("on_immediate_quit", ImmediateExitContext(
-                            member.guild, "SUCCESS", self.SUBJECT, "", self.rta
+                            self.bot, member.guild, "SUCCESS", self.SUBJECT, "", self.rta
                         ))
                     self.sended[f"{member.guild.id}-{member.id}"] = time()
 
