@@ -60,8 +60,14 @@ class Cacher(Generic[KeyT, ValueT]):
         if self.default is not None and key not in self.data:
             self.set(key, self.default())
 
+    def update_deadline(self, key: KeyT, additional: Optional[float] = None) -> None:
+        "指定されたデータの寿命を更新します。"
+        if (new := additional or self.lifetime) is not None:
+            self.data[key].update_deadline(new)
+
     def __getitem__(self, key: KeyT) -> ValueT:
         self._default(key)
+        self.update_deadline(key)
         return self.data[key].data
 
     def __getattr__(self, key: KeyT) -> ValueT:

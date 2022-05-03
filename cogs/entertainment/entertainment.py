@@ -25,7 +25,7 @@ class Entertainment(Cog):
     @commands.command(description="Search minecraft user", fsparent=FSPARENT)
     @app_commands.describe(user="Minecraft user name")
     async def minecraft(self, ctx, *, user: str):
-        await ctx.trigger_typing()
+        await ctx.typing()
         try:
             result = await search(self.session, user)
         except NotFound:

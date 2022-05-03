@@ -9,7 +9,9 @@ from orjson import loads
 
 __all__ = (
     "SECRET", "DATA", "CANARY", "get_category", "HOST_PORT", "URL", "API_URL", "SHARD",
-    "TEST", "PREFIXES", "ADMINS", "Colors", "EMOJIS", "SUPPORT_SERVER", "PERMISSION_TEXTS"
+    "TEST", "PREFIXES", "ADMINS", "Colors", "EMOJIS", "SUPPORT_SERVER", "PERMISSION_TEXTS",
+    "SETTING_NOTFOUND", "SET_ALIASES", "DELETE_ALIASES", "ADD_ALIASES", "REMOVE_ALIASES",
+    "SHOW_ALIASES"
 )
 
 
@@ -128,3 +130,14 @@ PERMISSION_TEXTS = {
     "add_reactions": {"ja": "リアクションの追加", "en": "Add reactions"}
 }
 "権限の日本語での名前"
+
+
+SETTING_NOTFOUND = {
+    "ja": "設定が見つかりませんでした。",
+    "en": "Setting not found."
+}
+SET_ALIASES = ("s", "設定")
+DELETE_ALIASES = ("del", "削除")
+ADD_ALIASES = ("a", "追加")
+REMOVE_ALIASES = ("rm", "削除")
+SHOW_ALIASES = ("sw", "now", "見る", "現在")

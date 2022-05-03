@@ -59,7 +59,7 @@ class Prefix(Cog):
     @commands.has_guild_permissions(administrator=True)
     @app_commands.describe(prefix="A Custom prefix")
     async def prefix(self, ctx: commands.Context, *, prefix: Optional[str] = None):
-        await ctx.trigger_typing()
+        await ctx.typing()
         await self.data.prepare_table()
         await self.data.set(ctx.guild.id, prefix) # type: ignore
         if prefix is None:

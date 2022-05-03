@@ -191,7 +191,7 @@ class HelpCommand(Help):
             key: self.full_qualified(
                 key, {"message": args, "slash": args}
             ) for key in ("ja", "en")
-        }, detail)
+        }, detail, "\n")
         if "Examples" in self.extras:
             self.extras["Examples"] = concat_text(self.extras["Examples"], data, "\n")
         else:
@@ -223,10 +223,14 @@ class HelpCommand(Help):
 
     def to_str(self, language: str, first = False) -> str:
         return "".join((
-            f"**{self.title}**\n\n" if self.command.parent or first else "",
-            f"{gettext(self.description, language)}\n\n**#** ",
-            f"{get_inner_text(EXTRAS, 'How', language)}\n",
-            self.full_qualified(language), self.args_text(language, "\n\n"),
+            f"**{self.command.qualified_name}**\n\n"
+                if self.command.parent or not first else "",
+            gettext(self.description, language),
+            *((
+                f"\n\n**#** {get_inner_text(EXTRAS, 'How', language)}\n",
+                self.full_qualified(language),
+                self.args_text(language, "\n\n")
+            ) if not isinstance(self.command, commands.Group) else ()),
             self.extras_text(language, "\n\n")
         ))
 

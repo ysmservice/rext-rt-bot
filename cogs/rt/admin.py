@@ -34,18 +34,18 @@ class Admin(Cog):
     @discord.app_commands.describe(choice="Something will be reloaded.")
     async def reload(self, ctx: commands.Context, *, choice: Literal["help"]):
         if choice == "help":
-            await ctx.trigger_typing()
+            await ctx.typing()
             await self.bot.cogs["Help"].aioload() # type: ignore
         else:
             return await ctx.reply(t(dict(
                 ja="何をすれば良いかわかりません。", en="I don't know what to do."
-            )))
+            ), ctx))
         await ctx.reply("Ok")
 
     @admin.command(aliases=("db", "データベース"), description="Run sql")
     @discord.app_commands.describe(sql="SQL code")
     async def sql(self, ctx: commands.Context, *, sql: str):
-        await ctx.trigger_typing()
+        await ctx.typing()
         async with self.bot.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(sql)
@@ -98,7 +98,7 @@ class Admin(Cog):
 
     @admin.command(aliases=("m", "モニター"), description="Displays CPU utilization, etc.")
     async def monitor(self, ctx: commands.Context):
-        await ctx.trigger_typing()
+        await ctx.typing()
         embed = await self.make_monitor_embed()
         embed.add_field(name="Tasks", value=len(all_tasks()))
         await ctx.reply(embed=embed)

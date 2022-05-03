@@ -85,7 +85,7 @@ class RTLog(Cog):
     @rtlog.command(description="Clear RT Log")
     @commands.cooldown(1, 15, commands.BucketType.guild)
     async def clear(self, ctx: commands.Context):
-        await ctx.trigger_typing()
+        await ctx.typing()
         await self.bot.log.data.clear(ctx.author.id if ctx.guild is None else ctx.guild.id)
         await ctx.reply("Ok")
 

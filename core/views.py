@@ -10,6 +10,7 @@ import discord
 
 from discord.ext.fslash import Context
 
+from .types_ import Text
 from .utils import separate
 
 from .__init__ import t
@@ -187,6 +188,19 @@ class EmbedPage(BasePage):
 
     def on_edit(self, _: discord.Interaction, **kwargs):
         return kwargs
+
+    async def first_reply(
+        self, ctx: Context | OriginalContext, if_none: Text = dict(
+            ja="何もありません。", en="Nothing."
+        )
+    ) -> None:
+        "一番最初の返信をします。"
+        if len(self.embeds) > 1:
+            self.set_message(ctx, await ctx.reply(embeds=self.embeds[0], view=self)) # type: ignore
+        elif self.embeds:
+            await ctx.reply(embeds=self.embeds[0])
+        else:
+            await ctx.reply(t(if_none, ctx))
 
 
 class NoEditEmbedPage(EmbedPage):

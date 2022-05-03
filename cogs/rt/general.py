@@ -10,6 +10,7 @@ import discord
 
 from rtlib.common.utils import make_error_message
 
+from core.converters import DateTimeFormatNotSatisfiable
 from core.utils import make_default
 from core.views import TimeoutView
 from core.cacher import Cacher
@@ -172,6 +173,11 @@ class General(Cog):
             color=getattr(self.bot.Colors, color)
         ), view=view)
 
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if not message.content.startswith(tuple(await self.bot.get_prefix(message))):
+            self.bot.dispatch("message_noprefix", message)
+
     BAD_ARGUMENT = staticmethod(lambda ctx, code: t(dict(
         ja="引数がおかしいです。\nCode:`{code}`", en="The argument format is incorrect.\nCode:`{code}`"
     ), ctx, code=code))
@@ -207,12 +213,16 @@ class General(Cog):
         if isinstance(error, commands.CommandInvokeError) and not retry:
             return await self.on_command_error(ctx, error.original, True)
         elif isinstance(error, AssertionError):
+            reply = False
             if isinstance(error.args[0], tuple):
                 status, content = error.args[0]
             else:
+                reply = True
                 content = error.args[0]
             if isinstance(content, dict):
                 content = t(content, ctx)
+            if reply:
+                return await ctx.reply(content)
         elif isinstance(error, commands.UserInputError):
             content = self.BAD_ARGUMENT(ctx, error)
             if isinstance(error, commands.MissingRequiredArgument):
@@ -229,6 +239,11 @@ class General(Cog):
                     content = t(dict(
                         ja="期待される値の種類：{kind}", en="Expected Kind of Value: {kind}"
                     ), ctx, kind=kind)
+                elif isinstance(error, DateTimeFormatNotSatisfiable):
+                    content = t(dict(
+                        ja="指定された時間のフォーマットが正しくありません。",
+                        en="The format of the time specified is incorrect."
+                    ), ctx)
                 elif isinstance(error, commands.ChannelNotReadable):
                     content = t(dict(
                         ja="指定されたチャンネルが見えません。", en="The specified channel is not visible."
@@ -241,7 +256,7 @@ class General(Cog):
                     content = t(dict(
                         ja="真偽地がおかしいです。\n有効な真偽地：True/False, on/off, 1/0",
                         en="The specified boolean value is wrong.\nValid Values: True/False, on/off, 1/0"
-                    ))
+                    ), ctx)
                 elif isinstance(error, (commands.BadUnionArgument, commands.BadLiteralArgument)):
                     if isinstance(error, commands.BadLiteralArgument):
                         extra = "\n{}".format(t(

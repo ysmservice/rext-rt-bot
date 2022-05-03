@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypeVar, Optional, Any
-from collections.abc import Coroutine, Callable, Iterator, Sequence
+from collections.abc import Coroutine, Callable, Iterator, Iterable, Sequence
 
 from inspect import cleandoc, getfile
 
@@ -12,9 +12,9 @@ import discord
 
 from discord.ext.fslash import _get as get_kwarg, Context
 
-from aiomysql import Cursor
-
 from rtlib.common.utils import make_error_message
+
+from data import TEST, CANARY, Colors
 
 if TYPE_CHECKING:
     from .types_ import Text, Feature, CmdGrp
@@ -24,9 +24,9 @@ if TYPE_CHECKING:
 
 __all__ = (
     "get_inner_text", "separate", "separate_from_list", "set_page",
-    "to_dict_for_dataclass", "get_name_and_id_str", "gettext", "cleantext", "quick_log",
+    "get_name_and_id_str", "gettext", "cleantext", "quick_log",
     "make_default", "get_kwarg", "truncate", "unwrap", "concat_text", "quick_invoke_command",
-    "get_fsparent"
+    "get_fsparent", "webhook_send", "artificially_send"
 )
 
 
@@ -175,7 +175,7 @@ async def unwrap(
 
 
 # 埋め込み関連
-def separate_from_list(texts: list[str], max_: int = 2000, join: str = "") -> Iterator[str]:
+def separate_from_list(texts: Iterable[str], max_: int = 2000, join: str = "") -> Iterator[str]:
     "渡された文字列のリストを特定の文字数のタイミングで分割します。"
     length, tentative = 0, ""
     for text in texts:
@@ -201,12 +201,46 @@ def set_page(
         )))
 
 
-to_dict_for_dataclass: Callable[..., dict[str, Any]] = lambda self: {
-    key: getattr(self, key) for key in self.__class__.__annotations__.keys()
-}
-"データクラスのデータを辞書として出力する`to_dict`を作成します。"
-
-
 def get_name_and_id_str(obj: discord.abc.Snowflake):
     "渡されたオブジェクトの名前とIDが書き込まれた文字列を作ります。"
     return f"{obj} (`{obj.id}`)"
+
+
+if CANARY:
+    WEBHOOK_NAME = "R2-Tool"
+elif TEST:
+    WEBHOOK_NAME = "R3-Tool"
+else:
+    WEBHOOK_NAME = "RT-Tool"
+
+
+async def webhook_send(
+    channel: discord.TextChannel, member: discord.Member,
+    *args, **kwargs
+) -> discord.WebhookMessage:
+    "指定されたメンバーの名前とアイコンを使ってWebhookでメッセージを送信します。"
+    kwargs.setdefault("username", member.display_name)
+    kwargs.setdefault("avatar_url", getattr(member.display_avatar, "url", ""))
+    if (webhook := discord.utils.get(await channel.webhooks(), name=WEBHOOK_NAME)) is None:
+        webhook = await channel.create_webhook(name=WEBHOOK_NAME, reason="For RT Tool")
+    return await webhook.send(*args, **kwargs)
+
+
+async def artificially_send(
+    channel: discord.TextChannel | discord.Thread,
+    member: discord.Member, content: str | None,
+    *args, additional_name: str = "", **kwargs
+) -> discord.WebhookMessage | discord.Message:
+    "Webhookまたは埋め込みの送信で、あたかも渡されたメンバーが送信したメッセージのように、メッセージを送信します。"
+    name = f"{member.display_name}{additional_name}"
+    if isinstance(channel, discord.Thread):
+        kwargs.setdefault("embeds", [])
+        kwargs["embeds"].insert(0, discord.Embed(
+            description=content, color=Colors.normal
+        ).set_author(
+            name=name, icon_url=getattr(member.display_avatar, "url", "")
+        ))
+        return await channel.send(*args, **kwargs)
+    else:
+        kwargs["username"] = name
+        return await webhook_send(channel, member, content, *args, **kwargs)

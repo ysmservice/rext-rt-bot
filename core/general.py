@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypeVar, Optional, Any
 
-from discord.ext.commands import Cog as OriginalCog
+from discord.ext.commands import Cog as OriginalCog, Context
 from discord.ext.fslash import is_fslash
 import discord
 
@@ -96,6 +96,13 @@ class Cog(OriginalCog):
     )
     EventContext: type[EventContext]
     bot: RT
+
+    async def group_index(self, ctx: Context) -> None:
+        "グループコマンドが実行された際に「使用方法が違います」と返信します。"
+        if not ctx.invoked_subcommand:
+            await ctx.reply(t({
+                "ja": "使用方法が違います。", "en": "It is wrong way to use this command."
+            }, ctx))
 
     @staticmethod
     def mention_and_id(obj: MentionIdObj) -> str:

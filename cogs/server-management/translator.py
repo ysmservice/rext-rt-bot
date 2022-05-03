@@ -39,7 +39,7 @@ class Translator(Cog):
     )
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def translate_(self, ctx: commands.Context, language: str, *, content: str):
-        await ctx.trigger_typing()
+        await ctx.typing()
 
         if language == "auto":
             # もし自動で翻訳先を判別するなら英文字が多いなら日本語にしてそれ以外は英語にする。
