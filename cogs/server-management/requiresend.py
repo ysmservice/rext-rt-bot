@@ -57,19 +57,19 @@ class DataManager(DatabaseManager):
         "テーブルを作ります。"
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS RequireSent (
-                GuildID BIGINT, ChannelID BIGINT, Deadline FLOAT
+                GuildId BIGINT, ChannelId BIGINT, Deadline FLOAT
             );"""
         )
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS RequireSentQueue (
-                GuildID BIGINT, UserID BIGINT, Done JSON
+                GuildId BIGINT, UserId BIGINT, Done JSON
             );"""
         )
 
     async def get(self, guild_id: int, **_) -> dict[int, float]:
         "サーバーの設定を読み込みます。"
         await cursor.execute(
-            "SELECT ChannelID, Deadline FROM RequireSent WHERE GuildID = %s;",
+            "SELECT ChannelId, Deadline FROM RequireSent WHERE GuildId = %s;",
             (guild_id,)
         )
         self.caches.settings[guild_id] = {row[0]: row[1] for row in await cursor.fetchall() if row}
@@ -92,7 +92,7 @@ class DataManager(DatabaseManager):
         "設定を削除します。"
         assert channel_id in await self.get(guild_id, cursor=cursor), SETTING_NOTFOUND
         await cursor.execute(
-            "DELETE FROM RequireSent WHERE GuildID = %s;",
+            "DELETE FROM RequireSent WHERE GuildId = %s;",
             (guild_id,)
         )
         if guild_id in self.caches.settings and channel_id in self.caches.settings[guild_id]:
@@ -100,8 +100,8 @@ class DataManager(DatabaseManager):
 
     async def clear(self, guild_id: int, **_) -> None:
         "指定されたサーバーの設定を全部消します。"
-        await cursor.execute("DELETE FROM RequireSent WHERE GuildID = %s;", (guild_id,))
-        await cursor.execute("DELETE FROM RequireSentQueue WHERE GuildID = %s;", (guild_id,))
+        await cursor.execute("DELETE FROM RequireSent WHERE GuildId = %s;", (guild_id,))
+        await cursor.execute("DELETE FROM RequireSentQueue WHERE GuildId = %s;", (guild_id,))
 
     def check_exists_both(self, guild_id: int, user_id: int) -> bool:
         "指定されたギルドIDとユーザーIDのキューがあるかをチェックします。"
@@ -110,7 +110,7 @@ class DataManager(DatabaseManager):
     async def delete_queue(self, guild_id: int, user_id: int, **_) -> None:
         "キューを削除します。"
         await cursor.execute(
-            "DELETE FROM RequireSentQueue WHERE GuildID = %s AND UserID = %s;",
+            "DELETE FROM RequireSentQueue WHERE GuildId = %s AND UserId = %s;",
             (guild_id, user_id)
         )
         if self.check_exists_both(guild_id, user_id):
@@ -124,12 +124,12 @@ class DataManager(DatabaseManager):
                 del self.caches.queues[guild_id][user_id]
         else:
             await cursor.execute(
-                "SELECT UserID FROM RequireSentQueue WHERE GuildID = %s AND UserID = %s;",
+                "SELECT UserId FROM RequireSentQueue WHERE GuildId = %s AND UserId = %s;",
                 (guild_id, user_id)
             )
             if await cursor.fetchone():
                 await cursor.execute(
-                    "UPDATE RequireSentQueue SET Done = %s WHERE GuildID = %s AND UserID = %s;",
+                    "UPDATE RequireSentQueue SET Done = %s WHERE GuildId = %s AND UserId = %s;",
                     (dumps(done).decode(), guild_id, user_id)
                 )
             else:
@@ -144,7 +144,7 @@ class DataManager(DatabaseManager):
         "指定されたサーバーのキューを全て取得します。"
         if guild_id not in self.caches.queues:
             await cursor.execute(
-                "SELECT UserID, Done FROM RequireSentQueue WHERE GuildID = %s;",
+                "SELECT UserId, Done FROM RequireSentQueue WHERE GuildId = %s;",
                 (guild_id,)
             )
             self.caches.queues[guild_id] = {
@@ -207,15 +207,15 @@ class DataManager(DatabaseManager):
         async for row in self.fetchstep(cursor, "SELECT * FROM RequireSent;"):
             if not await self.cog.bot.exists("guild", row[0]):
                 await cursor.execute(
-                    "DELETE FROM RequireSent WHERE GuildID = %s;",
+                    "DELETE FROM RequireSent WHERE GuildId = %s;",
                     row[:1]
                 )
             elif await self.cog.bot.exists("channel", row[1]):
                 await cursor.execute(
-                    "DELETE FROM RequireSent WHERE ChannelID = %s;",
+                    "DELETE FROM RequireSent WHERE ChannelId = %s;",
                     (row[1],)
                 )
-        await self.clean_data(cursor, "RequireSentQueue", "GuildID")
+        await self.clean_data(cursor, "RequireSentQueue", "GuildId")
 
 
 class RequireSent(Cog):

@@ -38,7 +38,7 @@ class DataManager(DatabaseManager):
         "テーブルを作ります。"
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS Expander (
-                GuildID BIGINT PRIMARY KEY NOT NULL,
+                GuildId BIGINT PRIMARY KEY NOT NULL,
                 Method ENUM("webhook", "nowebhook", "none")
             );"""
         )
@@ -47,7 +47,7 @@ class DataManager(DatabaseManager):
         "設定を読み込みます。"
         if guild_id not in self.caches:
             await cursor.execute(
-                "SELECT Method FROM Expander WHERE GuildID = %s;",
+                "SELECT Method FROM Expander WHERE GuildId = %s;",
                 (guild_id,)
             )
             self.caches[guild_id] = getattr(Method, row[0]) \
@@ -65,7 +65,7 @@ class DataManager(DatabaseManager):
 
     async def clean(self) -> None:
         "お掃除をします。"
-        await self.clean_data(cursor, "Expander", "GuildID")
+        await self.clean_data(cursor, "Expander", "GuildId")
 
 
 PATTERN =  (

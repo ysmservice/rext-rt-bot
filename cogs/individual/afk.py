@@ -60,19 +60,19 @@ class DataManager(DatabaseManager):
         "テーブルを用意します。"
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS afk (
-                UserID BIGINT NOT NULL PRIMARY KEY, Content TEXT
+                UserId BIGINT NOT NULL PRIMARY KEY, Content TEXT
             );"""
         )
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS AutoAfk (
-                UserID BIGINT, Id TEXT, Timing JSON, Content TEXT
+                UserId BIGINT, Id TEXT, Timing JSON, Content TEXT
             );"""
         )
 
     async def get(self, user_id: int, **_) -> str | None:
         "AFKを取得します。"
         await cursor.execute(
-            "SELECT Content FROM afk WHERE UserID = %s;", (user_id,)
+            "SELECT Content FROM afk WHERE UserId = %s;", (user_id,)
         )
         if row := await cursor.fetchone():
             return row[0]
@@ -85,7 +85,7 @@ class DataManager(DatabaseManager):
                 "en": "AFK is not set to anything from the beginning."
             }
             await cursor.execute(
-                "DELETE FROM afk WHERE UserID = %s;",
+                "DELETE FROM afk WHERE UserId = %s;",
                 (user_id,)
             )
             if user_id in self.cog.caches.afk:
@@ -100,7 +100,7 @@ class DataManager(DatabaseManager):
     async def get_automations(self, user_id: int, **_) -> list[Automation]:
         "指定されたユーザーのAFKオートメーションのデータを全て取得します。"
         await cursor.execute(
-            "SELECT * FROM AutoAfk WHERE UserID = %s;",
+            "SELECT * FROM AutoAfk WHERE UserId = %s;",
             (user_id,)
         )
         data = []
@@ -111,7 +111,7 @@ class DataManager(DatabaseManager):
     async def get_automation(self, user_id: int, id_: str) -> None:
         "AFKオートメーションのデータを取得します。"
         await cursor.execute(
-            "SELECT Id, Timing, Content FROM AutoAfk WHERE UserID = %s AND Id = %s;",
+            "SELECT Id, Timing, Content FROM AutoAfk WHERE UserId = %s AND Id = %s;",
             (user_id, id_)
         )
 
@@ -150,7 +150,7 @@ class DataManager(DatabaseManager):
             assert await self.check_exists(user_id, id_, cursor=cursor) + 1, SETTING_NOTFOUND
         except AssertionError:
             await cursor.execute(
-                "DELETE FROM AutoAfk WHERE UserID = %s AND Id = %s;",
+                "DELETE FROM AutoAfk WHERE UserId = %s AND Id = %s;",
                 (user_id, id_)
             )
             if user_id in self.cog.caches.automation:
@@ -161,8 +161,8 @@ class DataManager(DatabaseManager):
 
     async def clean(self) -> None:
         "掃除をします。"
-        await self.clean_data(cursor, "AutoAfk", "UserID")
-        await self.clean_data(cursor, "afk", "UserID")
+        await self.clean_data(cursor, "AutoAfk", "UserId")
+        await self.clean_data(cursor, "afk", "UserId")
 
 
 @dataclass
@@ -186,13 +186,13 @@ class AFK(Cog, DataManager):
             self.bot.cachers.acquire(15.0),
             self.bot.cachers.acquire(15.0)
         )
-        self.automation_loop.start()
         super(Cog, self).__init__(self) # type: ignore
 
     SUBJECT = {"ja": "AFKの設定", "en": "Set afk"}
 
     async def cog_load(self):
         await self.prepare_table()
+        self.automation_loop.start()
 
     @commands.Cog.listener()
     async def on_message_noprefix(self, message: discord.Message):

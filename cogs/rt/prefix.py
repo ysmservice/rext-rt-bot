@@ -16,7 +16,7 @@ class DataManager(DatabaseManager):
         "テーブルを用意します。"
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS Prefix (
-                GuildID BIGINT PRIMARY KEY NOT NULL, Prefix TEXT
+                GuildId BIGINT PRIMARY KEY NOT NULL, Prefix TEXT
             );"""
         )
         await cursor.execute("SELECT * FROM Prefix;")
@@ -28,7 +28,7 @@ class DataManager(DatabaseManager):
         if prefix is None:
             if guild_id in self.bot.prefixes:
                 await cursor.execute(
-                    "DELETE FROM Prefix WHERE GuildID = %s;", (guild_id,)
+                    "DELETE FROM Prefix WHERE GuildId = %s;", (guild_id,)
                 )
                 del self.bot.prefixes[guild_id]
         else:
@@ -41,9 +41,9 @@ class DataManager(DatabaseManager):
 
     async def clean(self):
         "お掃除します。"
-        async for guild_id in self.fetchstep(cursor, "SELECT GuildID FROM Prefix;"):
+        async for guild_id in self.fetchstep(cursor, "SELECT GuildId FROM Prefix;"):
             if not await self.bot.exists("guild", guild_id[0]):
-                await cursor.execute("DELETE FROM Prefix WHERE GuildID = %s;")
+                await cursor.execute("DELETE FROM Prefix WHERE GuildId = %s;")
 
 
 class Prefix(Cog):

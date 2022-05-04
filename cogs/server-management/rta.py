@@ -24,7 +24,7 @@ class DataManager(DatabaseManager):
     async def get(self, guild_id: int, **_) -> Optional[Channel]:
         "RTAの設定を読み込みます。"
         await cursor.execute(
-            "SELECT ChannelID FROM rta WHERE GuildID = %s;",
+            "SELECT ChannelId FROM rta WHERE GuildId = %s;",
             (guild_id,)
         )
         if row := await cursor.fetchone():
@@ -34,7 +34,7 @@ class DataManager(DatabaseManager):
         "テーブルを用意します。"
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS rta (
-                GuildID BIGINT PRIMARY KEY NOT NULL, ChannelID BIGINT
+                GuildId BIGINT PRIMARY KEY NOT NULL, ChannelId BIGINT
             );"""
         )
 
@@ -45,14 +45,14 @@ class DataManager(DatabaseManager):
             and channel.id == channel_id
         ):
             await cursor.execute(
-                "DELETE FROM rta WHERE GuildID = %s;",
+                "DELETE FROM rta WHERE GuildId = %s;",
                 (guild_id,)
             )
             return False
         else:
             await cursor.execute(
                 """INSERT INTO rta VALUES (%s, %s)
-                    ON DUPLICATE KEY UPDATE ChannelID = %s;""",
+                    ON DUPLICATE KEY UPDATE ChannelId = %s;""",
                 (guild_id, channel_id, channel_id)
             )
             return True
@@ -63,11 +63,11 @@ class DataManager(DatabaseManager):
         async for guild_id, channel_id in self.fetchstep(cursor, "SELECT * FROM rta;"):
             if not await self.bot.exists("guild", guild_id):
                 await cursor.execute(
-                    "DELETE FROM rta WHERE GuildID = %s;", (guild_id,)
+                    "DELETE FROM rta WHERE GuildId = %s;", (guild_id,)
                 )
             elif not await self.bot.exists("channel", channel_id):
                 await cursor.execute(
-                    "DELETE FROM rta WHERE ChannelID = %s;", (channel_id,)
+                    "DELETE FROM rta WHERE ChannelId = %s;", (channel_id,)
                 )
 
 

@@ -19,12 +19,12 @@ class DataManager(DatabaseManager):
         "テーブルを準備します。"
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS GuildLanguage (
-                GuildID BIGINT PRIMARY KEY NOT NULL, Language TINYTEXT
+                GuildId BIGINT PRIMARY KEY NOT NULL, Language TINYTEXT
             );"""
         )
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS UserLanguage (
-                UserID BIGINT PRIMARY KEY NOT NULL, Language TINYTEXT
+                UserId BIGINT PRIMARY KEY NOT NULL, Language TINYTEXT
             );"""
         )
         await self.update_all_cache()
@@ -47,7 +47,7 @@ class DataManager(DatabaseManager):
             lower_mode = mode.lower()
             if getattr(self.bot.language, lower_mode, None) is not None:
                 await cursor.execute(
-                    "DELETE FROM {}Language WHERE {}ID = %s;".format(mode, mode),
+                    "DELETE FROM {}Language WHERE {}Id = %s;".format(mode, mode),
                     (id_,)
                 )
                 del getattr(self.bot.language, lower_mode)[id_]
@@ -64,7 +64,7 @@ class DataManager(DatabaseManager):
         for id_ in self.bot.language.guild.keys():
             if id_ and not await self.bot.exists("guild", id_):
                 await cursor.execute(
-                    "DELETE FROM GuildLanguage WHERE GuildID = %s;",
+                    "DELETE FROM GuildLanguage WHERE GuildId = %s;",
                     (id_,)
                 )
 
