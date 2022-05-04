@@ -13,8 +13,9 @@ import discord
 
 from orjson import loads, dumps
 
-from core.cacher import Cacher
 from core import RT, Cog, t, DatabaseManager, cursor
+
+from rtlib.common.cacher import Cacher
 
 from rtutil.converters import DayOfWeekTimeConverter, TimeConverter, DateTimeFormatNotSatisfiable
 from rtutil.utils import set_page, separate_from_iterable, artificially_send

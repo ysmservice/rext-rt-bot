@@ -60,8 +60,8 @@ def t(text: Text, ctx: Any, **kwargs) -> str:
     if client is None:
         text = gettext(text, "en") # type: ignore
     elif isinstance(ctx, int):
-        language = client.language.user.get(ctx) or \
-            client.language.guild.get(ctx)
+        text = gettext(text, client.language.user.get(ctx) # type: ignore
+            or client.language.guild.get(ctx))
     else:
         language = None
         if user:

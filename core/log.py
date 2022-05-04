@@ -201,13 +201,12 @@ class LogCore(Cog):
     async def cog_load(self):
         await self.data.prepare_table()
 
-    async def on_dispatch(self, _, args, __):
+    async def on_dispatch(self, ctx: Cog.EventContext):
         # RTイベントで`log`が`True`のContextが引数にある場合は、ログに流す。
-        if (ctx := self.bot.rtevent.get_context(args)) is not None and ctx.log:
-            assert ctx.target is not None
-            await self.__call__(LogData.quick_make(
-                ctx.feature, ctx.status, ctx.target, ctx.detail
-            ))
+        assert ctx.target is not None
+        await self.__call__(LogData.quick_make(
+            ctx.feature, ctx.status, ctx.target, ctx.detail
+        ))
 
     async def __call__(self, data: LogData):
         self.bot.dispatch("log", data)

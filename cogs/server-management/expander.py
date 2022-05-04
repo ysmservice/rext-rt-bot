@@ -12,7 +12,8 @@ from discord.ext import commands
 import discord
 
 from core import RT, Cog, t, DatabaseManager, cursor
-from core.cacher import Cacher
+
+from rtlib.common.cacher import Cacher
 
 from rtutil.utils import unwrap_or, artificially_send
 

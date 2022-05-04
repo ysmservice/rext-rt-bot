@@ -145,7 +145,10 @@ class HelpCommand(Help):
 
     def __init__(self, command: CmdGrp, set_help: bool = True, **kwargs):
         self.command = command
-        self.fsparent = _get(command, "fsparent", None)
+        if self.command.parent is None:
+            self.fsparent = _get(command, "fsparent", None)
+        else:
+            self.fsparent = _get(self.command.root_parent, "fsparent", None)
         self.args: list[tuple[str, Text, Text | None, Text]] = []
         super().__init__(**kwargs)
         # ここ以降はコマンドからの自動設定です。

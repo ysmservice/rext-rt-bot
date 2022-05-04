@@ -28,7 +28,8 @@ from rtlib.common import set_handler
 
 from data import DATA, CATEGORIES, PREFIXES, SECRET, TEST, SHARD, ADMINS, URL, API_URL, Colors
 
-from .cacher import CacherPool, Cacher
+from rtlib.common.cacher import CacherPool, Cacher
+
 from .rtws import setup
 from . import tdpocket
 

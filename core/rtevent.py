@@ -126,7 +126,7 @@ class RTEvent(Cog):
     def dispatch(self, event: str, context: EventContext) -> None:
         "イベントを実行します。"
         context.event = event
-        if event != "on_dispatch":
+        if event not in ("on_dispatch", "on_error"):
             self.dispatch("on_dispatch", context)
         for function in self.listeners[event]:
             coro = function(context)

@@ -5,10 +5,10 @@ from __future__ import annotations
 from discord.ext import commands
 import discord
 
-from core.cacher import Cacher
 from core import Cog, RT, t
 
 from rtlib.common.utils import code_block
+from rtlib.common.cacher import Cacher
 
 from rtutil.minesweeper import Minesweeper
 from rtutil.views import TimeoutView

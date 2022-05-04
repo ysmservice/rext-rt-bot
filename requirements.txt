@@ -22,7 +22,3 @@ deep_translator
 bs4
 lxml
 pillow
-
-# For mypy
-types-orjson
-types-aiofiles

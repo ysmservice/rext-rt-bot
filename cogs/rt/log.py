@@ -12,7 +12,7 @@ import discord
 
 from core.utils import truncate, make_default, concat_text
 from core.types_ import Text
-from core.cacher import Cacher
+from rtlib.common.cacher import Cacher
 from core.log import LogData
 from core import RT, Cog, t
 
