@@ -159,7 +159,7 @@ class Expander(Cog):
         if mode is None:
             await ctx.reply(t(dict(
                 ja="現在の設定：`{data}`", en="Current setting: `{data}`"
-            ), ctx, data=await self.data.read(ctx.guild.id)))
+            ), ctx, data=(await self.data.read(ctx.guild.id)).name))
         else:
             await self.data.write(ctx.guild.id, getattr(Method, mode))
             await ctx.reply("Ok")
