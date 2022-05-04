@@ -66,6 +66,7 @@ class RT(commands.Bot):
         self.prefixes = {}
         self.language = Caches({}, {})
         self.ipcs = IpcsClient(str(self.shard_id))
+        self.ipcs.set_route(self.exists_object, "exists")
 
         extend_force_slash(self, replace_invalid_annotation_to_str=True,
         first_groups=[discord.app_commands.Group(
@@ -158,7 +159,7 @@ class RT(commands.Bot):
         "バックエンドにリクエストをします。"
         return await self.ipcs.request("__IPCS_SERVER__", route, *args, **kwargs)
 
-    async def exists_all(self, mode: str, id_: int) -> bool:
+    async def exists(self, mode: str, id_: int) -> bool:
         "指定されたオブジェクトがRTが見える範囲に存在しているかを確認します。"
         value = self.exists_caches.get(id_, False)
         if value is None:
@@ -191,7 +192,7 @@ class RT(commands.Bot):
         self.print("Closed ipcs")
         return await super().close()
 
-    def exists(self, mode: str, id_: int) -> bool:
+    def exists_object(self, mode: str, id_: int) -> bool:
         "指定されたIDの存在確認をします。"
         return getattr(self, f"get_{mode}")(id_) is not None
 

@@ -62,7 +62,7 @@ class DataManager(DatabaseManager):
     async def clean(self):
         "ゴミデータを消します。"
         for id_ in self.bot.language.guild.keys():
-            if id_ and not await self.bot.exists_all("guild", id_):
+            if id_ and not await self.bot.exists("guild", id_):
                 await cursor.execute(
                     "DELETE FROM GuildLanguage WHERE GuildID = %s;",
                     (id_,)

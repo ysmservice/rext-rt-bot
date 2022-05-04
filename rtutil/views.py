@@ -148,9 +148,8 @@ class EmbedPage(BasePage):
                 self.select.add_option(label=f"{i} Page", value=str(i))
             self.add_item(self.select)
 
-    @property
     @cache
-    def length(self) -> int:
+    def get_length(self) -> int:
         return len(self.embeds)
 
     async def on_select(self, interaction: discord.Interaction):

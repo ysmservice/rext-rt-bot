@@ -58,7 +58,7 @@ class HelpSelect(discord.ui.Select):
             view = HelpView(
                 self.view.cog, self.view.language, self.view.cog.make_parts(
                     self.view.language, category, command
-                ), self.view.target # type: ignore
+                ), self.view.target
             )
             await interaction.response.edit_message(embed=view.page.embeds[0], view=view)
             view.set_message(interaction)
@@ -80,7 +80,7 @@ class HelpView(TimeoutView):
         embeds: list[discord.Embed] = []
         if isinstance(self.parts[2], str):
             embeds = list(separate_to_embeds(
-                self.parts[2], lambda x: Cog.Embed(self.parts[1], description=x), # type: ignore
+                self.parts[2], lambda x: Cog.Embed(self.parts[1], description=x),
                 lambda text: text[:2000]
             ))
         else:
@@ -119,7 +119,7 @@ RESULT_TYPES = {
 }
 
 
-class HelpCog(Cog, name="Help"):
+class HelpCog(Cog, name="Help"): # type: ignore
     def __init__(self, bot: RT):
         self.bot = bot
 
@@ -128,8 +128,9 @@ class HelpCog(Cog, name="Help"):
         command_name: Optional[str] = None
     ) -> EmbedParts:
         "ヘルプ用の埋め込みのパーツを作る。"
-        level = 0
-        description, title = FIRST_OF_HELP[language], "Help"
+        level: Literal[0, 1, 2] = 0
+        description: str | list[str] = FIRST_OF_HELP[language]
+        title = "Help"
         command, category = None, None
         if command_name is not None and category_name is not None:
             level = 2
@@ -207,7 +208,7 @@ class HelpCog(Cog, name="Help"):
                 )) for key in ("contain", "detail_contain")),
                 lambda text: self.embed(description=text)
             )))
-            if view.length > 1:
+            if view.get_length() > 1:
                 view.set_message(ctx, await ctx.reply(embed=view.embeds[0], view=view))
             else:
                 await ctx.reply(embed=view.embeds[0])

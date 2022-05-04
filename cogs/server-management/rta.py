@@ -60,11 +60,11 @@ class DataManager(DatabaseManager):
         "いらないセーブデータを消します。"
         await cursor.execute("SELECT * FROM rta;")
         async for guild_id, channel_id in self.fetchstep(cursor, "SELECT * FROM rta;"):
-            if not await self.bot.exists_all("guild", guild_id):
+            if not await self.bot.exists("guild", guild_id):
                 await cursor.execute(
                     "DELETE FROM rta WHERE GuildID = %s;", (guild_id,)
                 )
-            elif not await self.bot.exists_all("channel", channel_id):
+            elif not await self.bot.exists("channel", channel_id):
                 await cursor.execute(
                     "DELETE FROM rta WHERE ChannelID = %s;", (channel_id,)
                 )
@@ -88,6 +88,7 @@ class RTA(Cog):
 
     @commands.group(description="Immediate Quit RTA Feature", fsparent=FSPARENT)
     @commands.has_guild_permissions(administrator=True)
+    @commands.guild_only()
     async def rta(self, ctx: commands.Context):
         if not ctx.invoked_subcommand:
             await ctx.reply(self.ERRORS["WRONG_WAY"](ctx))

@@ -262,7 +262,7 @@ class HelpCore(Cog):
     def __init__(self, bot: RT):
         self.bot = bot
         self.bot.help_ = self
-        self.data: defaultdict[str, dict[str, Cog.Help]] = defaultdict(dict)
+        self.data: defaultdict[str, dict[str, Help]] = defaultdict(dict)
 
     @commands.Cog.listener()
     async def on_load(self):
@@ -272,7 +272,7 @@ class HelpCore(Cog):
         "ヘルプを追加します。"
         self.data[help_.category][help_.title] = help_
 
-    def make_other_command_help(self, command: commands.Command | commands.Group) -> Cog.Help:
+    def make_other_command_help(self, command: commands.Command | commands.Group) -> Help:
         "`HelpCommand`が用意されていないコマンドから自動でヘルプオブジェクトを作る。"
         assert command.callback.__doc__ is not None or command.description
         return Cog.HelpCommand(command, False) \

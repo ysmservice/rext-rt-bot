@@ -51,9 +51,9 @@ class DataManager(DatabaseManager):
 
     MAX_AUTOMATIONS = 30
 
-    def __init__(self, bot: RT):
-        self.bot = bot
-        self.pool = self.bot.pool
+    def __init__(self, cog: AFK):
+        self.cog = cog
+        self.pool = self.cog.bot.pool
 
     async def prepare_table(self):
         "テーブルを用意します。"
@@ -87,6 +87,8 @@ class DataManager(DatabaseManager):
                 "DELETE FROM afk WHERE UserID = %s;",
                 (user_id,)
             )
+            if user_id in self.cog.caches.afk:
+                del self.cog.caches.afk[user_id]
         else:
             await cursor.execute(
                 """INSERT INTO afk VALUES (%s, %s)
@@ -150,6 +152,11 @@ class DataManager(DatabaseManager):
                 "DELETE FROM AutoAfk WHERE UserID = %s AND Id = %s;",
                 (user_id, id_)
             )
+            if user_id in self.cog.caches.automation:
+                for automation in self.cog.caches.automation[user_id]:
+                    if automation.id_ == id_:
+                        self.cog.caches.automation[user_id].remove(automation)
+                        break
 
     async def clean(self) -> None:
         "掃除をします。"
@@ -179,7 +186,7 @@ class AFK(Cog, DataManager):
             self.bot.cachers.acquire(15.0)
         )
         self.automation_loop.start()
-        super(Cog, self).__init__(self.bot) # type: ignore
+        super(Cog, self).__init__(self) # type: ignore
 
     SUBJECT = {"ja": "AFKの設定", "en": "Set afk"}
 

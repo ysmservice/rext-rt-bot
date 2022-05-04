@@ -11,7 +11,7 @@ __all__ = (
     "SECRET", "DATA", "CANARY", "get_category", "HOST_PORT", "URL", "API_URL", "SHARD",
     "TEST", "PREFIXES", "ADMINS", "Colors", "EMOJIS", "SUPPORT_SERVER", "PERMISSION_TEXTS",
     "SETTING_NOTFOUND", "SET_ALIASES", "DELETE_ALIASES", "ADD_ALIASES", "REMOVE_ALIASES",
-    "SHOW_ALIASES"
+    "SHOW_ALIASES", "ALREADY_NO_SETTING"
 )
 
 
@@ -50,6 +50,7 @@ def get_category(category: str, language: str) -> str:
 TEST = argv[-1] != "production"
 CANARY = "canary" in argv
 SHARD = "shard" in argv
+PREFIXES: tuple[str, ...]
 if TEST:
     if CANARY:
         PREFIXES = ("r2!", "r2.", "r2,")
@@ -136,6 +137,11 @@ SETTING_NOTFOUND = {
     "ja": "設定が見つかりませんでした。",
     "en": "Setting not found."
 }
+ALREADY_NO_SETTING = {
+    "ja": "既に設定がありません。", "en": "There are already no settings."
+}
+
+
 SET_ALIASES = ("s", "設定")
 DELETE_ALIASES = ("del", "削除")
 ADD_ALIASES = ("a", "追加")

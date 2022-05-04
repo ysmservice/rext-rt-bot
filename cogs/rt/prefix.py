@@ -42,7 +42,7 @@ class DataManager(DatabaseManager):
     async def clean(self):
         "お掃除します。"
         async for guild_id in self.fetchstep(cursor, "SELECT GuildID FROM Prefix;"):
-            if not await self.bot.exists_all("guild", guild_id[0]):
+            if not await self.bot.exists("guild", guild_id[0]):
                 await cursor.execute("DELETE FROM Prefix WHERE GuildID = %s;")
 
 

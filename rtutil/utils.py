@@ -68,11 +68,12 @@ async def webhook_send(
 async def artificially_send(
     channel: discord.TextChannel | discord.Thread,
     member: discord.Member, content: str | None,
-    *args, additional_name: str = "", **kwargs
+    *args, additional_name: str = "",
+    mode: str = "webhook", **kwargs
 ) -> discord.WebhookMessage | discord.Message:
     "Webhookまたは埋め込みの送信で、あたかも渡されたメンバーが送信したメッセージのように、メッセージを送信します。"
     name = f"{member.display_name}{additional_name}"
-    if isinstance(channel, discord.Thread):
+    if isinstance(channel, discord.Thread) or mode != "webhook":
         kwargs.setdefault("embeds", [])
         kwargs["embeds"].insert(0, discord.Embed(
             description=content, color=Colors.normal
