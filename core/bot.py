@@ -29,6 +29,7 @@ from rtlib.common import set_handler
 from data import DATA, CATEGORIES, PREFIXES, SECRET, TEST, SHARD, ADMINS, URL, API_URL, Colors
 
 from rtlib.common.cacher import CacherPool, Cacher
+from rtlib.common.utils import make_simple_error_text
 
 from .rtws import setup
 from . import tdpocket
@@ -80,9 +81,15 @@ class RT(commands.Bot):
         return PREFIXES if message.guild is None or message.guild.id not in self.prefixes \
             else PREFIXES + (self.prefixes[message.guild.id],)
 
-    def print(self, *args, **kwargs):
+    def print(self, *args, **kwargs) -> None:
         "ログ出力をします。"
         print("[RT.Bot]", *args, **kwargs)
+
+    def ignore(self, error: Any, *args, subject: str = "error:", **kwargs) -> None:
+        "出来事が無視されたという旨のログ出力をします。"
+        if isinstance(error, Exception):
+            error = make_simple_error_text(error)
+        self.print("[warning] Ignored %s" % subject, error, *args, **kwargs)
 
     async def _load(self, path: str):
         if path.endswith(".py") or isdir(path):
@@ -171,17 +178,48 @@ class RT(commands.Bot):
 
     async def search_user(self, user_id: int) -> Optional[discord.User]:
         "`get_user`または`fetch_user`のどちらかを使用してユーザーデータの取得を試みます。"
-        user = super().get_user(user_id)
+        user = self.get_user(user_id)
         if user is None:
             user = await self.fetch_user(user_id)
         return user
 
-    async def get_member(self, guild: discord.Guild, member_id: int) -> Optional[discord.Member]:
+    def is_sharded(self) -> bool:
+        "シャードが使われているBotかどうかを返します。"
+        return hasattr(self, "shard_ids")
+
+    async def search_guild(self, guild_id: int, consider_shard: bool = True) -> Optional[discord.Guild]:
+        """`get_guild`または`fetch_guild`のどちらかを使用してギルドデータの取得を試みます。
+        これで返されるギルドの`get_member`や`members`そして`channels`などの属性は使えないことがあります。"""
+        guild = self.get_guild(guild_id)
+        if consider_shard and self.is_sharded() \
+                and (guild_id >> 22) % len(getattr(self, "shard_ids")) \
+                    in getattr(self, "shard_ids") \
+                and guild is None:
+            # もし`get_guild`で取得できなかったかつ、ギルドIDから算出したシャードが自分が監視するシャードなら、`fetch_guild`で取得を試みる。
+            guild = await self.fetch_guild(guild_id)
+        return guild
+
+    async def _search_obj_from_guild(
+        self, guild: discord.Guild, id_: int, type_: str,
+        type_for_fetch: Optional[str] = None
+    ) -> Optional[discord.Object]:
+        obj = getattr(guild, f"get_{type_}")(id_)
+        if obj is None:
+            type_for_fetch = type_for_fetch or type_
+            obj = await getattr(guild, f"fetch_{type_}")(id_)
+        return obj
+
+    async def search_member(self, guild: discord.Guild, member_id: int) -> Optional[discord.Member]:
         "Guildの`get_member`または`fetch_member`でメンバーオブジェクトの取得を試みます。"
-        member = guild.get_member(member_id)
-        if member is None:
-            member = await guild.fetch_member(member_id)
-        return member
+        return await self._search_obj_from_guild(guild, member_id, "member") # type: ignore
+
+    async def search_channel(
+        self, guild: discord.Guild, channel_id: int
+    ) -> Optional[discord.abc.GuildChannel | discord.Thread]:
+        "Guildの`get_channel`または`fetch_channel`でチャンネルオブジェクトの取得を試みます。"
+        return await self._search_obj_from_guild(
+            guild, channel_id, "channel_or_thread", "channel"
+        ) # type: ignore
 
     async def close(self):
         self.print("Closing...")

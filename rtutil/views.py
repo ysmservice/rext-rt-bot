@@ -23,13 +23,12 @@ CANT_MODE = dict(
     ja="これ以上ページを捲ることができません。",
     en="I can't turn the page any further."
 )
-class ContainTargetView(discord.ui.View):
-    target: discord.abc.Snowflake | int
 
 
-class TimeoutView(ContainTargetView):
+class TimeoutView(discord.ui.View):
     "タイムアウト時にコンポーネントを使用不可に編集するようにするViewです。"
 
+    target: discord.abc.Snowflake | int
     ctx: Optional[discord.Message | discord.Interaction] = None
 
     async def on_timeout(self):

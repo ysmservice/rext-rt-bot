@@ -5,10 +5,16 @@ from collections.abc import Callable, Iterable, Iterator, Sequence
 
 import discord
 
-from data import TEST, CANARY, Colors
+from core.utils import gettext
+from core import t
+
+from data import TEST, CANARY, PERMISSION_TEXTS, Colors
 
 
-__all__ = ("unwrap_or", "set_page", "webhook_send", "artificially_send")
+__all__ = (
+    "unwrap_or", "set_page", "webhook_send", "artificially_send",
+    "permissions_to_text", "make_nopermissions_text"
+)
 
 
 # discord.py系
@@ -67,9 +73,8 @@ async def webhook_send(
 
 async def artificially_send(
     channel: discord.TextChannel | discord.Thread,
-    member: discord.Member, content: str | None,
-    *args, additional_name: str = "",
-    mode: str = "webhook", **kwargs
+    member: discord.Member, content: str | None = None,
+    additional_name: str = "", mode: str = "webhook", **kwargs
 ) -> discord.WebhookMessage | discord.Message:
     "Webhookまたは埋め込みの送信で、あたかも渡されたメンバーが送信したメッセージのように、メッセージを送信します。"
     name = f"{member.display_name}{additional_name}"
@@ -80,7 +85,27 @@ async def artificially_send(
         ).set_author(
             name=name, icon_url=getattr(member.display_avatar, "url", "")
         ))
-        return await channel.send(*args, **kwargs)
+        return await channel.send(content, **kwargs)
     else:
         kwargs["username"] = name
-        return await webhook_send(channel, member, content, *args, **kwargs)
+        return await webhook_send(channel, member, content, **kwargs)
+
+
+def permissions_to_text(
+    permissions: Iterable[str], ctx: Any, margin: str = "`, `",
+    left: str = "`", right: str = "`"
+) -> str:
+    "権限の名前イテラブルを読みやすい名前の文字列にします。"
+    return "{}{}{}".format(left, margin.join(
+        gettext(value, ctx) if isinstance(ctx, str) else t(value, ctx)
+        for key, value in PERMISSION_TEXTS.items()
+        if key in permissions
+    ), right)
+
+
+def make_nopermissions_text(permissions: Iterable[str], ctx: Any, **kwargs) -> str:
+    "権限がないことを伝えるメッセージの文章を作ります。"
+    return (gettext if isinstance(ctx, str) else t)(dict(
+        ja="権限がありません。\n必要な権限：%s",
+        en="Not authorized.\nRequired Authority: %s"
+    ), ctx) % permissions_to_text(permissions, ctx, **kwargs)

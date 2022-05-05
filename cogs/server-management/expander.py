@@ -14,7 +14,6 @@ import discord
 from core import RT, Cog, t, DatabaseManager, cursor
 
 from rtlib.common.cacher import Cacher
-
 from rtutil.utils import unwrap_or, artificially_send
 
 from .__init__ import FSPARENT

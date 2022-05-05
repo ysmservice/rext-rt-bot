@@ -15,7 +15,6 @@ from orjson import loads, dumps
 from core import RT, Cog, t, DatabaseManager, cursor
 
 from rtlib.common.cacher import Cacher
-
 from rtutil.utils import unwrap_or
 
 from data import (
@@ -164,12 +163,13 @@ class DataManager(DatabaseManager):
         guild, data, now = None, None, time()
         async for row in self.get_all_queues(cursor=cursor):
             if guild is None or guild.id != row[0]:
-                guild = self.cog.bot.get_guild(row[0])
+                guild = await self.cog.bot.search_guild(row[0])
             if guild is None:
                 continue
             else:
                 data = await self.get(row[0], cursor=cursor)
-            if (member := guild.get_member(row[1])) is None or member.joined_at is None:
+            if (member := await self.cog.bot.search_member(guild, row[1])) is None \
+                    or member.joined_at is None:
                 await self.delete_queue(*row[:2])
                 continue
             # キューのメンバーが、RequireSentが設定されているチャンネルに、メッセージを送っていないまま放置している場合は、キックを行う。
@@ -177,7 +177,7 @@ class DataManager(DatabaseManager):
             for channel_id, deadline in filter(lambda x: x[0] not in row[2], data.items()): # type: ignore
                 i = True
                 if now - member.joined_at.timestamp() > deadline:
-                    channel = guild.get_channel(channel_id)
+                    channel = await self.cog.bot.search_channel(guild, channel_id)
                     reason = t(dict(
                         ja="RequireSentが設定されているチャンネルにメッセージを送信しなかった。\nチャンネル：{channel}" \
                             "\nメンバー：{member}",
@@ -190,6 +190,7 @@ class DataManager(DatabaseManager):
                         feature=self.cog.requiresent, member=member, channel_id=channel_id,
                         channel_name=unwrap_or(channel, "name")
                     )
+                    # Byeする。
                     try:
                         await member.kick(reason=reason)
                     except discord.Forbidden:

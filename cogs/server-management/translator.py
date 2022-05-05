@@ -14,12 +14,13 @@ from core.utils import quick_invoke_command
 from core import Cog, RT, t
 
 
+FEATURE_NAME = "Translate"
 class Translator(Cog):
     def __init__(self, bot: RT):
         self.bot = bot
-        self.bot.tree.remove_command("Translate")
+        self.bot.tree.remove_command(FEATURE_NAME)
         self.bot.tree.add_command(discord.app_commands.ContextMenu(
-            name="Translate", callback=self.translate_from_context_menu,
+            name=FEATURE_NAME, callback=self.translate_from_context_menu,
             type=discord.AppCommandType.message
         ))
 

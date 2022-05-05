@@ -8,16 +8,15 @@ from inspect import cleandoc
 from discord.ext import commands, tasks
 import discord
 
-from rtlib.common.utils import make_error_message
+from discord.ext.fslash import Context
 
 from core.utils import make_default
 from core.types_ import CmdGrp
 from core.help import CONV, ANNOTATIONS
 from core import RT, Cog, Embed, t
 
-from rtlib.common.utils import code_block
+from rtlib.common.utils import code_block, make_error_message
 from rtlib.common.cacher import Cacher
-
 from rtutil.converters import DateTimeFormatNotSatisfiable
 from rtutil.views import TimeoutView
 
@@ -77,6 +76,38 @@ class General(Cog):
             self.bot.cachers.acquire(5.0, list)
 
         self._dayly.start()
+
+        if not getattr(self.bot, "_patched_on_error", False):
+            @self.bot.tree.error
+            async def on_error(
+                interaction: discord.Interaction,
+                error: discord.app_commands.AppCommandError
+            ):
+                # AppCommandのエラーをコマンドフレームワークのエラーとして流す。
+                if hasattr(commands.errors, error.__class__.__name__):
+                    ctx = Context(interaction, {}, None, self.bot)
+                    ctx.command = interaction.command # type: ignore
+                    if isinstance(error, discord.app_commands.CommandInvokeError):
+                        return self.bot.dispatch(
+                            "command_error", ctx, commands.CommandInvokeError(error.original)
+                        )
+                    try:
+                        self.bot.dispatch(
+                            "command_error", ctx,
+                            getattr(commands.errors, error.__class__.__name__)(*(
+                                getattr(error, name)
+                                for name in error.__init__.__code__.co_varnames
+                                if name != "self" and hasattr(error, name)
+                                    and name in getattr(commands.errors, error.__class__.__name__)
+                                        .__init__.__code__.co_varnames
+                                    and not print(name)
+                            ))
+                        )
+                    except TypeError:
+                        if TEST:
+                            self.bot.print("Ignore error: %s: %s"
+                                % (error.__class__.__name__, error))
+            setattr(self.bot, "_patched_on_error", True)
 
     @Cog.listener()
     async def on_ready(self):
@@ -185,7 +216,7 @@ class General(Cog):
 
     @commands.Cog.listener()
     async def on_command_error(
-        self, ctx: commands.Context, error: commands.CommandError | Exception,
+        self, ctx: commands.Context | Context, error: commands.CommandError | Exception,
         retry: bool = False
     ):
         # エラーハンドリングをします。
@@ -311,7 +342,8 @@ class General(Cog):
                 ja="これ以上このコマンドを実行することはできません。",
                 en="No further execution of this command is allowed."
             ), ctx)
-        elif isinstance(error, commands.CommandNotFound):
+        elif isinstance(error, commands.CommandNotFound) \
+                and isinstance(ctx, commands.Context):
             view = None
             # `もしかして：`を提案する。
             suggestion = "`, `".join(
@@ -348,14 +380,16 @@ class General(Cog):
             else:
                 self.bot.print("Warning: An error has occurred: {} - {}\n\tCommand: {}".format(
                     error.__class__.__name__, error,
-                    ctx.message.content if ctx.command is None else ctx.command.qualified_name
+                    ctx.message.content
+                    if ctx.command is None and isinstance(ctx, commands.Context)
+                    else ctx.command.qualified_name # type: ignore
                 ))
             status = 500
             content = code_block(error_message, "python")
 
         self.bot.dispatch("command_error_review", status, content, ctx, error)
         await self.reply_error(
-            ctx, status, content, view,
+            ctx, status, content, view, # type: ignore
             "unknown" if view is None else "error"
         )
 

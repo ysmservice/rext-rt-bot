@@ -5,3 +5,6 @@ data.json
 .*
 !.gitignore
 rtlib
+
+cogs/tts/lib/OpenJTalk/dic
+cogs/tts/lib/OpenJTalk/*.htsvoice

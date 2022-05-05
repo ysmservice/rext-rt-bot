@@ -46,7 +46,7 @@ class LogViewerView(BasePage):
         for data in datas:
             embed.add_field(
                 name=data.title(self.cog.bot.get_language("user", self.target)), # type: ignore
-                value=truncate(data.to_str("", False)), inline=False
+                value=truncate(data.to_str("", False)) or "...", inline=False
             )
         embed.set_footer(text=t(dict(
             ja="より詳細を見たい場合は、ダッシュボードからご覧ください。",
@@ -106,7 +106,10 @@ class RTLog(Cog):
         "コマンドのログを流します。"
         feature = None
         if ctx.command is not None:
-            feature = ctx.command.root_parent or ctx.command
+            if isinstance(ctx.command, discord.app_commands.ContextMenu):
+                feature = ctx.command
+            else:
+                feature = ctx.command.root_parent or ctx.command
         if feature is None:
             feature = ("...", ctx.message.content)
         await self.bot.log(self.bot.log.LogData.quick_make(
