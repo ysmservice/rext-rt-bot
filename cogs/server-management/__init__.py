@@ -74,6 +74,7 @@ class ServerManagement(Cog):
             .set_category(FSPARENT))
         self.bot.help_.set_help(Cog.Help()
             .set_title("autoPublish")
+            .set_category(FSPARENT)
             .set_headline(ja="自動公開", en="Auto publish on news channel")
             .set_description(
                 ja="""自動でニュースチャンネルのメッセージを公開します。
