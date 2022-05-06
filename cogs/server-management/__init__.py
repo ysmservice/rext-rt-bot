@@ -1,5 +1,7 @@
 # RT - Server Management
 
+from datetime import datetime, timedelta
+
 from discord.ext import commands
 import discord
 
@@ -137,11 +139,47 @@ class ServerManagement(Cog):
             en=messagecount.description
         )
         .set_description(**MESC_HELP.headline)
-        .add_arg("content", "Optional",
+        .add_arg("content", "str", "Optional",
             ja="""数えるメッセージに含まれなければならない文字列を指定できます。
                 未入力の場合は全てのメッセージが数える対象となります。""",
             en="""You can specify a string of characters that must be included in the message to be counted.
                 If not entered, all messages will be counted."""))
+    del MESC_HELP
+
+    @commands.command(
+        aliases=("tm", "タイムマシン", "バック・トゥ・ザ・フューチャー"), fsparent=FSPARENT,
+        description="Displays jump URLs for past messages."
+    )
+    async def timemachine(self, ctx: commands.Context, *, day: int = -1):
+        await ctx.typing()
+        if 0 < day:
+            async for message in ctx.channel.history(
+                limit=1, before=datetime.now() - timedelta(days=day)
+            ):
+                return await ctx.reply(message.jump_url)
+        elif -1 == day:
+            async for message in ctx.channel.history(limit=1, after=ctx.channel.created_at):
+                return await ctx.reply(message.jump_url)
+        else:
+            return await ctx.reply(t({
+                "ja": "未来にはいけません。",
+                "en": "I can't read messages that on the future."
+            }, ctx))
+        await ctx.reply(t({
+            "ja": "過去にさかのぼりすぎました。",
+            "en": "I was transported back in time to another dimension."
+        }, ctx))
+
+    ((TM_HELP := Cog.HelpCommand(timemachine))
+        .merge_headline(
+            ja="過去のメッセージのジャンプURLを表示します。",
+            en=timemachine.description
+        )
+        .set_description(**TM_HELP.headline)
+        .add_arg("day", "int", ("default", "-1"),
+            ja="どのくらい遡るかの日数です。\n`-1`の場合は最初のメッセージです。",
+            en="The number of days to go back how far.\nIf `-1`, it is the first message."))
+    del TM_HELP
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
