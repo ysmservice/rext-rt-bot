@@ -72,6 +72,15 @@ class ServerManagement(Cog):
                 en="Create a Google search URL by pressing `Search` on the app in the context menu of the message you want to search."
             )
             .set_category(FSPARENT))
+        self.bot.help_.set_help(Cog.Help()
+            .set_title("autoPublish")
+            .set_headline(ja="自動公開", en="Auto publish on news channel")
+            .set_description(
+                ja="""自動でニュースチャンネルのメッセージを公開します。
+                    ニュースチャンネルのトピックに`rt>autoPublish`と入れることでできます。""",
+                en="""Automatically publish messages on news channels.
+                    You can do this by putting `rt>autoPublish` in the news channel topic."""
+            ))
 
     QUESTIONS_JA = (
         "とは", "とは?", "とは？", "って何", "って何？",
@@ -103,6 +112,20 @@ class ServerManagement(Cog):
         await interaction.response.send_message(
             getattr(view.children[0], "content"), ephemeral=True, view=view
         )
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if not message.guild or not isinstance(message.channel, discord.TextChannel) \
+                or message.channel.topic is None:
+            return
+
+        for line in message.channel.topic.splitlines():
+            if line.startswith("rt>autoPublish"):
+                await message.publish()
+                if len(line.split()) >= 1:
+                    option = line.split()[0]
+                    if option == "check":
+                        await message.add_reaction("✅")
 
 
 async def setup(bot):
