@@ -114,6 +114,35 @@ class ServerManagement(Cog):
             getattr(view.children[0], "content"), ephemeral=True, view=view
         )
 
+    @commands.command(
+        aliases=("msgc", "メッセージカウント", "メッセージ数"), fsparent=FSPARENT,
+        description="Count the number of messages in the channel up to 5,000."
+    )
+    @commands.cooldown(1, 600, commands.BucketType.channel)
+    async def messagecount(self, ctx: commands.Context, *, content: str | None = None):
+        message = await ctx.reply(t({
+            "ja": "数え中...", "en": "Counting..."
+        }, ctx))
+        count = len([
+            mes async for mes in ctx.channel.history(limit=5000)
+            if content is None or content in mes.content
+        ])
+        await message.edit(content=t(dict(
+            ja="メッセージ数：{count}", en="Message Count: {count}"
+        ), ctx, count='5000⬆️' if count == 5000 else count))
+
+    ((MESC_HELP := Cog.HelpCommand(messagecount))
+        .merge_headline(
+            ja="チャンネルのメッセージを五千個まで数え上げます。",
+            en=messagecount.description
+        )
+        .set_description(**MESC_HELP.headline)
+        .add_arg("content", "Optional",
+            ja="""数えるメッセージに含まれなければならない文字列を指定できます。
+                未入力の場合は全てのメッセージが数える対象となります。""",
+            en="""You can specify a string of characters that must be included in the message to be counted.
+                If not entered, all messages will be counted."""))
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if not message.guild or not isinstance(message.channel, discord.TextChannel) \

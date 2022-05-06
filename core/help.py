@@ -9,9 +9,8 @@ from collections import defaultdict
 from itertools import chain
 
 from discord.ext import commands
-from discord.app_commands import Command
 
-from discord.ext.fslash import _get, groups
+from discord.ext.fslash import _get
 
 from rtlib.common.utils import code_block
 
@@ -19,7 +18,6 @@ from .utils import (
     get_kwarg, get_fsparent, get_inner_text, gettext, cleantext,
     make_default, concat_text
 )
-from . import tdpocket
 from .types_ import CmdGrp, Text
 from .general import Cog
 from .bot import RT
@@ -49,9 +47,9 @@ OPTIONS = {
     "default": {"ja": "デフォルト", "en": "defualt"}
 }
 EXTRAS = {
-    "Examples": {"ja": "使用例"}, "Notes": {"ja": "メモ"},
-    "Warnings": {"ja": "警告"}, "See Also": {"ja": "参照"},
-    "How": {"ja": "使い方"}, "Aliases": {"ja": "エイリアス"}
+    "Examples": {"ja": "使用例", "en": "Examples"}, "Notes": {"ja": "メモ", "en": "Notes"},
+    "Warnings": {"ja": "警告", "en": "Warnings"}, "See Also": {"ja": "参照", "en": "See Also"},
+    "How": {"ja": "使い方", "en": "How"}, "Aliases": {"ja": "エイリアス", "en": "Aliases"}
 }
 COMMAND_TYPES = {
     "message": {"ja": "メッセージ"}, "slash": {"ja": "スラッシュ"},

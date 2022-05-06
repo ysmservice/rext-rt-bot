@@ -365,8 +365,8 @@ class General(Cog):
                     t({'ja': 'もしかして：', 'en': 'Perhaps: '}, ctx), suggestion
                 )
             content = t(dict(
-                ja="コマンドが見つかりませんでした。{suggestion}", en="That command is not found.{suggetion}"
-            ), ctx, suggestion=suggestion)
+                ja="コマンドが見つかりませんでした。{suggetion}", en="That command is not found.{suggetion}"
+            ), ctx, suggetion=suggestion)
             status = 404
 
         if content is None:
