@@ -214,7 +214,7 @@ class HelpCog(Cog, name="Help"): # type: ignore
             else:
                 await ctx.reply(embed=view.embeds[0])
                 
-    @_help.autocomplete()
+    @help_.autocomplete()
     async def search(self, interaction, current: str):
         result = []
         for category in list(self.bot.help_.data.keys()):
