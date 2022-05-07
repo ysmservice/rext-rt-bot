@@ -225,6 +225,8 @@ class RT(commands.Bot):
         self.print("Closing...")
         self.dispatch("close")
         # お片付けをする。
+        self.cachers.close()
+        self.print("Closed cacher")
         self.pool.close()
         self.print("Closed pool")
         await self.ipcs.close(reason="Closing bot")
