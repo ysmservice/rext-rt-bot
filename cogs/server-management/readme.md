@@ -4,3 +4,7 @@
 ## マップ
 * `rta.py` 即抜けRTA
 * `translator.py` 翻訳
+* `expander.py` メッセージリンク展開
+* `force_pinned_message.py` 強制ピン留め
+* `requiresend.py` requiresend
+* `tenki.py` 天気予報

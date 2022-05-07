@@ -71,6 +71,12 @@ class DataManager(DatabaseManager):
         async for row in self.fetchstep(cursor, "SELECT * FROM Tenki;"):
             yield Data(*row)
 
+    async def clean(self) -> None:
+        async for row in self.fetchstep(cursor, "SELECT * FROM Tenki;"):
+            if (row[1] == "user" and not await self.cog.bot.exists("user", row[0])) \
+                    or (row[1] == "channel" and not await self.cog.bot.exists("channel", row[0])):
+                await self.delete(row[0], cursor=cursor)
+
 
 class CitySelectView(TimeoutView):
     """市町村を選択します。
