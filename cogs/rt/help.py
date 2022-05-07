@@ -120,9 +120,33 @@ RESULT_TYPES = {
 }
 
 
+async def help_autocomplete(_, current: str) \
+        -> list[discord.app_commands.Choice[str]]:
+    self = __help_cog__
+    result = [discord.app_commands.Choice(name="...", value="...")]
+    i = 0
+    for category in list(self.bot.help_.data.keys()):
+        if current in category:
+            i += 1
+            result.append(discord.app_commands.Choice(name=category, value=category))
+        for command_name, _ in list(self.bot.help_.data[category].items()):
+            if current in command_name:
+                i += 1
+                result.append(discord.app_commands.Choice(
+                    name=command_name, value=command_name
+                ))
+    if result and result[0].name == "..." and result[0].value == "...":
+        result = result[1:]
+    if i > 25:
+        result = result[:25]
+    return result
+
+
 class HelpCog(Cog, name="Help"): # type: ignore
     def __init__(self, bot: RT):
         self.bot = bot
+        global __help_cog__
+        __help_cog__ = self
 
     def make_parts(
         self, language: str, category_name: Optional[str] = None,
@@ -164,6 +188,7 @@ class HelpCog(Cog, name="Help"): # type: ignore
         description="Displays how to use RT."
     )
     @discord.app_commands.describe(word="Search word or command name")
+    @discord.app_commands.autocomplete(word=help_autocomplete)
     async def help_(self, ctx: commands.Context, *, word: Optional[str] = None) -> None:
         language = self.bot.get_language("user", ctx.author.id)
         found, category, command_name = False, None, None
@@ -213,17 +238,6 @@ class HelpCog(Cog, name="Help"): # type: ignore
                 view.set_message(ctx, await ctx.reply(embed=view.embeds[0], view=view))
             else:
                 await ctx.reply(embed=view.embeds[0])
-                
-    @_help.autocomplete()
-    async def search(self, interaction, current: str):
-        result = []
-        for category in list(self.bot.help_.data.keys()):
-            if current in category:
-                result.append(category)
-            for command_name, detail in list(self.bot.help_.data[category].items()):
-                if current in command_name:
-                    result.append(result)
-        return result
 
     Cog.HelpCommand(help_) \
         .add_arg(
