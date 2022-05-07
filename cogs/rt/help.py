@@ -58,7 +58,7 @@ class HelpSelect(discord.ui.Select):
             view = HelpView(
                 self.view.cog, self.view.language, self.view.cog.make_parts(
                     self.view.language, category, command
-                ), self.view.target
+                ), self.view.target # type: ignore
             )
             await interaction.response.edit_message(embed=view.page.embeds[0], view=view)
             view.set_message(interaction)
@@ -80,7 +80,8 @@ class HelpView(TimeoutView):
         embeds: list[discord.Embed] = []
         if isinstance(self.parts[2], str):
             embeds = list(separate_to_embeds(
-                self.parts[2], lambda x: Cog.Embed(self.parts[1], description=x),
+                self.parts[2], # type: ignore
+                lambda x: Cog.Embed(self.parts[1], description=x),
                 lambda text: text[:2000]
             ))
         else:

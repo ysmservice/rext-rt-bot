@@ -43,7 +43,7 @@ ANNOTATIONS = {
     "bool": {"ja": "真偽地 (on/off, True/False のいずれか)", "en": "Boolean (any of on/off, True/False)"}
 }
 OPTIONS = {
-    "Optional": {"ja": "オプション", "en": "Option"},
+    "Optional": {"ja": "オプション", "en": "optional"},
     "default": {"ja": "デフォルト", "en": "defualt"}
 }
 EXTRAS = {
@@ -167,13 +167,18 @@ class HelpCommand(Help):
         "引数の説明を追加します。"
         if isinstance(annotation, str):
             annotation = ANNOTATIONS.get(annotation, annotation)
+            if isinstance(annotation, dict):
+                annotation = annotation.copy()
         if isinstance(option, str):
-            option = make_default(OPTIONS.get(option, option))
+            option = OPTIONS.get(option, make_default(option)).copy()
         elif isinstance(option, tuple):
-            option = make_default(f"{OPTIONS.get(option[0], option[0])} {option[1]}")
+            option = concat_text(
+                OPTIONS.get(option[0], make_default(option[0])).copy(),
+                make_default(option[1]), " "
+            )
         self.args.append((
             name, make_default(annotation),
-            option,
+            option, # type: ignore
             cleantext(detail)
         ))
         return self

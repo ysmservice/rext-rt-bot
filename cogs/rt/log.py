@@ -207,9 +207,12 @@ class DiscordLog(Cog):
     async def send_log(self):
         for channel, embeds in list(self.caches.items()):
             if embeds:
-                await channel.send(embeds=embeds[:10])
-                if embeds := embeds[10:]:
+                try:
                     await channel.send(embeds=embeds[:10])
+                    if embeds := embeds[10:]:
+                        await channel.send(embeds=embeds[:10])
+                except Exception as e:
+                    self.bot.ignore(e, "\nEmbed:", embeds[int(str(e).split(".")[1])].title)
             del self.caches[channel]
 
     async def cog_unload(self):
@@ -413,12 +416,15 @@ class DiscordLog(Cog):
                 {"ja": "メッセージの編集", "en": "Edit Message"}, after.guild,
                 description=after.jump_url
             )
-            if before.content != after.content and (before.content or after.content):
-                embed.add_field(
-                    name=t(BEFORE_TEXT, logc.guild), value=before.content
-                ).add_field(
-                    name=t(AFTER_TEXT, logc.guild), value=after.content
-                )
+            if before.content != after.content:
+                if before.content:
+                    embed.add_field(
+                        name=t(BEFORE_TEXT, logc.guild), value=before.content
+                    )
+                if after.content:
+                    embed.add_field(
+                        name=t(AFTER_TEXT, logc.guild), value=after.content
+                    )
             self.caches[logc].append(embed)
 
     def on_message(self, message: discord.Message) -> Text:

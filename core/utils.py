@@ -55,9 +55,10 @@ def cleantext(text: Text) -> Text:
     return {key: cleandoc(value) for key, value in text.items()}
 
 
-def make_default(text: str | Text) -> Text:
+def make_default(text: str | Text, **kwargs) -> Text:
     "渡された文字列を日本語と英語のキーがあるTextに入れます。\nTextが渡された場合はそのまま返します。"
-    return {"ja": text, "en": text} if isinstance(text, str) else text
+    return {"ja": text.format(**kwargs), "en": text.format(**kwargs)} \
+        if isinstance(text, str) else text
 
 
 def concat_text(data: Text, plus: Text, space: str = "") -> Text:

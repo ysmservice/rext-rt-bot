@@ -121,6 +121,7 @@ class ServerManagement(Cog):
         description="Count the number of messages in the channel up to 5,000."
     )
     @commands.cooldown(1, 600, commands.BucketType.channel)
+    @discord.app_commands.describe(content="The characters that must be included in the message to be counted. If not specified, all are included.")
     async def messagecount(self, ctx: commands.Context, *, content: str | None = None):
         message = await ctx.reply(t({
             "ja": "数え中...", "en": "Counting..."
@@ -150,6 +151,7 @@ class ServerManagement(Cog):
         aliases=("tm", "タイムマシン", "バック・トゥ・ザ・フューチャー"), fsparent=FSPARENT,
         description="Displays jump URLs for past messages."
     )
+    @discord.app_commands.describe(day="How far back do we go.")
     async def timemachine(self, ctx: commands.Context, *, day: int = -1):
         await ctx.typing()
         if 0 < day:

@@ -3,6 +3,8 @@
 from typing import Optional, Any
 from collections.abc import Callable, Iterable, Iterator, Sequence
 
+from datetime import datetime, timedelta, timezone
+
 import discord
 
 from core.utils import gettext
@@ -12,8 +14,8 @@ from data import TEST, CANARY, PERMISSION_TEXTS, Colors
 
 
 __all__ = (
-    "unwrap_or", "set_page", "webhook_send", "artificially_send",
-    "permissions_to_text", "make_nopermissions_text"
+    "unwrap_or", "set_page", "webhook_send", "artificially_send", "permissions_to_text",
+    "make_nopermissions_text", "JST", "make_datetime_text"
 )
 
 
@@ -109,3 +111,10 @@ def make_nopermissions_text(permissions: Iterable[str], ctx: Any, **kwargs) -> s
         ja="権限がありません。\n必要な権限：%s",
         en="Not authorized.\nRequired Authority: %s"
     ), ctx) % permissions_to_text(permissions, ctx, **kwargs)
+
+
+JST = timezone(timedelta(hours=9))
+def make_datetime_text(time: datetime, format_: str = "%H:%M", timezone: ... = JST) -> str:
+    "`datetime.datetime`を文字列にします。また、デフォルトでJSTのタイムゾーンに変換します。"
+    time.astimezone(timezone)
+    return time.strftime(format_)

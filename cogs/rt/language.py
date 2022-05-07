@@ -134,7 +134,7 @@ class Language(Cog):
             `日本語`: 日本語として設定します。
             `English`: 英語として設定します。""",
             en="""Which language is to be used.
-            Japanese`: Set as Japanese.
+            `Japanese`: Set as Japanese.
             `English`: Set as English."""
         ) \
         .set_examples(
