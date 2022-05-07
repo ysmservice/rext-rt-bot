@@ -213,6 +213,17 @@ class HelpCog(Cog, name="Help"): # type: ignore
                 view.set_message(ctx, await ctx.reply(embed=view.embeds[0], view=view))
             else:
                 await ctx.reply(embed=view.embeds[0])
+                
+    @_help.autocomplete()
+    async def search(self, interaction, current: str):
+        result = []
+        for category in list(self.bot.help_.data.keys()):
+            if current in category:
+                result.append(category)
+            for command_name, detail in list(self.bot.help_.data[category].items()):
+                if current in command_name:
+                    result.append(result)
+        return result
 
     Cog.HelpCommand(help_) \
         .add_arg(
