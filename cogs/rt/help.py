@@ -163,6 +163,7 @@ class HelpCog(Cog, name="Help"): # type: ignore
         "help", aliases=("h", "ヘルプ", "助けて", "へ", "HelpMe,RITSUUUUUU!!"),
         description="Displays how to use RT."
     )
+    @discord.app_commands.autocomplete(word=search)
     @discord.app_commands.describe(word="Search word or command name")
     async def help_(self, ctx: commands.Context, *, word: Optional[str] = None) -> None:
         language = self.bot.get_language("user", ctx.author.id)
@@ -214,7 +215,6 @@ class HelpCog(Cog, name="Help"): # type: ignore
             else:
                 await ctx.reply(embed=view.embeds[0])
                 
-    @help_.autocomplete()
     async def search(self, interaction, current: str):
         result = []
         for category in list(self.bot.help_.data.keys()):
