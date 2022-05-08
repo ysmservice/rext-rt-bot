@@ -27,6 +27,14 @@ class Userinfo(Cog):
             name="ID",
             value=user.id
         )
+        embed.add_field(
+            name="Discord登録日時",
+            value=user.created_at
+        )
+        embed.add_field(
+            name="アバターURL",
+            value=user.avatar.url
+        )
  
 
 async def setup(bot):
