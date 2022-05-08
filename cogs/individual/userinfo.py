@@ -19,9 +19,13 @@ class Userinfo(Cog):
             hypesquad = "<:HypeSquad_Balance:876337714679676968>"
         else:
             hypesquad = ""
-        Cog.Embed(
+        embed = Cog.Embed(
             title=user,
             description=hypesquad
+        )
+        embed.add_field(
+            name="ID",
+            value=user.id
         )
  
 
