@@ -31,17 +31,17 @@ class TimeoutView(discord.ui.View):
     "タイムアウト時にコンポーネントを使用不可に編集するようにするViewです。"
 
     target: discord.abc.Snowflake | int | UserMember
-    ctx: Optional[discord.Message | discord.Interaction | OriginalContext] = None
+    _ctx: Optional[discord.Message | discord.Interaction | OriginalContext] = None
 
     async def on_timeout(self):
         for child in self.children:
             if hasattr(child, "disabled"):
                 child.disabled = True # type: ignore
-        if self.ctx is not None:
-            if hasattr(self.ctx, "edit"):
-                await self.ctx.edit(view=None) # type: ignore
-            elif isinstance(self.ctx, discord.Interaction):
-                await self.ctx.edit_original_message(view=None)
+        if self._ctx is not None:
+            if hasattr(self._ctx, "edit"):
+                await self._ctx.edit(view=None) # type: ignore
+            elif isinstance(self._ctx, discord.Interaction):
+                await self._ctx.edit_original_message(view=None)
 
     def set_message(
         self, ctx: Context | OriginalContext | discord.Interaction | None,
@@ -49,11 +49,11 @@ class TimeoutView(discord.ui.View):
     ):
         "Viewを編集するメッセージを指定します。"
         if isinstance(ctx, Context):
-            self.ctx = ctx.interaction
+            self._ctx = ctx.interaction
         elif isinstance(ctx, discord.Interaction):
-            self.ctx = ctx
+            self._ctx = ctx
         if isinstance(message, OriginalContext | discord.Message):
-            self.ctx = message
+            self._ctx = message
 
 
 async def check(

@@ -102,6 +102,7 @@ class RT(commands.Bot):
 
     async def setup_hook(self):
         self.cachers = CacherPool()
+        self.cachers.start()
         self.exists_caches = self.cachers.acquire(60.0)
         self.print("Prepared cachers")
         self.pool = await create_pool(**SECRET["mysql"])

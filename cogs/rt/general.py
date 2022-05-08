@@ -227,7 +227,7 @@ class General(Cog):
                 if hasattr(error, "retry_after"):
                     # クールダウン告知後十秒以内にもう一度コマンドが実行された場合、クールダウンが終わるまでクールダウン告知を返信しないようにする。
                     self._replied_caches.get_raw(ctx.author.id) \
-                        .update_deadline(error.retry_after) # type: ignore
+                        .merge_deadline(error.retry_after) # type: ignore
                 return
             elif name:
                 self._replied_caches[ctx.author.id].append(name)

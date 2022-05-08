@@ -97,6 +97,9 @@ class Cog(OriginalCog):
     FORBIDDEN = dict(
         ja="権限がないため処理に失敗しました。", en="Processing failed due to lack of authorization."
     )
+    NOTFOUND = staticmethod(lambda ja, en: dict(
+        ja=f"{ja}が見つかりませんでした。", en=f"{en} was not found."
+    ))
     EventContext: type[EventContext]
     bot: RT
 
