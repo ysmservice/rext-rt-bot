@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TypeAlias, NamedTuple, Literal, Any
+from typing import Literal, Any, overload
 
 from dataclasses import dataclass
 from asyncio import create_task
@@ -17,14 +17,13 @@ from core import RT, Cog, t, DatabaseManager, cursor
 
 from rtlib.common.cacher import Cacher
 
-from .part import CaptchaContext, CaptchaPart
+from .part import CaptchaContext, CaptchaPart, RowData, Mode
+from .oneclick import OneClickCaptchaPart
+from .web import WebCaptchaPart
+from .word import WordCaptchaPart
+from .image import ImageCaptchaPart
 
 
-Mode: TypeAlias = Literal["image", "word", "web", "onclick"]
-RowData = NamedTuple("Row", (
-    ("guild_id", "int"), ("role_id", int), ("mode", Mode),
-    ("timeout", float), ("kick", bool), ("extras", dict[str, Any])
-))
 class DataManager(DatabaseManager):
     def __init__(self, cog: Captcha):
         self.cog = cog
@@ -78,7 +77,12 @@ class DataManager(DatabaseManager):
 
 @dataclass
 class Parts:
-    ...
+    "認証のパーツを格納するためのクラスです。"
+
+    word: WordCaptchaPart
+    web: WebCaptchaPart
+    oneclick: OneClickCaptchaPart
+    image: ImageCaptchaPart
 
 
 class Captcha(Cog):
@@ -87,8 +91,12 @@ class Captcha(Cog):
         self.queues: Cacher[discord.Member, CaptchaContext] = self.bot.cachers.acquire(
             10800.0, on_dead=self.on_dead_queue
         )
-        self.parts = Parts()
+        self.parts = Parts(*(globals()[name](self) for name in Parts.__annotations__.values()))
         self.data = DataManager(self)
+
+    @commands.Cog.listener()
+    async def on_setup(self):
+        self.bot.ipcs.set_route(self.parts.web.on_success)
 
     def on_dead_queue(self, _, ctx: CaptchaContext) -> None:
         "キューが削除された際に呼ばれる関数です。"
@@ -119,16 +127,15 @@ class Captcha(Cog):
 
     def get_part(self, type_: str) -> CaptchaPart:
         "CaptchaPartを手に入れます。"
-        return getattr(self.parts, f"{type_}CaptchaPart")
+        return getattr(self.parts, type_)
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         data = await self.data.read(member.guild.id)
         if data is not None:
             self.queues[member] = CaptchaContext(
-                data=data, part=self.get_part(
-                    f"{data.mode[0].upper()}{data.mode[1:]}"
-                ), member=member, event_context=Cog.EventContext(
+                data=data, part=self.get_part(data.mode), member=member,
+                event_context=Cog.EventContext(
                     self.bot, member.guild, "ERROR", {
                         "ja": "認証成功時のロール付与",
                         "en": "Granting roles upon successful authentication"
@@ -137,10 +144,20 @@ class Captcha(Cog):
             )
             self.queues.set_deadline(member, time() + data.timeout)
 
+    @overload
+    async def on_success(
+        self, ctx: CaptchaContext, interaction: None,
+        mode: Literal["edit", "send"] = "edit", **kwargs
+    ) -> str: ...
+    @overload
     async def on_success(
         self, ctx: CaptchaContext, interaction: discord.Interaction,
-        mode: Literal["edit", "send"] = "send", **kwargs
-    ) -> None:
+        mode: Literal["edit", "send"] = "edit", **kwargs
+    ) -> None: ...
+    async def on_success(
+        self, ctx: CaptchaContext, interaction: discord.Interaction | None,
+        mode: Literal["edit", "send"] = "edit", **kwargs
+    ) -> None | str:
         "認証成功時に呼ばれるべき関数です。ロールを付与します。"
         ctx.success = True
         del self.queues[ctx.member]
@@ -169,17 +186,20 @@ class Captcha(Cog):
             else:
                 ctx.event_context.status = "SUCCESS"
                 kwargs["content"] = t(dict(
-                    ja="認証に成功しました。", en=""
+                    ja="認証に成功しました。", en="Captcha succeeded."
                 ), interaction)
 
-        if mode == "send":
-            kwargs.setdefault("ephemeral")
-            await interaction.response.send_message(**kwargs)
-        else:
-            kwargs.setdefault("view", None)
-            await interaction.response.edit_message(**kwargs)
-
         self.bot.rtevent.dispatch("on_captcha_success", ctx.event_context)
+
+        if interaction is None:
+            return kwargs["content"]
+        else:
+            if mode == "send":
+                kwargs.setdefault("ephemeral")
+                await interaction.response.send_message(**kwargs)
+            else:
+                kwargs.setdefault("view", None)
+                await interaction.response.edit_message(**kwargs)
 
     @commands.command()
     async def captcha(self, ctx: commands.Context):
@@ -187,4 +207,4 @@ class Captcha(Cog):
 
 
 async def setup(bot):
-    bot.add_cog(Captcha(bot))
+    await bot.add_cog(Captcha(bot))

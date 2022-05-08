@@ -29,6 +29,7 @@ from rtlib.common import set_handler
 from data import DATA, CATEGORIES, PREFIXES, SECRET, TEST, SHARD, ADMINS, URL, API_URL, Colors
 
 from rtlib.common.cacher import CacherPool, Cacher
+from rtlib.common.chiper import ChiperManager
 from rtlib.common.utils import make_simple_error_text
 
 from .rtws import setup
@@ -69,6 +70,7 @@ class RT(commands.Bot):
         self.language = Caches({}, {})
         self.ipcs = IpcsClient(str(self.shard_id))
         self.ipcs.set_route(self.exists_object, "exists")
+        self.chiper = ChiperManager.from_key_file("secret.key")
 
         extend_force_slash(self, replace_invalid_annotation_to_str=True,
         first_groups=[discord.app_commands.Group(
@@ -124,6 +126,7 @@ class RT(commands.Bot):
                 await self._load(path)
         self.print("Prepared extensions")
         self.dispatch("load")
+        self.dispatch("setup")
 
     async def connect(self, reconnect: bool = True) -> None:
         self.print("Connecting...")

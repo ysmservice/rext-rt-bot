@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple, TypeAlias, Literal, Any
 
 from types import SimpleNamespace
 
@@ -15,6 +15,11 @@ if TYPE_CHECKING:
 
 
 FAILED_CODE = {"ja": "コードが違います。", "en": "It is a wrong code."}
+Mode: TypeAlias = Literal["image", "word", "web", "onclick"]
+RowData = NamedTuple("Row", (
+    ("guild_id", "int"), ("role_id", int), ("mode", Mode),
+    ("timeout", float), ("kick", bool), ("extras", dict[str, Any])
+))
 
 
 class CaptchaContext(SimpleNamespace):
