@@ -9,7 +9,7 @@ class Userinfo(Cog):
     def __init__(self, bot):
         self.bot = bot
         
-    @commands.command()
+    @commands.command(description="search user")
     @app_commands.describe(userid="user id")
     async def userinfo(self, ctx, *, userid: int=None):
         user = await self.bot.search_user(userid if userid is not None else ctx.author.id)
@@ -55,6 +55,12 @@ class Userinfo(Cog):
             )
             embeds.append(embed)
         await ctx.send(embeds=embeds)
+        
+    Cog.HelpCommand(userinfo) \
+        .set_headline(ja="ユーザーを検索します。") \
+        .add_args("userid", "str", "Optional",
+                 ja="ユーザーID", en="User ID") \
+        .set_description(ja="ユーザーを検索します", en="Search user")
  
 
 async def setup(bot):
