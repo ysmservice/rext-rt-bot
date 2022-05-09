@@ -51,7 +51,7 @@ class Userinfo(Cog):
             )
             embed.add_field(
                 name=t({"en": "Joined at", "ja": "参加日時"}, ctx),
-                value=ctx.joined_at
+                value=ctx.author.joined_at
             )
             embeds.append(embed)
         await ctx.send(embeds=embeds)
