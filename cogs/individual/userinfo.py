@@ -35,7 +35,7 @@ class Userinfo(Cog):
             value=user.created_at
         )
         embed.add_field(
-            name=t({"ja": "アバターURL", "en": "Avatar url"}, ctx)
+            name=t({"ja": "アバターURL", "en": "Avatar url"}, ctx),
             value=getattr(user.avatar, "url", "null"),
             inline=False
         )
