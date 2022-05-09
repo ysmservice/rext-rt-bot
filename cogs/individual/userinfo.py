@@ -31,11 +31,11 @@ class Userinfo(Cog):
             value=user.id
         )
         embed.add_field(
-            name="Discord登録日時",
+            name=t({"ja": "Discord登録日時", "en": "Discord register time"}, ctx)
             value=user.created_at
         )
         embed.add_field(
-            name="アバターURL",
+            name=t({"ja": "アバターURL", "en": "Avatar url"}, ctx)
             value=getattr(user.avatar, "url", "null"),
             inline=False
         )
