@@ -1,8 +1,8 @@
 # RT - Userinfo
 from discord.ext import commands
-from discord import app_commands
+from discord import app_commands, Member
 
-from core import Cog
+from core import Cog, t
 
 
 class Userinfo(Cog):
@@ -21,6 +21,7 @@ class Userinfo(Cog):
             hypesquad = "<:HypeSquad_Balance:876337714679676968>"
         else:
             hypesquad = ""
+        embeds = []
         embed = Cog.Embed(
             title=user,
             description=hypesquad
@@ -38,7 +39,22 @@ class Userinfo(Cog):
             value=getattr(user.avatar, "url", "null"),
             inline=False
         )
-        await ctx.send(embed=embed)
+        embeds.append(embed)
+        if isinstance(ctx.author, Member):
+            embed = Cog.Embed(
+                title=t({"en": "Now your turn", "ja": "あなたの番です。"}, ctx),
+                description=", ".join(role.mention for role in guild.roles)
+            )
+            embed.add_field(
+                name=t({"en": "Show name", "ja": "表示名"}, ctx),
+                value=ctx.author.nick
+            )
+            embed.add_field(
+                name=t({"en": "Joined at", "ja": "参加日時"}, ctx),
+                value=ctx.joined_at
+            )
+            embeds.append(embed)
+        await ctx.send(embeds=embeds)
  
 
 async def setup(bot):
