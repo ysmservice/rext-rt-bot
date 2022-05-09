@@ -43,7 +43,7 @@ class Userinfo(Cog):
         if isinstance(ctx.author, Member):
             embed = Cog.Embed(
                 title=t({"en": "Now your turn", "ja": "あなたの番です。"}, ctx),
-                description=", ".join(role.mention for role in guild.roles)
+                description=", ".join(role.mention for role in ctx.guild.roles)
             )
             embed.add_field(
                 name=t({"en": "Show name", "ja": "表示名"}, ctx),
