@@ -1,5 +1,6 @@
 # RT - Userinfo
 from discord.ext import commands
+from discord import app_commands
 
 from core import Cog
 
@@ -9,6 +10,7 @@ class Userinfo(Cog):
         self.bot = bot
         
     @commands.command()
+    @app_commands.describe(userid="user id")
     async def userinfo(self, ctx, *, userid: int=None):
         user = await self.bot.search_user(userid if userid is not None else ctx.author.id)
         if user.public_flags.hypesquad_bravery:
