@@ -31,7 +31,7 @@ class Userinfo(Cog):
             value=user.id
         )
         embed.add_field(
-            name=t({"ja": "Discord登録日時", "en": "Discord register time"}, ctx)
+            name=t({"ja": "Discord登録日時", "en": "Discord register time"}, ctx),
             value=user.created_at
         )
         embed.add_field(
