@@ -10,7 +10,7 @@ class Userinfo(Cog):
         
     @commands.command()
     async def userinfo(self, ctx, *, userid: int=None):
-        user = await self.bot.search_user(id if id is not None else ctx.author.id)
+        user = await self.bot.search_user(userid if userid is not None else ctx.author.id)
         if user.public_flags.hypesquad_bravery:
             hypesquad = "<:HypeSquad_Bravery:876337861572579350>"
         elif user.public_flags.hypesquad_brilliance:
