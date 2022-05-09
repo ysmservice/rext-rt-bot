@@ -33,7 +33,7 @@ class Userinfo(Cog):
         )
         embed.add_field(
             name="アバターURL",
-            value=user.avatar.url
+            value=getattr(user.avatar, "url", "null")
         )
  
 
