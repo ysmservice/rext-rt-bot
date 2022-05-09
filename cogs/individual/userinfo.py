@@ -33,7 +33,8 @@ class Userinfo(Cog):
         )
         embed.add_field(
             name="アバターURL",
-            value=getattr(user.avatar, "url", "null")
+            value=getattr(user.avatar, "url", "null"),
+            inline=False
         )
         await ctx.send(embed=embed)
  
