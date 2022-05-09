@@ -35,6 +35,7 @@ class Userinfo(Cog):
             name="アバターURL",
             value=getattr(user.avatar, "url", "null")
         )
+        await ctx.send(embed=embed)
  
 
 async def setup(bot):
