@@ -58,7 +58,7 @@ class Userinfo(Cog):
         
     Cog.HelpCommand(userinfo) \
         .set_headline(ja="ユーザーを検索します。") \
-        .add_args("userid", "str", "Optional",
+        .add_arg("userid", "str", "Optional",
                  ja="ユーザーID", en="User ID") \
         .set_description(ja="ユーザーを検索します", en="Search user")
  
