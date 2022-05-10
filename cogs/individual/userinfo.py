@@ -40,7 +40,7 @@ class Userinfo(Cog):
             inline=False
         )
         embeds.append(embed)
-        member = await ctx.bot.search_member(ctx.guild.id, user.id)
+        member = await ctx.bot.search_member(ctx.guild, user.id)
         if member is not None:
             embed = Cog.Embed(
                 title=t({"en": "At this server information", "ja": "このサーバーの情報"}, ctx),
