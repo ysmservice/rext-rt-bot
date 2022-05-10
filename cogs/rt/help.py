@@ -122,6 +122,7 @@ RESULT_TYPES = {
 
 async def help_autocomplete(_, current: str) \
         -> list[discord.app_commands.Choice[str]]:
+    current = current.lower()
     self = __help_cog__
     result = [discord.app_commands.Choice(name="...", value="...")]
     i = 0
