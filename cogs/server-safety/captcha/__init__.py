@@ -17,7 +17,9 @@ from core import RT, Cog, t, DatabaseManager, cursor
 
 from rtlib.common.cacher import Cacher
 
-from .part import CaptchaContext, CaptchaPart, RowData, Mode
+from data import OFF_ALIASES
+
+from .part import CaptchaContext, CaptchaPart, CaptchaView, RowData, Mode
 from .oneclick import OneClickCaptchaPart
 from .web import WebCaptchaPart
 from .word import WordCaptchaPart
@@ -35,9 +37,16 @@ class DataManager(DatabaseManager):
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS Captcha (
                 GuildId BIGINT PRIMARY KEY NOT NULL, RoleId BIGINT,
-                Mode ENUM("image", "word", "web", "onclick"),
-                TimeoutAfter FLOAT, Kick BOOLEAN, Extras JSON
+                Mode ENUM("image", "word", "web", "oneclick"),
+                DeadlineAfter FLOAT, Kick BOOLEAN, Extras JSON
             );"""
+        )
+
+    async def write_deadline(self, guild_id: int, deadline: float, kick: bool) -> None:
+        "期限を設定します。"
+        await cursor.execute(
+            "UPDATE Captcha SET DeadlineAfter = %s, Kick = %s WHERE GuildId = %s;",
+            (deadline, kick, guild_id)
         )
 
     async def write(
@@ -71,7 +80,7 @@ class DataManager(DatabaseManager):
                 (guild_id,)
             )
             if row := await cursor.fetchone():
-                self.caches[guild_id] = RowData(*row)
+                self.caches[guild_id] = RowData(*row[:-1], loads(row[-1])) # type: ignore
         return self.caches[guild_id]
 
 
@@ -93,6 +102,10 @@ class Captcha(Cog):
         )
         self.parts = Parts(*(globals()[name](self) for name in Parts.__annotations__.values()))
         self.data = DataManager(self)
+        if not getattr(self.bot, "_captcha_patched", False):
+            self.view = CaptchaView(self)
+            self.bot.add_view(self.view)
+            setattr(self.bot, "_captcha_patched", True)
 
     @commands.Cog.listener()
     async def on_setup(self):
@@ -142,7 +155,7 @@ class Captcha(Cog):
                     }, feature=self.captcha
                 )
             )
-            self.queues.set_deadline(member, time() + data.timeout)
+            self.queues.set_deadline(member, time() + data.deadline)
 
     @overload
     async def on_success(
@@ -201,9 +214,63 @@ class Captcha(Cog):
                 kwargs.setdefault("view", None)
                 await interaction.response.edit_message(**kwargs)
 
-    @commands.command()
+    @commands.group(
+        aliases=("認証", "authentication", "auth"),
+        description="Set up captcha"
+    )
+    @commands.guild_only()
+    @commands.cooldown(1, 10, commands.BucketType.guild)
     async def captcha(self, ctx: commands.Context):
-        ...
+        await self.group_index(ctx)
+
+    async def setup(
+        self, ctx: commands.Context, mode: Mode, role: discord.Role,
+        extras: dict[str, Any] | None = None
+    ) -> None:
+        assert ctx.guild is not None
+        async with ctx.typing():
+            await self.data.write(ctx.guild.id, role.id, mode, extras or {})
+            await ctx.channel.send(view=self.view)
+        await ctx.reply("Ok", ephemeral=True)
+
+    @captcha.command(aliases=("画像", "img"), description="Set up image captcha")
+    async def image(self, ctx: commands.Context, *, role: discord.Role):
+        await self.setup(ctx, "image", role)
+
+    @captcha.command(aliases=("合言葉", "word"), description="Set up word captcha")
+    async def word(
+        self, ctx: commands.Context, word: str,
+        mode: Literal["partial", "full"], *,
+        role: discord.Role
+    ):
+        await self.setup(ctx, "word", role, {"word": word, "mode": mode})
+
+    @captcha.command(aliases=("ウェブ", "web"), description="Set up web captcha")
+    async def web(self, ctx: commands.Context, *, role: discord.Role):
+        await self.setup(ctx, "web", role)
+
+    @captcha.command(aliases=("ワンクリック", "web"), description="Set up web captcha")
+    async def oneclick(self, ctx: commands.Context, *, role: discord.Role):
+        await self.setup(ctx, "oneclick", role)
+
+    @captcha.command(
+        aliases=("dl", "timeout", "to", "期限", "タイムアウト"),
+        description="Sets the deadline for the captcha."
+    )
+    async def deadline(self, ctx: commands.Context, deadline: float, kick: bool):
+        async with ctx.typing():
+            assert ctx.guild is not None
+            await self.data.write_deadline(ctx.guild.id, deadline, kick)
+        await ctx.reply("Ok")
+
+    @captcha.command(
+        aliases=OFF_ALIASES, description="Remove the captcha setting."
+    )
+    async def off(self, ctx: commands.Context):
+        async with ctx.typing():
+            assert ctx.guild is not None
+            await self.data.delete(ctx.guild.id)
+        await ctx.reply("Ok")
 
 
 async def setup(bot):
