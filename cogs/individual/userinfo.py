@@ -21,7 +21,6 @@ class Userinfo(Cog):
             hypesquad = "<:HypeSquad_Balance:876337714679676968>"
         else:
             hypesquad = ""
-        embeds = []
         embed = Cog.Embed(
             title=user,
             description=hypesquad
@@ -40,7 +39,7 @@ class Userinfo(Cog):
             inline=False
         )
         embed.set_thumbnail(url=user.avatar.url)
-        embeds.append(embed)
+        embeds = [embed]
         member = await self.bot.search_member(ctx.guild, user.id)
         if member is not None:
             embed = Cog.Embed(
