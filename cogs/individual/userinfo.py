@@ -48,7 +48,7 @@ class Userinfo(Cog):
             )
             embed.add_field(
                 name=t({"en": "Show name", "ja": "表示名"}, ctx),
-                value=member.nick
+                value=member.nick if member.nick is not None else member.name
             )
             embed.add_field(
                 name=t({"en": "Joined at", "ja": "参加日時"}, ctx),
