@@ -38,7 +38,7 @@ class Userinfo(Cog):
             value=getattr(user.avatar, "url", "null"),
             inline=False
         )
-        embed.set_thumbnail(url=user.avatar.url)
+        embed.set_thumbnail(url=getattr(user.avatar, "url", ""))
         embeds = [embed]
         try:
             member = await self.bot.search_member(ctx.guild, user.id)
