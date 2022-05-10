@@ -40,18 +40,19 @@ class Userinfo(Cog):
             inline=False
         )
         embeds.append(embed)
-        if isinstance(ctx.author, Member):
+        member = await ctx.bot.search_member(ctx.guild.id, user.id)
+        if member is not None:
             embed = Cog.Embed(
                 title=t({"en": "At this server information", "ja": "このサーバーの情報"}, ctx),
-                description=", ".join(role.mention for role in ctx.author.roles)
+                description=", ".join(role.mention for role in member.roles)
             )
             embed.add_field(
                 name=t({"en": "Show name", "ja": "表示名"}, ctx),
-                value=ctx.author.nick
+                value=member.nick
             )
             embed.add_field(
                 name=t({"en": "Joined at", "ja": "参加日時"}, ctx),
-                value=ctx.author.joined_at
+                value=member.joined_at
             )
             embeds.append(embed)
         await ctx.send(embeds=embeds)
