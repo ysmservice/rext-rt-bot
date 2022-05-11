@@ -245,7 +245,7 @@ class Captcha(Cog):
     ):
         await self.setup(ctx, "word", role, {"word": word, "mode": mode})
 
-    @captcha.command(aliases=("ウェブ", "web"), description="Set up web captcha")
+    @captcha.command(aliases=("ウェブ",), description="Set up web captcha")
     async def web(self, ctx: commands.Context, *, role: discord.Role):
         await self.setup(ctx, "web", role)
 
