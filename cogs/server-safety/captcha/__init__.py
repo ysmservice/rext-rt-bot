@@ -237,7 +237,7 @@ class Captcha(Cog):
     async def image(self, ctx: commands.Context, *, role: discord.Role):
         await self.setup(ctx, "image", role)
 
-    @captcha.command(aliases=("合言葉", "word"), description="Set up word captcha")
+    @captcha.command(aliases=("合言葉",), description="Set up word captcha")
     async def word(
         self, ctx: commands.Context, word: str,
         mode: Literal["partial", "full"], *,
