@@ -106,6 +106,9 @@ class Captcha(Cog):
             self.view = CaptchaView(self)
             self.bot.add_view(self.view)
             setattr(self.bot, "_captcha_patched", True)
+            
+    async def cog_load(self):
+        await self.data.prepare_table()
 
     @commands.Cog.listener()
     async def on_setup(self):
