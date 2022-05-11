@@ -16,6 +16,7 @@ def setup(bot: RT):
     @bot.ipcs.listen()
     async def on_connect():
         bot.dispatch("backend_connect")
+        bot.dispatch("setup")
         global disconnected
         if disconnected:
             bot.dispatch("backend_reconnect")

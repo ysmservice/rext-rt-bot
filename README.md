@@ -12,6 +12,7 @@ RTのBotで、メインプログラムです。
 2. `data.json.template`と`secret.json.template`のコピーを作って、名前をそれぞれ`.template`を消した名前にします。
 3. `data.json`と`secret.json`の中身をそこに書かれてる通りに適切なものを書き込みます。
 4. リポジトリ`rt-lib`を`clone`してフォルダの名前を`rtlib`にする。
+5. ルートに`secret.key`を`rtlib/rtlib/common/make_key.py`で作る。もしバックエンド側にあるならそれをコピーする。
 
 ## 起動方法
 `python3 main.py test`で起動が可能です。  
