@@ -249,7 +249,7 @@ class Captcha(Cog):
     async def web(self, ctx: commands.Context, *, role: discord.Role):
         await self.setup(ctx, "web", role)
 
-    @captcha.command(aliases=("ワンクリック", "web"), description="Set up web captcha")
+    @captcha.command(aliases=("ワンクリック",), description="Set up web captcha")
     async def oneclick(self, ctx: commands.Context, *, role: discord.Role):
         await self.setup(ctx, "oneclick", role)
 
