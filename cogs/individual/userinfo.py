@@ -1,6 +1,6 @@
 # RT - Userinfo
 from discord.ext import commands
-from discord import app_commands, Member
+from discord import app_commands, Member, errors
 
 from core import Cog, t
 
@@ -38,9 +38,12 @@ class Userinfo(Cog):
             value=getattr(user.avatar, "url", "null"),
             inline=False
         )
-        embed.set_thumbnail(url=user.avatar.url)
+        embed.set_thumbnail(url=getattr(user.avatar, "url", ""))
         embeds = [embed]
-        member = await self.bot.search_member(ctx.guild, user.id)
+        try:
+            member = await self.bot.search_member(ctx.guild, user.id)
+        except errors.NotFound:
+            member = None
         if member is not None:
             embed = Cog.Embed(
                 title=t({"en": "At this server information", "ja": "このサーバーの情報"}, ctx),
