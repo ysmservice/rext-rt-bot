@@ -38,7 +38,7 @@ class CaptchaView(discord.ui.View):
         kwargs.setdefault("timeout", None)
         super().__init__(*args, **kwargs)
 
-    @discord.ui.button(custom_id="captcha.start", emoji="🔎")
+    @discord.ui.button(label="Start captcha", custom_id="captcha.start", emoji="🔎")
     async def start(self, interaction: discord.Interaction, _):
         assert interaction.message is not None and isinstance(interaction.user, discord.Member)
         self.cog.queues[interaction.user] = CaptchaContext(member=interaction.user)

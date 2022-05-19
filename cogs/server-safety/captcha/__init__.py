@@ -107,6 +107,9 @@ class Captcha(Cog):
             self.bot.add_view(self.view)
             setattr(self.bot, "_captcha_patched", True)
 
+    async def cog_load(self):
+        await self.data.prepare_table()
+
     @commands.Cog.listener()
     async def on_setup(self):
         self.bot.ipcs.set_route(self.parts.web.on_success)
@@ -227,17 +230,19 @@ class Captcha(Cog):
         self, ctx: commands.Context, mode: Mode, role: discord.Role,
         extras: dict[str, Any] | None = None
     ) -> None:
-        assert ctx.guild is not None
         async with ctx.typing():
+            assert ctx.guild is not None
             await self.data.write(ctx.guild.id, role.id, mode, extras or {})
-            await ctx.channel.send(view=self.view)
-        await ctx.reply("Ok", ephemeral=True)
+        await ctx.channel.send(content=t(dict(
+            ja="以下のボタンから認証を行なってください。",
+            en="Please click the button below to authenticate."
+        ), ctx.guild), view=self.view)
 
     @captcha.command(aliases=("画像", "img"), description="Set up image captcha")
     async def image(self, ctx: commands.Context, *, role: discord.Role):
         await self.setup(ctx, "image", role)
 
-    @captcha.command(aliases=("合言葉", "word"), description="Set up word captcha")
+    @captcha.command(aliases=("合言葉",), description="Set up word captcha")
     async def word(
         self, ctx: commands.Context, word: str,
         mode: Literal["partial", "full"], *,
@@ -245,11 +250,11 @@ class Captcha(Cog):
     ):
         await self.setup(ctx, "word", role, {"word": word, "mode": mode})
 
-    @captcha.command(aliases=("ウェブ", "web"), description="Set up web captcha")
+    @captcha.command(aliases=("ウェブ",), description="Set up web captcha")
     async def web(self, ctx: commands.Context, *, role: discord.Role):
         await self.setup(ctx, "web", role)
 
-    @captcha.command(aliases=("ワンクリック", "web"), description="Set up web captcha")
+    @captcha.command(aliases=("ワンクリック", "oc"), description="Set up web captcha")
     async def oneclick(self, ctx: commands.Context, *, role: discord.Role):
         await self.setup(ctx, "oneclick", role)
 
