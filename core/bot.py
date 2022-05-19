@@ -210,7 +210,10 @@ class RT(commands.Bot):
         obj = getattr(guild, f"get_{type_}")(id_)
         if obj is None:
             type_for_fetch = type_for_fetch or type_
-            obj = await getattr(guild, f"fetch_{type_}")(id_)
+            try:
+                obj = await getattr(guild, f"fetch_{type_}")(id_)
+            except discord.NotFound:
+                obj = None
         return obj
 
     async def search_member(self, guild: discord.Guild, member_id: int) -> Optional[discord.Member]:
