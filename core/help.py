@@ -154,7 +154,7 @@ class HelpCommand(Help):
         else: setattr(self.command._callback, "__raw_help__", self)
         self.set_headline(en=command.description)
         self.set_title(self.command.name)
-        self.set_category(_get(self.command, "category", "Other"))
+        self.set_category(_get(self.command, "category", None) or self.fsparent or "Other")
         if command.aliases:
             # エキストラにエイリアスを自動で追加する。
             self.set_extra("Aliases", **make_default(f'`{"`, `".join(command.aliases)}`'))
@@ -181,6 +181,12 @@ class HelpCommand(Help):
             option, # type: ignore
             cleantext(detail)
         ))
+        return self
+
+    def set_args(self: SelfCmdT, **kwargs: dict) -> SelfCmdT:
+        "引数の説明を全て`.add_arg`で追加します。"
+        for key, value in kwargs.items():
+            self.add_arg(key, **value)
         return self
 
     @property

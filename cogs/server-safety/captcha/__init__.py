@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Literal, Any, overload
 
 from dataclasses import dataclass
-from asyncio import create_task
 from time import time
 
 from discord.ext import commands
@@ -243,6 +242,16 @@ class Captcha(Cog):
         if ctx.interaction is not None:
             await ctx.interaction.response.send_message("Ok", ephemeral=True)
 
+    _SETUP_HELP = (Cog.HelpCommand(captcha)
+        .merge_headline(ja="認証を設定します。")
+        .set_description(
+            ja="""認証を設定します。
+                認証というのは人間かどうかを確認するというものです。
+                これを使うことでセルフBotによる荒らしをある程度防止することができます。""",
+            en=f"""{captcha.description}
+                Captcha is a way to check if a person is human or not.
+                This can be used to prevent vandalism by self-bots to some extent."""
+        ))
     _role_d = "Roles granted upon successful captcha"
     _role_describe = discord.app_commands.describe(role=_role_d)
 
@@ -250,6 +259,20 @@ class Captcha(Cog):
     @_role_describe
     async def image(self, ctx: commands.Context, *, role: discord.Role):
         await self.setup(ctx, "image", role)
+
+    _BASE_ARGS = {
+        "role": {
+            "annotation": "Role",
+            "ja": "認証が成功した際に付与するロールです。\nこのロールがなければ喋れないようにしましょう。",
+            "en": "This is the role to be granted upon successful captcha.\nYou should not be able to speak without this role."
+        }
+    }
+    _SETUP_HELP.add_sub(Cog.HelpCommand(image)
+        .set_description(
+            ja="表示された画像にある数字を選択する認証です。",
+            en="The captcha is to select the number in the displayed image."
+        )
+        .set_args(**_BASE_ARGS))
 
     @captcha.command(aliases=("合言葉",), description="Set up word captcha")
     @discord.app_commands.describe(
@@ -264,29 +287,94 @@ class Captcha(Cog):
     ):
         await self.setup(ctx, "word", role, {"word": word, "mode": mode})
 
+    _WORD_ARGS = _BASE_ARGS.copy()
+    _WORD_ARGS.update(
+        word={
+            "annotation": "str",
+            "ja": "合言葉です。", "en": "The password for captcha."
+        },
+        mode={
+            "annotation": "Choice",
+            "ja": """認証対象のユーザーが合言葉が正しいかをどのようにチェックするかです。
+                全一致は全ての文字が合っていないといませんが、部分一致の場合は合言葉に文字が含まれてれば良いです。
+                `full` 全一致
+                `partial` 部分一致""",
+            "en": """This is how to check if the password is correct for the user to be done captcha.
+                For a full match, all characters must match, but for a partial match, only the characters in the password need to be present.
+                `full` full match
+                `partial` partial match"""
+        }
+    )
+    _SETUP_HELP.add_sub(Cog.HelpCommand(word)
+        .set_description(
+            ja="""合言葉を入力しなければいけない認証です。
+                ルールを読まないとわからないような合言葉を設定するのがおすすめです。""",
+            en="""This is an authentication that requires you to enter a password.
+                It is recommended that you set a password that is not obvious unless you read the rules."""
+        )
+        .set_args(**_WORD_ARGS))
+    del _WORD_ARGS
+
     @captcha.command(aliases=("ウェブ",), description="Set up web captcha")
     @_role_describe
     async def web(self, ctx: commands.Context, *, role: discord.Role):
         await self.setup(ctx, "web", role)
+
+    _SETUP_HELP.add_sub(Cog.HelpCommand(web)
+        .set_description(
+            ja="ウェブで行う認証方式で、本格的な認証で安全度が高いです。",
+            en="Web captcha. It is a full-fledged captcha and highly secure."
+        )
+        .set_args(**_BASE_ARGS))
 
     @captcha.command(aliases=("ワンクリック", "oc"), description="Set up web captcha")
     @_role_describe
     async def oneclick(self, ctx: commands.Context, *, role: discord.Role):
         await self.setup(ctx, "oneclick", role)
 
+    _SETUP_HELP.add_sub(Cog.HelpCommand(oneclick)
+        .set_description(
+            ja="""ボタンをクリックするだけで良い認証です。
+                この認証は手軽ですぐ終わりますが、安全性は低いです。""",
+            en="""This captcha requires only the click of a button.
+                This captcha is easy and quick, but it is not secure."""
+        )
+        .set_args(**_BASE_ARGS))
+    del _BASE_ARGS
+
     @captcha.command(
         aliases=("dl", "timeout", "to", "期限", "タイムアウト"),
         description="Sets the deadline for the captcha."
     )
     @discord.app_commands.describe(
-        deadline="The number of seconds before captcha is no longer possible.",
-        kick="Whether to kick in when due."
+        deadline=(_d_d := "The number of seconds before captcha is no longer possible."),
+        kick=(_d_k := "Whether to kick in when due.")
     )
     async def deadline(self, ctx: commands.Context, deadline: float, kick: bool):
         async with ctx.typing():
             assert ctx.guild is not None
             await self.data.write_deadline(ctx.guild.id, deadline, kick)
         await ctx.reply("Ok")
+
+    _SETUP_HELP.add_sub(Cog.HelpCommand(deadline)
+        .set_description(
+            ja="""認証の期限を設定します。
+                サーバー入室者が認証をしていない状態でこの期限を切った場合は認証対象から外れます。""",
+            en=deadline.description
+        )
+        .set_extra("Notes",
+            ja="デフォルトでは認証をせず一時間放置した場合はキックするようになっています。",
+            en="By default, the system will kick the user if the user don't captcha for an hour."
+        )
+        .add_arg(
+            "deadline", "float", en=_d_d,
+            ja="どのくらいの起源にするかの秒数です。\nデフォルトでは一時間の3600秒です。"
+        )
+        .add_arg(
+            "kick", "bool", en=_d_k,
+            ja="キックをするかどうかです。\nデフォルトではキックを行う`True`です。"
+        ))
+    del _d_d, _d_k
 
     @captcha.command(
         aliases=OFF_ALIASES, description="Remove the captcha setting."
@@ -296,6 +384,11 @@ class Captcha(Cog):
             assert ctx.guild is not None
             await self.data.delete(ctx.guild.id)
         await ctx.reply("Ok")
+
+    _SETUP_HELP.add_sub(Cog.HelpCommand(off)
+        .set_description(ja="認証を無効化します。", en=off.description))
+
+    del _role_d, _role_describe, _SETUP_HELP
 
 
 async def setup(bot):
