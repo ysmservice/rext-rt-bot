@@ -25,6 +25,8 @@ from .web import WebCaptchaPart
 from .word import WordCaptchaPart
 from .image import ImageCaptchaPart
 
+from ..__init__ import FSPARENT
+
 
 class DataManager(DatabaseManager):
     def __init__(self, cog: Captcha):
@@ -57,8 +59,8 @@ class DataManager(DatabaseManager):
         row = (guild_id, role_id, mode, 3600.0, True, dumps(extras).decode())
         await cursor.execute(
             """INSERT INTO Captcha VALUES (%s, %s, %s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE RoleId = %s, Mode = %s;""",
-            row + row[1:-3]
+                ON DUPLICATE KEY UPDATE RoleId = %s, Mode = %s, Extras = %s;""",
+            row + row[1:-3] + row[-1:]
         )
         if guild_id in self.caches:
             self.caches[guild_id] = RowData(*row[:-1], extras)
@@ -116,8 +118,8 @@ class Captcha(Cog):
 
     def on_dead_queue(self, _, ctx: CaptchaContext) -> None:
         "キューが削除された際に呼ばれる関数です。"
-        create_task(ctx.part.on_queue_remove(ctx))
-        create_task(self.after_captcha(ctx))
+        self.bot.loop.create_task(ctx.part.on_queue_remove(ctx))
+        self.bot.loop.create_task(self.after_captcha(ctx))
 
     async def after_captcha(self, ctx: CaptchaContext) -> None:
         "キューが消された後の後処理をする。(キック等)\n`.on_dead_queue`から呼ばれる。"
@@ -125,12 +127,12 @@ class Captcha(Cog):
         if not ctx.success:
             if ctx.data.kick:
                 ctx.event_context.detail = t(dict(
-                    ja="認証期限が切れたのでキックをしようとした。",
-                    en="Attempted to kick the certification because it had expired."
+                    ja="認証期限が切れたので入室者をキックしようとした。",
+                    en="Attempted to kick the person entering the room because the captcha had expired."
                 ), ctx.member.guild)
                 try:
                     await ctx.member.kick(reason=t(dict(
-                        ja="認証期限が過ぎたため。", en="Because the certification deadline has passed."
+                        ja="認証期限が過ぎたため。", en="Because the captcha deadline has passed."
                     ), ctx.member.guild))
                 except discord.Forbidden:
                     ctx.event_context.detail = "{}\n{}".format(
@@ -176,7 +178,6 @@ class Captcha(Cog):
     ) -> None | str:
         "認証成功時に呼ばれるべき関数です。ロールを付与します。"
         ctx.success = True
-        del self.queues[ctx.member]
 
         # ロールを用意する。
         if (role := ctx.member.guild.get_role(ctx.data.role_id)) is None:
@@ -206,12 +207,13 @@ class Captcha(Cog):
                 ), interaction)
 
         self.bot.rtevent.dispatch("on_captcha_success", ctx.event_context)
+        del self.queues[ctx.member]
 
         if interaction is None:
             return kwargs["content"]
         else:
             if mode == "send":
-                kwargs.setdefault("ephemeral")
+                kwargs.setdefault("ephemeral", True)
                 await interaction.response.send_message(**kwargs)
             else:
                 kwargs.setdefault("view", None)
@@ -219,7 +221,7 @@ class Captcha(Cog):
 
     @commands.group(
         aliases=("認証", "authentication", "auth"),
-        description="Set up captcha"
+        description="Set up captcha", fsparent=FSPARENT
     )
     @commands.guild_only()
     @commands.cooldown(1, 10, commands.BucketType.guild)
@@ -230,37 +232,55 @@ class Captcha(Cog):
         self, ctx: commands.Context, mode: Mode, role: discord.Role,
         extras: dict[str, Any] | None = None
     ) -> None:
-        async with ctx.typing():
-            assert ctx.guild is not None
-            await self.data.write(ctx.guild.id, role.id, mode, extras or {})
+        if ctx.interaction is None:
+            await ctx.typing()
+        assert ctx.guild is not None
+        await self.data.write(ctx.guild.id, role.id, mode, extras or {})
         await ctx.channel.send(content=t(dict(
             ja="以下のボタンから認証を行なってください。",
-            en="Please click the button below to authenticate."
+            en="Please click the button below to do captcha."
         ), ctx.guild), view=self.view)
+        if ctx.interaction is not None:
+            await ctx.interaction.response.send_message("Ok", ephemeral=True)
+
+    _role_d = "Roles granted upon successful captcha"
+    _role_describe = discord.app_commands.describe(role=_role_d)
 
     @captcha.command(aliases=("画像", "img"), description="Set up image captcha")
+    @_role_describe
     async def image(self, ctx: commands.Context, *, role: discord.Role):
         await self.setup(ctx, "image", role)
 
     @captcha.command(aliases=("合言葉",), description="Set up word captcha")
+    @discord.app_commands.describe(
+        word="Password for captcha",
+        mode="The question is whether the password should be a partial match.",
+        role=_role_d
+    )
     async def word(
         self, ctx: commands.Context, word: str,
-        mode: Literal["partial", "full"], *,
+        mode: Literal["full", "partial"], *,
         role: discord.Role
     ):
         await self.setup(ctx, "word", role, {"word": word, "mode": mode})
 
     @captcha.command(aliases=("ウェブ",), description="Set up web captcha")
+    @_role_describe
     async def web(self, ctx: commands.Context, *, role: discord.Role):
         await self.setup(ctx, "web", role)
 
     @captcha.command(aliases=("ワンクリック", "oc"), description="Set up web captcha")
+    @_role_describe
     async def oneclick(self, ctx: commands.Context, *, role: discord.Role):
         await self.setup(ctx, "oneclick", role)
 
     @captcha.command(
         aliases=("dl", "timeout", "to", "期限", "タイムアウト"),
         description="Sets the deadline for the captcha."
+    )
+    @discord.app_commands.describe(
+        deadline="The number of seconds before captcha is no longer possible.",
+        kick="Whether to kick in when due."
     )
     async def deadline(self, ctx: commands.Context, deadline: float, kick: bool):
         async with ctx.typing():

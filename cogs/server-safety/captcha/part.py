@@ -8,6 +8,8 @@ from types import SimpleNamespace
 
 import discord
 
+from core import t
+
 if TYPE_CHECKING:
     from core.rtevent import EventContext
 
@@ -39,12 +41,19 @@ class CaptchaView(discord.ui.View):
         super().__init__(*args, **kwargs)
 
     @discord.ui.button(label="Start captcha", custom_id="captcha.start", emoji="🔎")
+    @discord.app_commands.checks.cooldown(1, 10)
     async def start(self, interaction: discord.Interaction, _):
-        assert interaction.message == "" and isinstance(interaction.user, discord.Member)
-        self.cog.queues[interaction.user] = CaptchaContext(member=interaction.user)
-        await self.cog.get_part(interaction.message.content).on_button_push(
-            self.cog.queues[interaction.user], interaction
-        )
+        assert interaction.message is not None and isinstance(interaction.user, discord.Member) \
+            and interaction.guild_id is not None
+        if interaction.user in self.cog.queues:
+            await self.cog.queues[interaction.user].part.on_button_push(
+                self.cog.queues[interaction.user], interaction
+            )
+        else:
+            await interaction.response.send_message(t(dict(
+                ja="あなたは認証対象ではありません。\n考えられる原因：放置した, サーバーの認証が解除された, 既にロールを所有している",
+                en="You are not eligible for captcha.\nPossible causes: You are neglected, The setting is deactivated, Already own the role"
+            ), interaction), ephemeral=True)
 
 
 class CaptchaPart:
