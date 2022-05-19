@@ -110,8 +110,15 @@ class Individual(Cog):
                     else f"<t:{int(user.joined_at.timestamp())}> (UST)"
             )
             embeds.append(embed)
-
         await ctx.send(embeds=embeds)
+        
+    @commands.command(
+        aliases=("si", "サーバー情報")
+        description="Show server information", fsparent=FSPARENT)
+    )
+    @app_commands.describe(target="server id")
+    async def serverinfo(self, target: int):
+        guild = await self.bot.search_guild(target)
         
     (Cog.HelpCommand(userinfo)
         .set_headline(ja="ユーザーを検索します。")
