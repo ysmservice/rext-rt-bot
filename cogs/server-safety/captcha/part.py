@@ -5,10 +5,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, NamedTuple, TypeAlias, Literal, Any
 
 from types import SimpleNamespace
+from time import time
 
 import discord
 
 from core import t
+
+from rtlib.common.cacher import Cacher
 
 if TYPE_CHECKING:
     from core.rtevent import EventContext
@@ -37,18 +40,37 @@ class CaptchaContext(SimpleNamespace):
 class CaptchaView(discord.ui.View):
     def __init__(self, cog: Captcha, *args, **kwargs):
         self.cog = cog
+        self._cache: Cacher[tuple[int, int], tuple[float, int]] = \
+            self.cog.bot.cachers.acquire(1800.0)
         kwargs.setdefault("timeout", None)
         super().__init__(*args, **kwargs)
 
     @discord.ui.button(label="Start captcha", custom_id="captcha.start", emoji="🔎")
-    @discord.app_commands.checks.cooldown(1, 10)
     async def start(self, interaction: discord.Interaction, _):
         assert interaction.message is not None and isinstance(interaction.user, discord.Member) \
             and interaction.guild_id is not None
         if interaction.user in self.cog.queues:
-            await self.cog.queues[interaction.user].part.on_button_push(
-                self.cog.queues[interaction.user], interaction
-            )
+            # やればやるほど待機しなければならないようにした。
+            now, key = time(), (interaction.guild_id, interaction.user.id)
+            if key not in self._cache:
+                self._cache[key] = (now, 0)
+            if now < self._cache[key][0]:
+                await interaction.response.send_message(t(dict(
+                    ja="クールダウン中です。\n{after:.2f}秒後にお試しください。",
+                    en="It is in cooldown.\nPlease try again after {after:.2f} seconds."
+                ), interaction, after=self._cache[key][0] - now), ephemeral=True)
+            else:
+                count = self._cache[key][1] + 1
+                if count == 13:
+                    self._cache.merge_deadline(key)
+                else:
+                    self._cache[key] = (
+                        now + count * 10 * count, count
+                    )
+
+                await self.cog.queues[interaction.user].part.on_button_push(
+                    self.cog.queues[interaction.user], interaction
+                )
         else:
             await interaction.response.send_message(t(dict(
                 ja="あなたは認証対象ではありません。\n考えられる原因：放置した, サーバーの認証が解除された, 既にロールを所有している",

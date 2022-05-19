@@ -30,7 +30,7 @@ class SelectNumber(TimeoutView):
         self.ctx, self.password = ctx, password
         super().__init__(*args, **kwargs)
         password_index = randint(0, 24)
-        for i in range(24):
+        for i in range(25):
             if i == password_index:
                 self.on_select.add_option(label=self.password, value=self.password)
             else:
