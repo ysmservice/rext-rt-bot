@@ -83,7 +83,7 @@ class DataManager(DatabaseManager):
             )
             if row := await cursor.fetchone():
                 self.caches[guild_id] = RowData(*row[:-1], loads(row[-1])) # type: ignore
-        return self.caches[guild_id]
+        return self.caches.get(guild_id, None)
 
 
 @dataclass
