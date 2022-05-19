@@ -4,7 +4,7 @@ import discord
 
 from core import t
 
-from data import HOST_PORT
+from data import URL
 
 from .part import CaptchaPart, CaptchaContext
 
@@ -13,8 +13,7 @@ class WebCaptchaPart(CaptchaPart):
     async def on_button_push(self, _: CaptchaContext, interaction: discord.Interaction) -> None:
         view = discord.ui.View(timeout=0.0)
         view.add_item(discord.ui.Button(
-            label="Go captcha page",
-            url=f"https://{HOST_PORT}/captcha"
+            label="Go captcha page", url=f"{URL}/captcha/login/{interaction.guild_id}"
         ))
         await interaction.response.send_message(t(dict(
             ja="以下でウェブ認証を行なってください。",
