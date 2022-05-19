@@ -40,7 +40,7 @@ class CaptchaView(discord.ui.View):
 
     @discord.ui.button(label="Start captcha", custom_id="captcha.start", emoji="🔎")
     async def start(self, interaction: discord.Interaction, _):
-        assert interaction.message is not None and isinstance(interaction.user, discord.Member)
+        assert interaction.message == "" and isinstance(interaction.user, discord.Member)
         self.cog.queues[interaction.user] = CaptchaContext(member=interaction.user)
         await self.cog.get_part(interaction.message.content).on_button_push(
             self.cog.queues[interaction.user], interaction
