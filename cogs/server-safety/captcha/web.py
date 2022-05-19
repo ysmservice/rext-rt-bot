@@ -19,7 +19,7 @@ class WebCaptchaPart(CaptchaPart):
         await interaction.response.send_message(t(dict(
             ja="以下でウェブ認証を行なってください。",
             en="Please perform web authentication below."
-        ), interaction), view=view)
+        ), interaction), view=view, ephemeral=True)
 
     async def on_success(self, user_id: int) -> str:
         for member in self.cog.queues.keys():

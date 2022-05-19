@@ -41,7 +41,8 @@ class SelectNumber(TimeoutView):
     @discord.ui.select()
     async def on_select(self, interaction: discord.Interaction, select: discord.ui.Select):
         if select.values[0] == self.password:
-            await self.ctx.part.cog.on_success(self.ctx, interaction, "edit")
+            await self.ctx.part.cog.on_success(self.ctx, interaction)
+            await interaction.edit_original_message(attachments=(), view=None)
         else:
             await interaction.response.edit_message(
                 content=t(FAILED_CODE, interaction), view=None
@@ -63,14 +64,14 @@ class ImageCaptchaPart(CaptchaPart):
         ), characters
 
     async def on_button_push(self, ctx: CaptchaContext, interaction: discord.Interaction) -> None:
-        data, ctx.password = await self.generate_image()
+        data, password = await self.generate_image()
         if data is None:
             await interaction.response.send_message(t(dict(
                 ja="すみませんが、認証に使う画像の生成に失敗しました。\nもう一度お試しください。",
                 en="Sorry, we failed to generate the image to be used for authentication.\nPlease try again."
-            ), interaction))
+            ), interaction), ephemeral=True)
         else:
             await interaction.response.send_message(t(dict(
-                ja="以下にある数字を選んでください。",
-                en="Please select a number below."
-            ), interaction), file=discord.File(data))
+                ja="以下にある数字を選んでください。", en="Please select a number below."
+            ), interaction), file=discord.File(data, "captcha_image.png"),
+            view=SelectNumber(ctx, password), ephemeral=True)
