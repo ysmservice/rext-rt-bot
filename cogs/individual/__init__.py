@@ -5,10 +5,12 @@ from typing import cast
 from discord.ext import commands
 import discord
 
+from jishaku.functools import executor_function
+
 from core import RT, Cog, t
 
+from rtutil.calculator import aiocalculate, NotSupported
 from rtutil.collectors import make_google_url
-from rtutil.utils import JST
 
 
 FSPARENT = "individual"
@@ -114,10 +116,31 @@ class Individual(Cog):
         await ctx.send(embeds=embeds)
         
     (Cog.HelpCommand(userinfo)
-        .set_headline(ja="ユーザーを検索します。")
+        .merge_headline(ja="ユーザーを検索します。")
         .add_arg("user", "User", "Optional",
             ja="ユーザーのIDかメンションまたは名前です。", en="User's name, id or mention.")
         .set_description(ja="ユーザーを検索します", en="Search user"))
+
+    @commands.command(
+        aliases=("calc", "計算機", "電卓"), fsparent=FSPARENT,
+        description="The calculator"
+    )
+    async def calculate(self, ctx: commands.Context, *, expression: str):
+        await ctx.typing()
+        try:
+            await ctx.reply(f"`{await aiocalculate(expression[:50])}`")
+        except (SyntaxError, NotSupported):
+            await ctx.reply(t(dict(
+                ja="使用できない文字があるか形式がおかしいため、計算をすることができませんでした。",
+                en="Some characters cannot be used or syntax is wrong.\nSo I was failed to calculate."
+            ), ctx))
+
+    (Cog.HelpCommand(calculate)
+        .merge_headline(ja="計算機")
+        .set_description(ja="計算機です。", en=calculate.description)
+        .add_arg("expression", "str",
+            ja="計算する式です。五十文字までです。\n`+-*/`に対応しています。",
+            en="Expression to calculate. Up to 50 characters.\n`+-*/` is supported."))
 
 
 async def setup(bot):
