@@ -131,8 +131,8 @@ class Individual(Cog):
             await ctx.reply(f"`{await aiocalculate(expression[:50])}`")
         except (SyntaxError, NotSupported):
             await ctx.reply(t(dict(
-                ja="使用できない文字があるか形式がおかしいため、計算をすることができませんでした。",
-                en="Some characters cannot be used or syntax is wrong.\nSo I was failed to calculate."
+                ja="使用できない文字があるか形式がおかしいまたは長すぎるため、計算をすることができませんでした。",
+                en="The calculation could not be performed because there are characters that cannot be used or the format is incorrect or too long."
             ), ctx))
 
     (Cog.HelpCommand(calculate)
