@@ -31,6 +31,7 @@ class Individual(Cog):
         description="Use SecURL to access the URL destination."
     )
     @discord.app_commands.describe(url=(_d_u := "The url to be accessed."))
+    @commands.cooldown(1, 15, commands.BucketType.user)
     async def securl(self, ctx: commands.Context, *, url: str):
         await ctx.typing()
         try:
