@@ -43,10 +43,7 @@ class EventContext:
             subject = t(subject, target, client=bot)
         if isinstance(detail, dict):
             detail = t(detail, target, client=bot)
-        self.detail = "{}{}".format(
-            f"{subject}\n" if subject and detail else "",
-            detail
-        )
+        self.detail = "{}{}".format(f"{subject}\n" if subject else "", detail)
         self.feature = feature
 
     def to_dict(self) -> dict[str, Any]:
