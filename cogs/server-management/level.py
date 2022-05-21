@@ -373,7 +373,7 @@ class LevelCog(Cog, name="Level"):
 
     @commands.Cog.listener()
     async def on_message_noprefix(self, message: discord.Message):
-        if message.guild is None:
+        if message.guild is None or isinstance(message.author, discord.Member):
             return
 
         level, _ = await self.data.read(message.guild.id, message.author.id)
@@ -388,7 +388,6 @@ class LevelCog(Cog, name="Level"):
                 await self.process_reward(message, level)
         # レベルのセーブキューにメンバーを追加する。
         if message.author not in self.queues:
-            assert isinstance(message.author, discord.Member)
             self.queues.append(message.author)
 
 
