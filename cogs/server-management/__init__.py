@@ -7,7 +7,10 @@ import discord
 
 from core import RT, Cog, t
 
+from rtlib.common.utils import code_block
+from rtlib.common import dumps
 from rtutil.collectors import make_google_url
+from rtutil.utils import ContentData
 from rtutil.views import TimeoutView
 
 
@@ -57,11 +60,20 @@ class SearchResultShowButton(discord.ui.Button):
 class ServerManagement(Cog):
     def __init__(self, bot: RT):
         self.bot = bot
-        self.bot.tree.remove_command("search")
+        self._CTX_MES_SEARCH = "Search"
+        self._CTX_MES_GC = "Get content"
         self.bot.tree.add_command(discord.app_commands.ContextMenu(
-            name="Search", callback=self.search,
+            name=self._CTX_MES_SEARCH, callback=self.search,
             type=discord.AppCommandType.message
         ))
+        self.bot.tree.add_command(discord.app_commands.ContextMenu(
+            name=self._CTX_MES_GC, callback=self.get_embed,
+            type=discord.AppCommandType.message
+        ))
+
+    async def cog_unload(self):
+        self.bot.tree.remove_command(self._CTX_MES_SEARCH)
+        self.bot.tree.remove_command(self._CTX_MES_GC)
 
     @commands.Cog.listener()
     async def on_help_load(self):
@@ -75,6 +87,20 @@ class ServerManagement(Cog):
             )
             .set_category(FSPARENT))
         self.bot.help_.set_help(Cog.Help()
+            .set_title("Get content")
+            .set_headline(ja="メッセージの内容のコードを取得します。", en="Get message content code")
+            .set_description(
+                ja="""メッセージの内容を表すコードを取得します。
+                    一部の機能は、これで取得したコードでメッセージ内容を指定することができます。
+                    もし、埋め込みや既にあるメッセージの内容をコマンドに使いたい場合は、もしかしたらこれでできるかもしれません。
+                    例：`command`""",
+                en="""Gets the code that represents the content of the message.
+                    Some functions can specify the message content with the code retrieved with this.
+                    If you want to use the content of an already existing message in a command, perhaps this can do it.
+                    Example: `command`"""
+            )
+            .set_category(FSPARENT))
+        self.bot.help_.set_help(Cog.Help()
             .set_title("autoPublish")
             .set_category(FSPARENT)
             .set_headline(ja="自動公開", en="Auto publish on news channel")
@@ -84,6 +110,17 @@ class ServerManagement(Cog):
                 en="""Automatically publish messages on news channels.
                     You can do this by putting `rt>autoPublish` in the news channel topic."""
             ))
+
+    async def get_embed(self, interaction: discord.Interaction, message: discord.Message):
+        data = ContentData(content={}, author=message.author.id, json=True)
+        if message.content:
+            data["content"]["content"] = message.content
+        if message.embeds:
+            data["content"]["embeds"] = [embed.to_dict() for embed in message.embeds]
+        await interaction.response.send_message(
+            code_block(dumps(data), "json"),
+            allowed_mentions=discord.AllowedMentions.none()
+        )
 
     QUESTIONS_JA = (
         "とは", "とは?", "とは？", "って何", "って何？",
