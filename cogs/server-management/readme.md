@@ -9,3 +9,4 @@
 * `requiresend.py` requiresend
 * `tenki.py` 天気予報
 * `role_linker.py` ロールリンカー
+* `level.py` レベル
