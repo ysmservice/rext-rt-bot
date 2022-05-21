@@ -165,6 +165,8 @@ class RoleLinker(Cog):
         aliases=("rl", "ロールリンカー"), fsparent=FSPARENT,
         description="Tie the roles to the roles."
     )
+    @commands.has_guild_permissions(manage_roles=True)
+    @commands.cooldown(1, 8, commands.BucketType.guild)
     async def role_linker(self, ctx: commands.Context):
         await self.group_index(ctx)
 
@@ -286,7 +288,10 @@ class RoleLinker(Cog):
         self.queues[member] = ([], self.queues[member][1]) if mode == "add" \
             else (self.queues[member][0], [])
         if roles:
-            await getattr(member, f"{mode}_roles")(*roles)
+            await getattr(member, f"{mode}_roles")(*roles, reason=t(dict(
+                ja=f"ロールリンカーのロールの{'付与' if mode == 'add' else '削除'}",
+                en=f"RoleLinker's {mode}"
+            ), member.guild))
 
     @tasks.loop(seconds=5)
     async def queue_processer(self):

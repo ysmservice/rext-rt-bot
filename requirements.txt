@@ -9,6 +9,7 @@ discord-ext-fslash
 jishaku
 ipcs
 uvloop; sys_platform != "win32" and implementation_name == "cpython"
+aioitertools
 # cogs.individual
 ## reprypt
 reprypt
