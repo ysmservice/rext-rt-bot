@@ -10,8 +10,9 @@ from orjson import loads
 __all__ = (
     "SECRET", "DATA", "CANARY", "get_category", "HOST_PORT", "URL", "API_URL", "SHARD",
     "TEST", "PREFIXES", "ADMINS", "Colors", "EMOJIS", "SUPPORT_SERVER", "PERMISSION_TEXTS",
-    "SETTING_NOTFOUND", "ALREADY_NO_SETTING", "TOO_LARGE_NUMBER", "NO_MORE_SETTING",
-    "NUMBER_CANT_USED", "FORBIDDEN", "notfound", "ROLE_NOTFOUND",
+    "SETTING_NOTFOUND", "ALREADY_NO_SETTING", "TOO_LARGE_NUMBER", "TOO_SMALL_NUMBER",
+    "TOO_SMALL_OR_LARGE_NUMBER", "NO_MORE_SETTING", "NUMBER_CANT_USED",
+    "FORBIDDEN", "notfound", "ROLE_NOTFOUND",
     "SET_ALIASES", "DELETE_ALIASES", "ADD_ALIASES", "REMOVE_ALIASES", "SHOW_ALIASES",
     "LIST_ALIASES", "OFF_ALIASES", "ON_ALIASES"
 )
@@ -147,6 +148,12 @@ NO_MORE_SETTING = {
 }
 TOO_LARGE_NUMBER = {
     "ja": "数が大きすぎます。", "en": "The number is too large."
+}
+TOO_SMALL_NUMBER = {
+    "ja": "数が小さぎます。", "en": "The number is too small."
+}
+TOO_SMALL_OR_LARGE_NUMBER = {
+    "ja": "数が小さいまたは大きぎます。", "en": "The number is too small or large."
 }
 NUMBER_CANT_USED = {
     "ja": "その数は使用できません。", "en": "That number cannot be used."
