@@ -79,6 +79,11 @@ class RT(commands.Bot):
             "interaction_response_mode": InteractionResponseMode.SEND_AND_REPLY
         })
 
+        self.check(self._guild_check)
+
+    def _guild_check(self, ctx: commands.Context) -> bool:
+        return ctx.guild is not None
+
     def _get_command_prefix(self, _, message: discord.Message):
         return PREFIXES if message.guild is None or message.guild.id not in self.prefixes \
             else PREFIXES + (self.prefixes[message.guild.id],)

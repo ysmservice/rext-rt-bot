@@ -10,3 +10,6 @@
 * `tenki.py` 天気予報
 * `role_linker.py` ロールリンカー
 * `level.py` レベル
+* `token_remover.py` TOKEN削除
+* `captcha.py` 認証
+* `no_icon_notice.py` アイコン未設定者への警告機能
