@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TypedDict, TypeAlias, Any
+from typing import TypeAlias, Any
 
 from time import time
 
@@ -14,7 +14,7 @@ from orjson import loads, dumps
 from core import RT, Cog, t, DatabaseManager, cursor
 
 from rtlib.common.cacher import Cacher
-from rtutil.utils import artificially_send
+from rtutil.utils import ContentData, artificially_send
 from rtutil.views import TimeoutView
 
 from data import TEST, NO_MORE_SETTING, NUMBER_CANT_USED, FORBIDDEN
@@ -22,12 +22,7 @@ from data import TEST, NO_MORE_SETTING, NUMBER_CANT_USED, FORBIDDEN
 from .__init__ import FSPARENT
 
 
-class ContentJson(TypedDict):
-    content: dict[str, Any]
-    author: int
-Data: TypeAlias = tuple[ContentJson, float, int]
-
-
+Data: TypeAlias = tuple[ContentData, float, int]
 class DataManager(DatabaseManager):
 
     MAX_PIN = 30
@@ -77,7 +72,7 @@ class DataManager(DatabaseManager):
         if channel_id in self.caches:
             self.caches[channel_id] = self.merge(channel_id, {2: message_id})
 
-    async def set_(self, channel_id: int, guild_id: int, content: ContentJson) -> None:
+    async def set_(self, channel_id: int, guild_id: int, content: ContentData) -> None:
         "強制ピン留めを設定します。"
         await cursor.execute(
             "SELECT * FROM ForcePinnedMessage WHERE GuildId = %s;",
@@ -170,9 +165,10 @@ class ForcePinnedMessageSettingView(TimeoutView):
         if content:
             # セーブする。
             await self.data.set_(
-                self.message.channel.id, self.message.guild.id, ContentJson(
+                self.message.channel.id, self.message.guild.id, ContentData(
                     content=content, author=self.bot_id
-                        if self.select.values[0] == "rt" else interaction.user.id
+                        if self.select.values[0] == "rt" else interaction.user.id,
+                    json=True
                 )
             )
             await interaction.response.edit_message(content="Ok", view=None)
