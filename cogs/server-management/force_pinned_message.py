@@ -17,7 +17,7 @@ from rtlib.common.cacher import Cacher
 from rtutil.utils import artificially_send
 from rtutil.views import TimeoutView
 
-from data import TEST, NO_MORE_SETTING, NUMBER_CANT_USED
+from data import TEST, NO_MORE_SETTING, NUMBER_CANT_USED, FORBIDDEN
 
 from .__init__ import FSPARENT
 
@@ -330,7 +330,7 @@ class ForcePinnedMessage(Cog):
                             **kwargs
                         )
             except discord.Forbidden:
-                ctx.detail = t(self.FORBIDDEN, channel.guild)
+                ctx.detail = t(FORBIDDEN, channel.guild)
             else:
                 ctx.status = "SUCCESS"
                 ctx.detail = ""

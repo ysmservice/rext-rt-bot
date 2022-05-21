@@ -18,7 +18,7 @@ from rtlib.common.cacher import Cacher
 from rtutil.utils import unwrap_or
 
 from data import (
-    SETTING_NOTFOUND, ALREADY_NO_SETTING, TOO_LARGE_NUMBER,
+    SETTING_NOTFOUND, ALREADY_NO_SETTING, TOO_LARGE_NUMBER, FORBIDDEN,
     ADD_ALIASES, REMOVE_ALIASES, LIST_ALIASES
 )
 
@@ -194,7 +194,7 @@ class DataManager(DatabaseManager):
                     try:
                         await member.kick(reason=reason)
                     except discord.Forbidden:
-                        ctx.detail = t(Cog.FORBIDDEN, guild)
+                        ctx.detail = t(FORBIDDEN, guild)
                     finally:
                         await self.delete_queue(*row[:2])
                     self.cog.bot.rtevent.dispatch("on_requiresent", ctx)
