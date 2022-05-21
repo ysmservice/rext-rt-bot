@@ -9,6 +9,8 @@ from core import RT, Cog, t
 
 from rtlib.common.cacher import Cacher
 
+from data import FORBIDDEN
+
 
 def check_token(content: str) -> bool:
     "TOKENが含まれているか確認します。"
@@ -52,7 +54,7 @@ class TokenRemover(Cog):
                             en="For sending what appears to be TOKEN 8 times."
                         ), message.guild))
                     except discord.Forbidden:
-                        ctx.detail = t(self.FORBIDDEN, message.guild)
+                        ctx.detail = t(FORBIDDEN, message.guild)
                         ctx.status = "ERROR"
                     self.bot.rtevent.dispatch("on_token_remove", ctx)
 

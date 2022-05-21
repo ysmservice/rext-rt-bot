@@ -16,6 +16,8 @@ from core import RT, Cog, t, DatabaseManager, cursor
 
 from rtlib.common.cacher import Cacher
 
+from data import FORBIDDEN
+
 
 class DataManager(DatabaseManager):
     def __init__(self, bot: RT):
@@ -183,7 +185,7 @@ class RTA(Cog):
                         )
                     except discord.Forbidden:
                         self.bot.rtevent.dispatch("on_immediate_quit", ImmediateExitContext(
-                            self.bot, member.guild, "ERROR", self.SUBJECT, Cog.FORBIDDEN, self.rta
+                            self.bot, member.guild, "ERROR", self.SUBJECT, FORBIDDEN, self.rta
                         ))
                     except Exception as e:
                         self.bot.rtevent.dispatch("on_immediate_quit", ImmediateExitContext(

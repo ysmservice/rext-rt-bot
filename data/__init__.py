@@ -11,7 +11,7 @@ __all__ = (
     "SECRET", "DATA", "CANARY", "get_category", "HOST_PORT", "URL", "API_URL", "SHARD",
     "TEST", "PREFIXES", "ADMINS", "Colors", "EMOJIS", "SUPPORT_SERVER", "PERMISSION_TEXTS",
     "SETTING_NOTFOUND", "ALREADY_NO_SETTING", "TOO_LARGE_NUMBER", "NO_MORE_SETTING",
-    "NUMBER_CANT_USED",
+    "NUMBER_CANT_USED", "FORBIDDEN", "notfound", "ROLE_NOTFOUND",
     "SET_ALIASES", "DELETE_ALIASES", "ADD_ALIASES", "REMOVE_ALIASES", "SHOW_ALIASES",
     "LIST_ALIASES", "OFF_ALIASES", "ON_ALIASES"
 )
@@ -151,6 +151,14 @@ TOO_LARGE_NUMBER = {
 NUMBER_CANT_USED = {
     "ja": "その数は使用できません。", "en": "That number cannot be used."
 }
+FORBIDDEN = dict(
+    ja="権限がないため処理に失敗しました。",
+    en="Processing failed due to lack of authorization."
+)
+notfound = lambda ja, en: dict(
+    ja=f"{ja}が見つかりませんでした。", en=f"{en} was not found."
+)
+ROLE_NOTFOUND = notfound("ロール", "Role")
 
 
 SET_ALIASES = ("s", "設定")

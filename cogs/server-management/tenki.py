@@ -18,12 +18,9 @@ from core import RT, Cog, t, DatabaseManager, cursor
 from rtlib.common.cacher import Cacher
 from rtutil.views import TimeoutView, EmbedPage
 from rtutil.utils import make_datetime_text
-from rtutil.converters import TimeConverter, DateTimeFormatNotSatisfiable
 from rtutil.collectors import CITY_CODES, tenki
 
-from data import SHOW_ALIASES, SET_ALIASES
-
-from .__init__ import FSPARENT
+from data import SHOW_ALIASES, SET_ALIASES, FORBIDDEN
 
 
 Data = NamedTuple("Data", (
@@ -249,7 +246,7 @@ class Tenki(Cog):
                     try:
                         await sendable.send(embed=(await self.make_content(data.city)).embeds[0])
                     except discord.Forbidden:
-                        ctx.detail = t(Cog.FORBIDDEN, sendable)
+                        ctx.detail = t(FORBIDDEN, sendable)
                         ctx.status = "ERROR"
                     self.bot.rtevent.dispatch("on_tenki_notification", ctx)
 
