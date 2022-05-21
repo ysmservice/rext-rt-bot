@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from asyncio import create_task
 
 from discord.ext import commands, tasks
 import discord
