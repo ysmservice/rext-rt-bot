@@ -5,12 +5,17 @@ from typing import cast
 from discord.ext import commands
 import discord
 
-from jishaku.functools import executor_function
+from aiohttp import ClientSession
 
 from core import RT, Cog, t
 
 from rtutil.calculator import aiocalculate, NotSupported
 from rtutil.collectors import make_google_url
+from rtutil.securl import check, get_capture
+
+from rtlib.common import dumps
+
+from data import Colors
 
 
 FSPARENT = "individual"
@@ -19,6 +24,74 @@ FSPARENT = "individual"
 class Individual(Cog):
     def __init__(self, bot: RT):
         self.bot = bot
+        self.session = ClientSession(json_serialize=dumps)
+
+    @commands.command(
+        aliases=("suc", "セキュアール", "urlチェック", "check"), fsparent=FSPARENT,
+        description="Use SecURL to access the URL destination."
+    )
+    @discord.app_commands.describe(url=(_d_u := "The url to be accessed."))
+    async def securl(self, ctx: commands.Context, *, url: str):
+        await ctx.typing()
+        try:
+            data = await check(self.session, url)
+        except ValueError:
+            await ctx.reply(t(dict(
+                ja="そのページへのアクセスに失敗しました。",
+                en="Failed to access the URL."
+            ), ctx))
+        else:
+            if data.get("status") == 0:
+                warnings = {
+                    key: data[key]
+                    for key in ("viruses", "annoyUrl", "blackList")
+                }
+                embed = discord.Embed(
+                    title="SecURL",
+                    description=t(dict(
+                        ja="このサイトは危険なウェブページである可能性があります！",
+                        en="This site may be a dangerous web page!"
+                    ), ctx)
+                    if (warn := any(warnings.values()))
+                    else t(dict(
+                        ja="危険性はありませんでした。", en="There was no danger."
+                    ), ctx), color=getattr(Colors, "error" if warn else "normal")
+                )
+                for contents, bool_ in zip(((
+                    dict(ja="ウイルス", en="Is contained virus"),
+                    dict(ja="未検出", en="No"),
+                    dict(ja="**検出**", en="**Yes**")
+                ),
+                (
+                    dict(ja="迷惑サイト", en="Is spammy web site"),
+                    dict(ja="いいえ", en="No"), dict(ja="**はい**", en="**Yes**")
+                ),
+                (
+                    dict(ja="ブラックリスト", en="Is registered as black"),
+                    dict(ja="登録されていません。", en="No"),
+                    dict(ja="**登録されています。**", en="**Yes**")
+                )), warnings.values()):
+                    embed.add_field(
+                        name=t(contents[0], ctx), value=t(contents[int(bool(bool_)) + 1], ctx)
+                    )
+                embed.set_image(url=get_capture(data))
+                embed.set_footer(
+                    text="Powered by SecURL",
+                    icon_url="https://www.google.com/s2/favicons?domain=securl.nu"
+                )
+                await ctx.reply(embed=embed, view=discord.ui.View(timeout=1).add_item(
+                    discord.ui.Button(label=t(dict(
+                        ja="スクリーンショット全体を見る", en="See full screenshot",
+                    ), ctx), url=get_capture(data, True))
+                ))
+            else:
+                await ctx.reply(data.get("message"))
+
+    (Cog.HelpCommand(securl)
+        .merge_headline(ja="SecURLを使ってURL先にアクセスします。")
+        .set_description(ja="SecURLを使ってURL先にアクセスします。", en=securl.description)
+        .add_arg("url", "str", ja="アクセスするURLです。", en=_d_u))
+    del _d_u
 
     @commands.command(
         aliases=("google", "グーグル", "ggrks", "gg"), fsparent=FSPARENT,

@@ -240,6 +240,7 @@ class RoleLinker(Cog):
                 ja="付与または削除を行うロールです。", en=_d_a))
         .add_sub(Cog.HelpCommand(list_)
             .set_description(ja="ロールリンクの設定を表示します。", en=list_.description)))
+    del _d_b, _d_a
 
     async def cog_load(self):
         await self.data.prepare_table()
