@@ -117,7 +117,6 @@ class RoleKeeper(Cog):
     def __init__(self, bot: RT):
         self.bot = bot
         self.data = DataManager(self)
-        self.done: Cacher[tuple[int, int], int] = self.bot.cachers.acquire(30.0)
 
     async def cog_load(self):
         await self.data.prepare_table()
@@ -143,23 +142,16 @@ class RoleKeeper(Cog):
         .set_extra("Notes",
             ja="ロールのデータは一年保持されます。", en="Data for roles is retained for one year."))
 
-    def _check(self, member: discord.Member) -> int:
-        # やりすぎなメンバーじゃないかどうかを調べます。
-        result = (now := self.done.get((member.guild.id, member.id), 0)) < 3
-        if result:
-            self.done[(member.guild.id, member.id)] = now + 1
-        return result
-
     @commands.Cog.listener()
-    async def on_member_remove(self, member: discord.Member):
-        if await self.data.is_on(member.guild.id) and self._check(member):
+    async def on_member_remove_cooldown(self, member: discord.Member):
+        if await self.data.is_on(member.guild.id):
             await self.data.set_cache(member.guild.id, member.id, [
                 role.id for role in member.roles if not role.is_default()
             ])
 
     @commands.Cog.listener()
-    async def on_member_join(self, member: discord.Member):
-        if await self.data.is_on(member.guild.id) and self._check(member) \
+    async def on_member_join_cooldown(self, member: discord.Member):
+        if await self.data.is_on(member.guild.id) \
                 and (roles := await self.data.get_cache(member.guild.id, member.id)) \
                     is not None:
             roles = [
@@ -180,7 +172,7 @@ class RoleKeeper(Cog):
             self.bot.rtevent.dispatch("on_role_keeper_role_add", RoleKeeperRoleAddEventContext(
                 self.bot, member.guild, "ERROR" if detail else "SUCCESS",
                 {"ja": "ロールキーパーのロール付与", "en": "Role Keeper Role Add"},
-                detail, self.role_keeper
+                detail, self.role_keeper, roles=roles, member=member
             ))
 
 
