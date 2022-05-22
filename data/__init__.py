@@ -73,8 +73,6 @@ ADMINS = (
 
 CATEGORIES = {
     "server-tool": {"ja": "サーバー ツール", "en": "Server Tool"},
-    "server-panel": {"ja": "サーバー パネル", "en": "Server Panel"},
-    "server-safety": {"ja": "サーバー 安全", "en": "Server Safety"},
     "server-management": {"ja": "サーバー 運営", "en": "Server Management"},
     "individual": {"ja": "個人", "en": "Individual"}, "rt": {"ja": "RT", "en": "RT"},
     "entertainment": {"ja": "娯楽", "en": "Entertainment"},
