@@ -98,7 +98,7 @@ class Parts:
 class Captcha(Cog):
     def __init__(self, bot: RT):
         self.bot = bot
-        self.queues: Cacher[discord.Member, CaptchaContext] = self.bot.cachers.acquire(
+        self.queues: Cacher[tuple[int, discord.Member], CaptchaContext] = self.bot.cachers.acquire(
             10800.0, on_dead=self.on_dead_queue
         )
         self.parts = Parts(*(globals()[name](self) for name in Parts.__annotations__.values()))
@@ -150,7 +150,7 @@ class Captcha(Cog):
     async def on_member_join(self, member: discord.Member):
         data = await self.data.read(member.guild.id)
         if data is not None:
-            self.queues[member] = CaptchaContext(
+            self.queues[(member.guild.id, member)] = CaptchaContext(
                 data=data, part=self.get_part(data.mode), member=member,
                 event_context=Cog.EventContext(
                     self.bot, member.guild, "ERROR", {
@@ -159,7 +159,7 @@ class Captcha(Cog):
                     }, feature=self.captcha
                 )
             )
-            self.queues.set_deadline(member, time() + data.deadline)
+            self.queues.set_deadline((member.guild.id, member), time() + data.deadline)
 
     @overload
     async def on_success(
@@ -204,7 +204,7 @@ class Captcha(Cog):
                 ), interaction)
 
         self.bot.rtevent.dispatch("on_captcha_success", ctx.event_context)
-        del self.queues[ctx.member]
+        del self.queues[(ctx.member.guild.id, ctx.member)]
 
         if interaction is None:
             return kwargs["content"]
@@ -221,6 +221,7 @@ class Captcha(Cog):
         description="Set up captcha", fsparent=FSPARENT
     )
     @commands.guild_only()
+    @commands.has_guild_permissions(manage_roles=True)
     @commands.cooldown(1, 10, commands.BucketType.guild)
     async def captcha(self, ctx: commands.Context):
         await self.group_index(ctx)
