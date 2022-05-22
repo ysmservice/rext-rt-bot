@@ -14,7 +14,7 @@ __all__ = (
     "TOO_SMALL_OR_LARGE_NUMBER", "NO_MORE_SETTING", "NUMBER_CANT_USED",
     "FORBIDDEN", "notfound", "ROLE_NOTFOUND",
     "SET_ALIASES", "DELETE_ALIASES", "ADD_ALIASES", "REMOVE_ALIASES", "SHOW_ALIASES",
-    "LIST_ALIASES", "OFF_ALIASES", "ON_ALIASES"
+    "LIST_ALIASES", "OFF_ALIASES", "ON_ALIASES", "TOGGLE_ALIASES"
 )
 
 
@@ -176,3 +176,4 @@ LIST_ALIASES = ("l", "リスト", "一覧")
 SHOW_ALIASES = ("sw", "now", "見る", "現在")
 OFF_ALIASES = ("オフ", "無効", "disable", "dis")
 ON_ALIASES = ("オン", "有効", "enable", "ena")
+TOGGLE_ALIASES = ("オンオフ", "onoff", "tgl", "switch")

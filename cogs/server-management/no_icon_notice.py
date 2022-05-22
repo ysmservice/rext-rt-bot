@@ -80,7 +80,8 @@ class NoIconNotice(Cog):
         description="Sends a warning when a person with an unset icon enters the room."
     )
     @discord.app_commands.describe(text="This is the message sent when a person with an unset icon enters the server.")
-    async def no_icon_notice(self, ctx: commands.Context, *, text: str):
+    @commands.has_guild_permissions(administrator=True)
+    async def no_icon_notice(self, ctx: commands.Context, *, text: str = ""):
         async with ctx.typing():
             assert ctx.guild is not None
             await self.data.write(ctx.guild.id, text)
