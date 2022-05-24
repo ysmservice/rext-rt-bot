@@ -350,7 +350,8 @@ class LevelCog(Cog, name="Level"):
     @tasks.loop(seconds=15)
     async def process_queues(self):
         for member in self.queues:
-            await self.data.write(member.guild.id, member.id)
+            if isinstance(member, discord.Member):
+                await self.data.write(member.guild.id, member.id)
         self.queues = []
 
     async def process_reward(self, message: discord.Message, level: LevelData) -> None:
