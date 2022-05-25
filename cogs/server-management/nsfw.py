@@ -17,7 +17,9 @@ class Nsfw(Cog):
     )
     @app_commands.describe(channel="Text channel")
     async def nsfw(self, ctx, channel: discord.TextChannel=None):
-        pass
+        ch = channel or ctx.channel
+        await ch.edit(nsfw=True)
+        await ctx.send(t({"ja": f"{ch.mention}をnsfwにしました", "en": "Setting nsfw"}))
     
     Cog.HelpCommand(nsfw) \
         .set_description(ja="nsfwチャンネルに設定します。", en="Setting nsfw channel") \
