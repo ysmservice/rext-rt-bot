@@ -15,11 +15,11 @@ class Nsfw(Cog):
         description="Setting nsfw channel",
         ailias=("えっc", "r18")
     )
-    @app_commands.describe(channel="Text channel")
-    async def nsfw(self, ctx, channel: discord.TextChannel=None):
+    @app_commands.describe(channel="Text channel", nsfw="If you want to set nsfw, you should to do true")
+    async def nsfw(self, ctx, nsfw: bool, channel: discord.TextChannel=None):
         ch = channel or ctx.channel
-        await ch.edit(nsfw=True)
-        await ctx.send(t({"ja": f"{ch.mention}をnsfwにしました", "en": "Setting nsfw"}))
+        await ch.edit(nsfw=nsfw)
+        await ctx.send(t({"ja": f"{ch.mention}を設定しました", "en": "Setting nsfw"}))
     
     Cog.HelpCommand(nsfw) \
         .set_description(ja="nsfwチャンネルに設定します。", en="Setting nsfw channel") \
