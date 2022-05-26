@@ -399,7 +399,7 @@ class Individual(Cog):
         await ctx.send(embeds=embeds)
         
     @commands.command(
-        aliases=("si", "サーバー情報")
+        aliases=("si", "サーバー情報"),
         description="Show server information", fsparent=FSPARENT
     )
     @discord.app_commands.describe(target="server id")
