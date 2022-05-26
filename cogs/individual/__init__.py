@@ -114,17 +114,52 @@ class Individual(Cog):
         
     @commands.command(
         aliases=("si", "サーバー情報")
-        description="Show server information", fsparent=FSPARENT)
+        description="Show server information", fsparent=FSPARENT
     )
-    @app_commands.describe(target="server id")
-    async def serverinfo(self, target: int):
+    @discord.app_commands.describe(target="server id")
+    async def serverinfo(self, ctx, target: int = None):
         guild = await self.bot.search_guild(target)
+        embed = discord.Embed(
+            title=t(
+                {
+                    "ja": "{name}の情報",
+                    "en": "{name}'s information"
+                }, ctx, name=guild.name
+            ),
+        )
+        embed.add_field(
+            name=t({"ja": "サーバー名", "en": "Server name"}, ctx),
+            value=f"{guild.name} (`{guild.id}`)"
+        )
+        embed.add_field(
+            name=t({"ja": "サーバー作成日時", "en": "Server created at"}, ctx),
+            value=f"<t:{int(guild.joined_at.timestamp())}>"
+        )
+        embed.add_field(
+            name=t({"ja": "サーバーの作成者", "en": "Server owner"}, ctx),
+            value=f"{guild.owner} (`{guild.owner.id}`)"
+        )
+        embed.add_field(
+            name=t({"ja": "サーバーのメンバー数", "en": "Server member count"}, ctx),
+            value=f"{guild.member_count} ({guild.member_count - guild.members.count(lambda m: m.bot)})"
+        )
+        embed.add_field(
+            name=t({"ja": "サーバーのチャンネル数", "en": "Server channel count"}, ctx),
+            value=f"{len(guild.channels)} ({len(guild.text_channels)})"
+        )
+        await ctx.reply(embed=embed)
         
     (Cog.HelpCommand(userinfo)
         .set_headline(ja="ユーザーを検索します。")
         .add_arg("user", "User", "Optional",
             ja="ユーザーのIDかメンションまたは名前です。", en="User's name, id or mention.")
         .set_description(ja="ユーザーを検索します", en="Search user"))
+
+    (Cog.HelpCommand(serverinfo)
+        .set_headline(ja="サーバーを検索します。")
+        .add_arg("target", "int", "Optional",
+            ja="サーバーのIDです。", en="Server's id.")
+        .set_description(ja="サーバーを検索します", en="Search server"))
 
 
 async def setup(bot):
