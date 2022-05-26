@@ -412,7 +412,7 @@ class Individual(Cog):
         )
         embed.add_field(
             name=t({"ja": "サーバー作成日時", "en": "Server created at"}, ctx),
-            value=f"<t:{int(guild.joined_at.timestamp())}>"
+            value=f"<t:{int(guild.created_at.timestamp())}>"
         )
         embed.add_field(
             name=t({"ja": "サーバーの作成者", "en": "Server owner"}, ctx),
