@@ -1,4 +1,5 @@
 # RT - nsfw
+
 from discord.ext import commands
 from discord import app_commands
 import discord
@@ -16,16 +17,20 @@ class Nsfw(Cog):
         ailias=("えっc", "r18")
     )
     @app_commands.describe(channel="Text channel", nsfw="If you want to set nsfw, you should to do true")
-    async def nsfw(self, ctx, nsfw: bool, channel: discord.TextChannel=None):
+    async def nsfw(self, ctx, nsfw: bool, channel: discord.TextChannel = None):
         ch = channel or ctx.channel
         await ch.edit(nsfw=nsfw)
-        await ctx.send(t({"ja": f"{ch.mention}を設定しました", "en": "Setting nsfw"}))
+        await ctx.send("Ok")
     
     Cog.HelpCommand(nsfw) \
-        .set_description(ja="nsfwチャンネルに設定します。", en="Setting nsfw channel") \
+        .set_description(ja="nsfwチャンネルに設定します。", en=nsfw.description) \
         .merge_headline(ja="nsfwチャンネルを設定します。") \
-        .add_arg("channel", "Optional", ja="設定したいテキストチャンネル",
-                 en="When you want to setting nsfw channel")
+        .add_arg(
+            "channel",
+            "Optional",
+            ja="設定したいテキストチャンネル",
+            en="When you want to setting nsfw channel"
+        )
     
     
 async def setup(bot):
