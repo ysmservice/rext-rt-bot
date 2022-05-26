@@ -405,7 +405,7 @@ class Individual(Cog):
     )
     @discord.app_commands.describe(target="server id")
     async def serverinfo(self, ctx, target: int | None = None):
-        guild = await self.bot.search_guild(target)
+        guild = await self.bot.search_guild(target) or ctx.guild
         embed = Cog.Embed(title=t({"ja": "{name}の情報","en": "{name}'s information"}, ctx, name=guild.name))
         embed.add_field(
             name=t({"ja": "サーバー名", "en": "Server name"}, ctx),
