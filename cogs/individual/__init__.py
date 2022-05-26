@@ -322,8 +322,9 @@ class Individual(Cog):
             ja="検索ワードです。", en="The word that you want to search."))
 
     @commands.command(
+        fsparent=FSPARENT,
         aliases=("ui", "ユーザー検索", "ゆーざーいんふぉ", "<-これかわいい！"),
-        description="Search user", fsparent=FSPARENT
+        description="Search user"
     )
     @discord.app_commands.describe(tentative="User's name, mention or id")
     @discord.app_commands.rename(tentative="user")
