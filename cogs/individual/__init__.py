@@ -400,8 +400,9 @@ class Individual(Cog):
         await ctx.send(embeds=embeds)
         
     @commands.command(
+        fsparent=FSPARENT,
         aliases=("si", "サーバー情報"),
-        description="Show server information", fsparent=FSPARENT
+        description="Show server information"
     )
     @discord.app_commands.describe(target="server id")
     async def serverinfo(self, ctx, target: int | None = None):
