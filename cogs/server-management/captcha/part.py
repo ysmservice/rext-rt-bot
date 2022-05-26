@@ -49,7 +49,7 @@ class CaptchaView(discord.ui.View):
     async def start(self, interaction: discord.Interaction, _):
         assert interaction.message is not None and isinstance(interaction.user, discord.Member) \
             and interaction.guild_id is not None
-        if interaction.user in self.cog.queues:
+        if (interaction.guild_id, interaction.user) in self.cog.queues:
             # やればやるほど待機しなければならないようにした。
             now, key = time(), (interaction.guild_id, interaction.user.id)
             if key not in self._cache:
@@ -68,9 +68,11 @@ class CaptchaView(discord.ui.View):
                         now + count * 10 * count, count
                     )
 
-                await self.cog.queues[interaction.user].part.on_button_push(
-                    self.cog.queues[interaction.user], interaction
-                )
+                await self.cog.queues[(interaction.guild_id, interaction.user)] \
+                    .part.on_button_push(
+                        self.cog.queues[(interaction.guild_id, interaction.user)],
+                        interaction
+                    )
         else:
             await interaction.response.send_message(t(dict(
                 ja="あなたは認証対象ではありません。\n考えられる原因：放置した, サーバーの認証が解除された, 既にロールを所有している",

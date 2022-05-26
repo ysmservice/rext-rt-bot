@@ -21,7 +21,7 @@ class WebCaptchaPart(CaptchaPart):
         ), interaction), view=view, ephemeral=True)
 
     async def on_success(self, user_id: int) -> str:
-        for member in self.cog.queues.keys():
+        for guild_id, member in self.cog.queues.keys():
             if member.id == user_id:
                 break
         else:
@@ -29,4 +29,4 @@ class WebCaptchaPart(CaptchaPart):
                 ja="あなたは認証対象ではないようです。",
                 en="It appears that you are not eligible for captcha."
             ), user_id)
-        return await self.cog.on_success(self.cog.queues[member], None)
+        return await self.cog.on_success(self.cog.queues[(guild_id, member)], None)

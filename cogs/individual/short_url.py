@@ -3,17 +3,62 @@
 from discord.ext import commands
 import discord
 
-from core import RT, Cog
+from aiomysql import Pool
 
-from rtlib.common.short_url import ShortURLManager
+from core import RT, Cog, DatabaseManager, cursor
 
 from .__init__ import FSPARENT
+
+
+class DataManager(DatabaseManager):
+    "セーブデータを管理するためのクラスです。"
+
+    MAX_URL = 150
+
+    def __init__(self, pool: Pool):
+        self.pool = pool
+
+    async def prepare_table(self) -> None:
+        "テーブルを用意します。"
+        await cursor.execute(
+            "CREATE TABLE IF NOT EXISTS ShortURL (UserId BIGINT, Url TEXT, Endpoint TEXT);"
+        )
+
+    async def read(self, user_id: int, **_) -> list[tuple[str, str]]:
+        "データを読み込みます。"
+        await cursor.execute(
+            "SELECT Url, Endpoint FROM ShortURL WHERE UserId = %s;",
+            (user_id,)
+        )
+        return await cursor.fetchall()
+
+    async def register(self, user_id: int, url: str, endpoint: str) -> None:
+        "短縮URLを登録します。"
+        assert self.MAX_URL > len(await self.read(user_id, cursor=cursor)), "設定しすぎです。"
+        await cursor.execute(
+            "SELECT Url FROM ShortURL WHERE Endpoint = %s;", (endpoint,)
+        )
+        assert not await cursor.fetchone(), "既にそのエンドポイントは使用されています。"
+        await cursor.execute(
+            "INSERT INTO ShortURL VALUES (%s, %s, %s);",
+            (user_id, url, endpoint)
+        )
+
+    async def delete(self, user_id: int, endpoint: str) -> None:
+        "短縮URLを削除します。"
+        await cursor.execute(
+            "DELETE FROM ShortURL WHERE UserId = %s AND Endpoint = %s;",
+            (user_id, endpoint)
+        )
 
 
 class ShortURL(Cog):
     def __init__(self, bot: RT):
         self.bot = bot
-        self.data = ShortURLManager(self.bot.pool)
+        self.data = DataManager(self.bot.pool)
+
+    async def cog_load(self):
+        await self.data.prepare_table()
 
     @commands.command(
         aliases=("surl", "短縮", "短縮URL"), fsparent=FSPARENT,

@@ -1,6 +1,6 @@
 # rtutil - Utils
 
-from typing import Optional, Any
+from typing import TypedDict, Optional, Any
 from collections.abc import Callable, Iterable, Iterator, Sequence
 
 from datetime import datetime, timedelta, timezone
@@ -14,12 +14,41 @@ from data import TEST, CANARY, PERMISSION_TEXTS, Colors
 
 
 __all__ = (
-    "unwrap_or", "set_page", "webhook_send", "artificially_send", "permissions_to_text",
-    "make_nopermissions_text", "JST", "make_datetime_text"
+    "ContentData", "disable_content_json", "enable_content_json",
+    "unwrap_or", "set_page", "webhook_send", "artificially_send",
+    "permissions_to_text", "make_nopermissions_text", "JST", "make_datetime_text"
 )
 
 
 # discord.py系
+class ContentData(TypedDict):
+    content: dict[str, Any]
+    author: int
+    json: bool
+_acj_check_embeds = lambda data, type_: \
+    "embeds" in data["content"] and data["content"]["embeds"] \
+    and isinstance(data["content"]["embeds"][0], type_)
+def disable_content_json(data: ContentData) -> ContentData:
+    "ContentDataのデータを`send`等で使える状態にします。"
+    if data["json"] and _acj_check_embeds(data, dict):
+        for index, embed in enumerate(data["content"]["embeds"]):
+            data["content"]["embeds"][index] = discord.Embed.from_dict(embed)
+    data["json"] = False
+    return data
+def enable_content_json(data: ContentData) -> ContentData:
+    "ContentDataをJSON形式にできるようにしています。"
+    if not data["json"] and _acj_check_embeds(data, discord.Embed):
+        for index, embed in enumerate(data["content"]["embeds"]):
+            data["content"]["embeds"][index] = embed.to_dict()
+    data["json"] = True
+    return data
+
+
+def is_json(data: str) -> bool:
+    "渡された文字列がJSONかどうかを調べます。"
+    return (data[0] == "{" and data[-1] == "}") or (data[0] == "[" and data[-1] == "]")
+
+
 def unwrap_or(obj: object | None, attr: str, default: Any = None):
     "オブジェクトから指定された属性を取り出すことを試みます。"
     return getattr(obj, attr, default)

@@ -10,10 +10,11 @@ from orjson import loads
 __all__ = (
     "SECRET", "DATA", "CANARY", "get_category", "HOST_PORT", "URL", "API_URL", "SHARD",
     "TEST", "PREFIXES", "ADMINS", "Colors", "EMOJIS", "SUPPORT_SERVER", "PERMISSION_TEXTS",
-    "SETTING_NOTFOUND", "ALREADY_NO_SETTING", "TOO_LARGE_NUMBER", "NO_MORE_SETTING",
-    "NUMBER_CANT_USED",
+    "SETTING_NOTFOUND", "ALREADY_NO_SETTING", "TOO_LARGE_NUMBER", "TOO_SMALL_NUMBER",
+    "TOO_SMALL_OR_LARGE_NUMBER", "NO_MORE_SETTING", "NUMBER_CANT_USED",
+    "FORBIDDEN", "notfound", "ROLE_NOTFOUND", "CHANNEL_NOTFOUND",
     "SET_ALIASES", "DELETE_ALIASES", "ADD_ALIASES", "REMOVE_ALIASES", "SHOW_ALIASES",
-    "LIST_ALIASES", "OFF_ALIASES", "ON_ALIASES"
+    "LIST_ALIASES", "OFF_ALIASES", "ON_ALIASES", "TOGGLE_ALIASES"
 )
 
 
@@ -72,8 +73,6 @@ ADMINS = (
 
 CATEGORIES = {
     "server-tool": {"ja": "サーバー ツール", "en": "Server Tool"},
-    "server-panel": {"ja": "サーバー パネル", "en": "Server Panel"},
-    "server-safety": {"ja": "サーバー 安全", "en": "Server Safety"},
     "server-management": {"ja": "サーバー 運営", "en": "Server Management"},
     "individual": {"ja": "個人", "en": "Individual"}, "rt": {"ja": "RT", "en": "RT"},
     "entertainment": {"ja": "娯楽", "en": "Entertainment"},
@@ -148,9 +147,24 @@ NO_MORE_SETTING = {
 TOO_LARGE_NUMBER = {
     "ja": "数が大きすぎます。", "en": "The number is too large."
 }
+TOO_SMALL_NUMBER = {
+    "ja": "数が小さぎます。", "en": "The number is too small."
+}
+TOO_SMALL_OR_LARGE_NUMBER = {
+    "ja": "数が小さいまたは大きぎます。", "en": "The number is too small or large."
+}
 NUMBER_CANT_USED = {
     "ja": "その数は使用できません。", "en": "That number cannot be used."
 }
+FORBIDDEN = dict(
+    ja="権限がないため処理に失敗しました。",
+    en="Processing failed due to lack of authorization."
+)
+notfound = lambda ja, en: dict(
+    ja=f"{ja}が見つかりませんでした。", en=f"{en} was not found."
+)
+ROLE_NOTFOUND = notfound("ロール", "Role")
+CHANNEL_NOTFOUND = notfound("チャンネル", "Channel")
 
 
 SET_ALIASES = ("s", "設定")
@@ -161,3 +175,4 @@ LIST_ALIASES = ("l", "リスト", "一覧")
 SHOW_ALIASES = ("sw", "now", "見る", "現在")
 OFF_ALIASES = ("オフ", "無効", "disable", "dis")
 ON_ALIASES = ("オン", "有効", "enable", "ena")
+TOGGLE_ALIASES = ("オンオフ", "onoff", "tgl", "switch")

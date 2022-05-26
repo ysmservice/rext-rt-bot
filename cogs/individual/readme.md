@@ -6,3 +6,4 @@
 * `afk.py` AFK機能
 * `short_url.py` 短縮URL
 * `__init__.py` タイムマシンとか色々
+* `minesweeper.py` マインスイーパー
