@@ -234,6 +234,25 @@ class ServerManagement(Cog):
                     if option == "check":
                         await message.add_reaction("✅")
 
+    @commands.command(
+        description="Setting nsfw channel",
+        ailias=("えっc", "r18")
+    )
+    @discord.app_commands.describe(channel="Text channel", nsfw="If you want to set nsfw, you should to do true")
+    async def nsfw(self, ctx, nsfw: bool, channel: discord.TextChannel | None = None):
+        ch = channel or ctx.channel
+        await ch.edit(nsfw=nsfw)
+        await ctx.reply("Ok")
+
+    Cog.HelpCommand(nsfw) \
+        .set_description(ja="nsfwチャンネルに設定します。", en=nsfw.description) \
+        .merge_headline(ja="nsfwチャンネルを設定します。") \
+        .add_arg(
+            "channel", "Optional",
+            ja="設定したいテキストチャンネル",
+            en="When you want to setting nsfw channel"
+        )
+
 
 async def setup(bot):
     await bot.add_cog(ServerManagement(bot))
