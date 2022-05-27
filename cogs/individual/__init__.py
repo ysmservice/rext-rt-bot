@@ -426,7 +426,7 @@ class Individual(Cog):
         )
         embed.add_field(
             name=t({"ja": "サーバーのチャンネル数", "en": "Server channel count"}, ctx),
-            value=f"{len(guild.channels)} ({len(guild.text_channels)})"
+            value=f"{len(guild.channels)} (text channel:{len(guild.text_channels)} voice channel:{len(guild.voice_channels)})"
         )
         await ctx.reply(embed=embed)
         
