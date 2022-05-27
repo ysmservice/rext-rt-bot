@@ -248,14 +248,14 @@ class ServerManagement(Cog):
         .set_description(ja="nsfwチャンネルに設定します。", en=nsfw.description) \
         .merge_headline(ja="nsfwチャンネルを設定します。") \
         .add_arg(
-            "channel", "Optional",
-            ja="設定したいテキストチャンネル",
-            en="When you want to setting nsfw channel"
-        ) \
-        .add_arg(
             "nsfw", "bool",
             ja="nsfwを設定するかどうか",
             en="True or False"
+        ) \
+        .add_arg(
+            "channel", "Optional",
+            ja="設定したいテキストチャンネル",
+            en="When you want to setting nsfw channel"
         )
 
 
