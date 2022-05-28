@@ -77,6 +77,11 @@ class Help:
         self.title = title
         return self
 
+    def merge_description(self: SelfT, **text: str) -> SelfT:
+        "説明をマージします。"
+        self.description.update(**text)
+        return self
+
     def set_description(self: SelfT, **text: str) -> SelfT:
         "説明を設定します。"
         self.description = cleantext(text)
@@ -153,6 +158,7 @@ class HelpCommand(Help):
         if set_help: setattr(self.command._callback, "__help__", self)
         else: setattr(self.command._callback, "__raw_help__", self)
         self.set_headline(en=command.description)
+        self.set_description(en=command.description)
         self.set_title(self.command.name)
         self.set_category(_get(self.command, "category", None) or self.fsparent or "Other")
         if command.aliases:

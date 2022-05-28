@@ -47,6 +47,11 @@ class ExtEvents(Cog):
     async def on_member_remove(self, member: discord.Member):
         self.on_member("remove", member)
 
+    @commands.Cog.listener()
+    async def on_interaction(self, interaction: discord.Interaction):
+        if interaction.data is not None and "custom_id" in interaction.data:
+            self.bot.dispatch("interaction_custom_id", interaction)
+
 
 async def setup(bot: RT) -> None:
     await bot.add_cog(ExtEvents(bot))
