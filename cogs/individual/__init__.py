@@ -400,8 +400,9 @@ class Individual(Cog):
         await ctx.send(embeds=embeds)
         
     @commands.command(
+        fsparent=FSPARENT,
         aliases=("si", "サーバー情報"),
-        description="Show server information", fsparent=FSPARENT
+        description="Show server information"
     )
     @discord.app_commands.describe(target="server id")
     async def serverinfo(self, ctx, target: int | None = None):
@@ -425,7 +426,7 @@ class Individual(Cog):
         )
         embed.add_field(
             name=t({"ja": "サーバーのチャンネル数", "en": "Server channel count"}, ctx),
-            value=f"{len(guild.channels)} ({len(guild.text_channels)})"
+            value=f"{len(guild.channels)} (text channel:{len(guild.text_channels)} voice channel:{len(guild.voice_channels)})"
         )
         await ctx.reply(embed=embed)
         
