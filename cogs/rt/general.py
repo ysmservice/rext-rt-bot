@@ -244,7 +244,7 @@ class General(Cog):
         # エラーハンドリングを行う。
         if isinstance(error, commands.CommandInvokeError) and not retry:
             return await self.on_command_error(ctx, error.original, True)
-        elif isinstance(error, AssertionError):
+        elif isinstance(error, (AssertionError, Cog.BadRequest)):
             reply = False
             if isinstance(error.args[0], tuple):
                 status, content = error.args[0]
