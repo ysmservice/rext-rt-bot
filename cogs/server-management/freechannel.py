@@ -14,7 +14,16 @@ from core import Cog, RT, t
 
 from rtlib.common.cacher import Cacher
 
+from data import FORBIDDEN
+
 from .__init__ import FSPARENT
+
+
+class FreeChannelEventContext(Cog.EventContext):
+    "チャンネルの作成時のイベントコンテキストです。"
+
+    channel: discord.TextChannel | discord.VoiceChannel | None
+    author: discord.Member
 
 
 class FreeChannelPanelView(discord.ui.View):
@@ -65,16 +74,28 @@ class FreeChannelPanelView(discord.ui.View):
             overwrites[interaction.user] = discord.PermissionOverwrite(view_channel=True, manage_channels=True)
 
         # チャンネルを作成する。
-        channel: discord.TextChannel | discord.VoiceChannel = await getattr(
-            interaction.channel.category or interaction.guild, f"create_{mode}_channel"
-        )(
-            f"{interaction.user.display_name}-{int(time())}", reason=t(dict(
-                ja="フリーチャンネル", en="FreeChannel"
-            ), interaction.guild), overwrites=overwrites
-        )
-        await interaction.response.send_message(t(dict(
-            ja="チャンネルを作成しました：{mention}", en="I created your channel: {mention}"
-        ), interaction, mention=channel.mention), ephemeral=True)
+        detail, channel = "", None
+        try:
+            channel: discord.TextChannel | discord.VoiceChannel | None = await getattr(
+                interaction.channel.category or interaction.guild, f"create_{mode}_channel"
+            )(
+                f"{interaction.user.display_name}-{int(time())}", reason=t(dict(
+                    ja="フリーチャンネル", en="FreeChannel"
+                ), interaction.guild), overwrites=overwrites
+            )
+        except discord.Forbidden:
+            detail = FORBIDDEN
+        finally:
+            await interaction.response.send_message(t(detail, interaction) if detail else t(dict(
+                ja="チャンネルを作成しました：{mention}", en="I created your channel: {mention}"
+            ), interaction, mention=channel.mention), ephemeral=True) # type: ignore
+            name = self.cog.name_and_id(interaction.user)
+            self.cog.bot.rtevent.dispatch("on_free_channel_create", FreeChannelEventContext(
+                self.cog.bot, interaction.guild, "ERROR" if detail else "SUCCESS",
+                {"ja": "フリーチャンネル", "en": "FreeChannel"}, detail or {
+                    "ja": f"作成者：{name}", "en": f"Author: {name}"
+                }, self.cog.free_channel, channel=channel, author=interaction.user
+            ))
 class FreeChannelPanelTextView(FreeChannelPanelView):
     @discord.ui.button(emoji="📝", custom_id="FreeChannelPanelText")
     async def text(self, interaction: discord.Interaction, _):

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypeVar, Optional, Any
 
-from discord.ext.commands import Cog as OriginalCog, Context
+from warnings import warn
+
+from discord.ext import commands
 from discord.ext.fslash import is_fslash
 import discord
 
@@ -80,10 +82,16 @@ def t(text: Text, ctx: Any, **kwargs) -> str:
     return text.format(**kwargs) # type: ignore
 
 
+class BadRequest(Exception):
+    "404エラーを発生させます。"
+
+
 UCReT = TypeVar("UCReT")
-class Cog(OriginalCog):
+class Cog(commands.Cog):
     "Extended cog"
 
+    detail_or = staticmethod(lambda detail: "ERROR" if detail else "SUCCESS")
+    BadRequest = BadRequest
     get_fsparent = staticmethod(get_fsparent)
     Help: type[Help]
     HelpCommand: type[HelpCommand]
@@ -97,7 +105,7 @@ class Cog(OriginalCog):
     EventContext: type[EventContext]
     bot: RT
 
-    async def group_index(self, ctx: Context) -> None:
+    async def group_index(self, ctx: commands.Context) -> None:
         "グループコマンドが実行された際に「使用方法が違います」と返信します。"
         if not ctx.invoked_subcommand:
             await ctx.reply(t({
