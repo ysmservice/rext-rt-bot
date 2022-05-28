@@ -322,8 +322,9 @@ class Individual(Cog):
             ja="検索ワードです。", en="The word that you want to search."))
 
     @commands.command(
+        fsparent=FSPARENT,
         aliases=("ui", "ユーザー検索", "ゆーざーいんふぉ", "<-これかわいい！"),
-        description="Search user", fsparent=FSPARENT
+        description="Search user"
     )
     @discord.app_commands.describe(tentative="User's name, mention or id")
     @discord.app_commands.rename(tentative="user")
@@ -396,15 +397,39 @@ class Individual(Cog):
                     else f"<t:{int(user.joined_at.timestamp())}> (UST)"
             )
             embeds.append(embed)
-
         await ctx.send(embeds=embeds)
         
-    (Cog.HelpCommand(userinfo)
-        .merge_headline(ja="ユーザーを検索します。")
-        .add_arg("user", "User", "Optional",
-            ja="ユーザーのIDかメンションまたは名前です。", en="User's name, id or mention.")
-        .set_description(ja="ユーザーを検索します", en="Search user"))
-
+    @commands.command(
+        fsparent=FSPARENT,
+        aliases=("si", "サーバー情報"),
+        description="Show server information"
+    )
+    @discord.app_commands.describe(target="server id")
+    async def serverinfo(self, ctx, target: int | None = None):
+        guild = await self.bot.search_guild(target) or ctx.guild
+        embed = Cog.Embed(title=t({"ja": "{name}の情報","en": "{name}'s information"}, ctx, name=guild.name))
+        embed.add_field(
+            name=t({"ja": "サーバー名", "en": "Server name"}, ctx),
+            value=f"{guild.name} (`{guild.id}`)"
+        )
+        embed.add_field(
+            name=t({"ja": "サーバー作成日時", "en": "Server created at"}, ctx),
+            value=f"<t:{int(guild.created_at.timestamp())}>"
+        )
+        embed.add_field(
+            name=t({"ja": "サーバーの作成者", "en": "Server owner"}, ctx),
+            value=f"{guild.owner} (`{guild.owner.id}`)"
+        )
+        embed.add_field(
+            name=t({"ja": "サーバーのメンバー数", "en": "Server member count"}, ctx),
+            value=f"{guild.member_count} ({guild.member_count - guild.members.count(lambda m: m.bot)})"
+        )
+        embed.add_field(
+            name=t({"ja": "サーバーのチャンネル数", "en": "Server channel count"}, ctx),
+            value=f"{len(guild.channels)} (text channel:{len(guild.text_channels)} voice channel:{len(guild.voice_channels)})"
+        )
+        await ctx.reply(embed=embed)
+        
     @commands.command(
         aliases=("calc", "計算機", "電卓"), fsparent=FSPARENT,
         description="The calculator"
@@ -418,6 +443,18 @@ class Individual(Cog):
                 ja="使用できない文字があるか形式がおかしいまたは長すぎるため、計算をすることができませんでした。",
                 en="The calculation could not be performed because there are characters that cannot be used or the format is incorrect or too long."
             ), ctx))
+        
+    (Cog.HelpCommand(userinfo)
+        .merge_headline(ja="ユーザーを検索します。")
+        .add_arg("user", "User", "Optional",
+            ja="ユーザーのIDかメンションまたは名前です。", en="User's name, id or mention.")
+        .set_description(ja="ユーザーを検索します", en="Search user"))
+
+    (Cog.HelpCommand(serverinfo)
+        .set_headline(ja="サーバーを検索します。")
+        .add_arg("target", "int", "Optional",
+            ja="サーバーのIDです。", en="Server's id.")
+        .set_description(ja="サーバーを検索します", en="Search server"))
 
     (Cog.HelpCommand(calculate)
         .merge_headline(ja="計算機")
