@@ -7,12 +7,11 @@ from typing import NamedTuple, Literal
 from discord.ext import commands
 import discord
 
-from orjson import loads
-
 from core import Cog, RT, t, DatabaseManager, cursor
 
-from rtlib.common import dumps
-from rtutil.utils import ContentData, disable_content_json, is_json
+from rtutil.content_data import ContentData, disable_content_json, convert_content_json
+
+from rtlib.common.json import dumps, loads
 
 from data import FORBIDDEN, CHANNEL_NOTFOUND
 
@@ -99,9 +98,8 @@ class WelcomeMessage(Cog):
         assert ctx.guild is not None and self.bot.user is not None
         async with ctx.typing():
             if text:
-                await self.data.write(ctx.guild.id, ctx.channel.id, mode, loads(text)
-                        if is_json(text) else ContentData(
-                    content={"content": text}, author=self.bot.user.id, json=True
+                await self.data.write(ctx.guild.id, ctx.channel.id, mode, convert_content_json(
+                    text, self.bot.user.id
                 ))
             else:
                 await self.data.write(ctx.guild.id, ctx.channel.id, mode, None)

@@ -1,4 +1,4 @@
-# rtutil - Minecraft User
+# RT Util - Minecraft User
 
 from dataclasses import dataclass
 

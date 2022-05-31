@@ -83,7 +83,7 @@ def t(text: Text, ctx: Any, **kwargs) -> str:
 
 
 class BadRequest(Exception):
-    "404エラーを発生させます。"
+    "400エラーを発生させます。"
 
 
 UCReT = TypeVar("UCReT")
