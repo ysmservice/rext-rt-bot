@@ -5,7 +5,7 @@ from __future__ import annotations
 from discord.ext import commands
 import discord
 
-from core import Cog, RT, t, DatabaseManager, cursor
+from core import Cog, RT, DatabaseManager, cursor
 
 from rtutil import content_data
 from rtutil.utils import artificially_send
