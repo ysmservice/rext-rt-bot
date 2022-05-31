@@ -5,7 +5,7 @@ import discord
 
 from core import Cog, RT, t
 
-from data import EMOJIS, PERMISSION_TEXTS
+from data import EMOJIS, PERMISSION_TEXTS, NOTFOUND
 
 
 FSPARENT = "server-tool"
@@ -74,6 +74,57 @@ class ServerTool(Cog):
                 指定しない場合は`@everyone`ロール(全員が持っている権限)となります。""",
             en="""The members of the target group who want to see the privileges they possess.
                 If not specified, it will be the `@everyone` role (the authority that everyone has)."""))
+
+    @commands.command(
+        fsparent=FSPARENT, aliases=("si", "サーバー情報"),
+        description="Show server information."
+    )
+    @discord.app_commands.describe(target="The id of server.")
+    async def serverinfo(self, ctx, *, target: int | None = None):
+        guild = ctx.guild if target is None else await self.bot.search_guild(target)
+        if guild is None:
+            raise Cog.BadRequest(NOTFOUND)
+        embed = Cog.Embed(title=t({"ja": "{name}の情報","en": "{name}'s information"}, ctx, name=guild.name))
+        embed.add_field(
+            name=t({"ja": "サーバー名", "en": "Server name"}, ctx),
+            value=f"{guild.name} (`{guild.id}`)"
+        )
+        embed.add_field(
+            name=t({"ja": "サーバー作成日時", "en": "Server created at"}, ctx),
+            value=f"<t:{int(guild.created_at.timestamp())}>"
+        )
+        if guild.owner is not None:
+            embed.add_field(
+                name=t({"ja": "サーバーの作成者", "en": "Server owner"}, ctx),
+                value=f"{guild.owner} (`{guild.owner.id}`)"
+            )
+        if guild.member_count is not None:
+            embed.add_field(
+                name=t({"ja": "サーバーのメンバー数", "en": "Server member count"}, ctx),
+                value="{} ({})".format(guild.member_count, guild.member_count - len(
+                    set(filter(lambda m: m.bot, guild.members))
+                ))
+            )
+        text, voice, count = 0, 0, 0
+        for count, channel in enumerate(guild.channels, 1):
+            if isinstance(channel, discord.TextChannel | discord.Thread):
+                text += 1
+            else:
+                voice += 1
+        embed.add_field(
+            name=t({"ja": "サーバーのチャンネル数", "en": "Server channel count"}, ctx),
+            value=t(dict(
+                ja="`{sum_}` (テキストチャンネル：`{text_}`, ボイスチャンネル：`{voice}`)",
+                en="`{sum_}` (Text channels: `{text_}`, Voice channels: `{voice}`)"
+            ), ctx, sum_=count, text_=text, voice=voice)
+        )
+        await ctx.reply(embed=embed)
+
+    (Cog.HelpCommand(serverinfo)
+        .set_headline(ja="サーバーを検索します。")
+        .add_arg("target", "int", "Optional",
+            ja="サーバーのIDです。", en="Server's id.")
+        .set_description(ja="サーバーを検索します", en="Search server"))
 
 
 async def setup(bot: RT) -> None:

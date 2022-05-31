@@ -28,7 +28,7 @@ class DataManager(DatabaseManager):
             );"""
         )
         async for row in self.fetchstep(cursor, "SELECT * FROM NgWord;"):
-            self.caches[row[0]] = row[1]
+            self.caches[row[0]].append(row[1])
 
     async def read(self, guild_id: int, **_) -> list[str]:
         "データを読み込みます。"
@@ -51,7 +51,7 @@ class DataManager(DatabaseManager):
         "データを削除します。"
         if guild_id in self.caches and word in self.caches[guild_id]:
             await cursor.execute(
-                "DELETE * FROM NgWord WHERE GuildId = %s AND Word = %s;",
+                "DELETE FROM NgWord WHERE GuildId = %s AND Word = %s;",
                 (guild_id, word)
             )
             self.caches[guild_id].remove(word)
@@ -80,7 +80,8 @@ class NgWord(Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if message.guild is None:
+        if message.guild is None or (isinstance(message.author, discord.Member)
+                and message.author.guild_permissions.manage_messages):
             return
 
         for ngword in self.data.caches.get(message.guild.id, ()):
@@ -103,6 +104,8 @@ class NgWord(Cog):
         aliases=("ng", "NGワード", "ngワード", "禁止言葉"),
         description="NG word function."
     )
+    @commands.has_guild_permissions(manage_messages=True)
+    @commands.cooldown(1, 6, commands.BucketType.guild)
     async def ngword(self, ctx: commands.Context):
         await self.group_index(ctx)
 
