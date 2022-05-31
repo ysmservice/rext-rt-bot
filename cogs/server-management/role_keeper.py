@@ -9,11 +9,9 @@ from time import time
 from discord.ext import commands
 import discord
 
-from orjson import loads
-
 from core import Cog, RT, t, DatabaseManager, cursor
 
-from rtlib.common import dumps
+from rtlib.common.json import dumps, loads
 from rtlib.common.cacher import Cacher
 
 from data import ROLE_NOTFOUND, FORBIDDEN

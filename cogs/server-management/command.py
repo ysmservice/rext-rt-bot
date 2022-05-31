@@ -8,14 +8,14 @@ from dataclasses import dataclass
 from discord.ext import commands
 import discord
 
-from orjson import loads
-
 from core import Cog, RT, t, DatabaseManager, cursor
 
-from rtlib.common import dumps
-from rtlib.common.cacher import Cacher
-from rtutil.utils import ContentData, disable_content_json, is_json
+from rtutil.content_data import ContentData, disable_content_json, to_text
 from rtutil.views import separate_to_embeds, EmbedPage
+from rtutil.utils import is_json
+
+from rtlib.common.cacher import Cacher
+from rtlib.common.json import dumps, loads
 
 from data import (
     LIST_ALIASES, NO_MORE_SETTING, ALREADY_NO_SETTING,
@@ -194,7 +194,9 @@ class OriginalCommand(Cog):
     async def list_(self, ctx: commands.Context):
         assert ctx.guild is not None
         await EmbedPage(list(separate_to_embeds("\n".join(
-            f"・{command}：`{data.response}` ({t(dict(ja='全一致：', en='FullMatch: '), ctx)} {data.full})"
+            "・{}：`{}` ({} {})".format(command, to_text(data.response), t(
+                dict(ja='全一致：', en='FullMatch: '), ctx
+            ), data.full)
             for command, data in self.data.caches[ctx.guild.id].items()
         ), lambda text: self.embed(description=text)))).first_reply(ctx)
 

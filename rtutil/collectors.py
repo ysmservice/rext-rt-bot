@@ -1,4 +1,4 @@
-# rtutil - Collectors
+# RT Util - Collectors
 
 from typing import Any
 
