@@ -3,16 +3,15 @@
 from __future__ import annotations
 
 from typing import TypeAlias, Optional, Any, cast
-from collections.abc import Callable, Coroutine, Sequence
+from collections.abc import Callable, Coroutine, Sequence, Iterable
 
 from asyncio import create_task
 from inspect import iscoroutinefunction
 from collections import defaultdict
 from functools import wraps
 
-from orjson import loads, dumps
-
 from rtlib.common.utils import make_error_message
+from rtlib.common.json import dumps, loads
 
 from .log import Feature, Target
 from .general import Cog, RT, t
@@ -29,21 +28,29 @@ class EventContext:
 
     def __init__(
         self, bot: RT, target: Optional[Target | int] = None, status: str = "SUCCESS",
-        subject: str | Text = "", detail: str | Text = "",
-        feature: Feature = ("Unknown", "..."),
-        log: bool = True, **kwargs
+        subject: str | Text = "", detail: str | Text = "", feature: Feature = ("Unknown", "..."),
+        extend_text: Iterable[str | Text | None] | None = None, log: bool = True, **kwargs
     ):
         self.keys = []
         for key, value in kwargs.items():
             setattr(self, key, value)
             self.keys.append(key)
         self.log, self.status, self.target = log, status, target
+
         # 文字列はもし辞書の場合は`t`を通す。
         if isinstance(subject, dict):
             subject = t(subject, target, client=bot)
         if isinstance(detail, dict):
             detail = t(detail, target, client=bot)
         self.detail = "{}{}".format(f"{subject}\n" if subject else "", detail)
+
+        # 拡張テキストがあるのなら全部追記する。
+        if extend_text is not None:
+            for text in filter(lambda t: t is not None, extend_text):
+                self.detail = "{}{}".format(
+                    self.detail, text if isinstance(text, str)
+                        else t(text, target, client=bot) # type: ignore
+                )
         self.feature = feature
 
     def to_dict(self) -> dict[str, Any]:
@@ -55,7 +62,7 @@ class EventContext:
 
     def dumps(self) -> str:
         "`to_dict`で得たものを`orjson.dumps`で文字列にします。"
-        return dumps(self.to_dict()).decode()
+        return dumps(self.to_dict())
 
     @classmethod
     def loads(cls, data: str) -> EventContext:

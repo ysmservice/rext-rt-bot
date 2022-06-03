@@ -4,13 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypeVar, Optional, Any
 
-from warnings import warn
-
 from discord.ext import commands
 from discord.ext.fslash import is_fslash
 import discord
 
-from rtlib.common.utils import make_error_message, code_block
+from rtlib.common.utils import make_error_message, code_block, text_format
 
 from .utils import get_fsparent, gettext
 from .types_ import NameIdObj, MentionIdObj
@@ -90,6 +88,7 @@ UCReT = TypeVar("UCReT")
 class Cog(commands.Cog):
     "Extended cog"
 
+    text_format = staticmethod(text_format)
     detail_or = staticmethod(lambda detail: "ERROR" if detail else "SUCCESS")
     BadRequest = BadRequest
     get_fsparent = staticmethod(get_fsparent)
