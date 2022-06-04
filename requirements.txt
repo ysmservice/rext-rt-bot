@@ -10,6 +10,7 @@ jishaku
 ipcs
 uvloop; sys_platform != "win32" and implementation_name == "cpython"
 aioitertools
+pynacl
 # cogs.individual
 ## reprypt
 reprypt

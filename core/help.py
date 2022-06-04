@@ -77,9 +77,11 @@ class Help:
         self.title = title
         return self
 
-    def merge_description(self: SelfT, **text: str) -> SelfT:
+    def merge_description(self: SelfT, copy: str | None = None, **text: str) -> SelfT:
         "説明をマージします。"
         self.description.update(**text)
+        if copy is not None:
+            getattr(self, f"merge_{copy}")(**text)
         return self
 
     def set_description(self: SelfT, **text: str) -> SelfT:
