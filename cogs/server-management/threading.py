@@ -13,7 +13,10 @@ from core.types_ import Text
 
 from rtlib.common.cacher import Cacher
 
-from data import FORBIDDEN, LIST_ALIASES, NO_MORE_SETTING, ROLE_NOTFOUND, TOGGLE_ALIASES
+from data import (
+    FORBIDDEN, LIST_ALIASES, NO_MORE_SETTING, ROLE_NOTFOUND,
+    TOGGLE_ALIASES, ADD_ALIASES, REMOVE_ALIASES
+)
 
 from .__init__ import FSPARENT
 
@@ -74,6 +77,10 @@ class DataManager(DatabaseManager):
                 (guild_id, channel_id, mode, extras)
             )
 
+    async def clean(self) -> None:
+        "セーブデータのお掃除をします。"
+        await self.clean_data(cursor, "ThreadingToggleFeatures", "ChannelId")
+
 
 class ThreadingAutoUnArchiveEventContext(Cog.EventContext):
     "スレッドのアーカイブの自動解除時のイベントコンテキストです。"
@@ -127,14 +134,29 @@ class Threading(Cog):
     async def threading(self, ctx: commands.Context):
         await self.group_index(ctx)
 
+    _HELP = Cog.HelpCommand(threading) \
+        .merge_description("headline", ja="スレッドを管理するためのコマンドです。")
+
     @threading.group(
         aliases=("kp", "monitor", "unarchiver", "監視", "キーパー"),
-        description="Thread Archive Releaser"
+        description="Prevents automatic archiving of threads."
     )
     async def keeper(self, ctx: commands.Context):
         await self.group_index(ctx)
 
-    @keeper.command("toggle", aliases=TOGGLE_ALIASES, description="Turns THREADKEEPER on/off.")
+    _HELP.add_sub(Cog.HelpCommand(keeper)
+        .merge_description(ja="スレッドの自動アーカイブを防止します。")
+        .set_extra("Notes",
+            ja="""もしスレッドをアーカイブするのなら、手動でアーカイブしてください。
+            PC版またはWeb版のDiscordの場合は「スレッドをアーカイブ」ではなく「スレッドをロック」を押さないとアーカイブがRTにより解除されます。
+            (スマホ版またはタブレット版の場合はロックがありませんが、通常のアーカイブで大丈夫です。)
+            これはDiscordの仕様上避けられないものです。ご了承ください。""",
+            en="""If you want to archive a thread, please archive it manually.
+            If you are using the PC or Web version of Discord, you must press "Lock Thread" instead of "Archive Thread" or the archive will be unarchived by RT.
+            (For the phone or tablet version, there is no "lock", but the normal archive will work.)
+            This is unavoidable due to Discord's specifications. Please be aware of this."""))
+
+    @keeper.command("toggle", aliases=TOGGLE_ALIASES, description="Turns thread keeper on/off.")
     @discord.app_commands.describe(channel=(_c_d := "Target channel"))
     async def toggle_keeper(
         self, ctx: commands.Context, *,
@@ -142,19 +164,30 @@ class Threading(Cog):
     ):
         await self._toggle(ctx, channel, "keeper", "")
 
+    _HELP.add_sub(Cog.HelpCommand(toggle_keeper)
+        .merge_description(ja="スレッドキーパーの機能の有効/無効を切り替えます。")
+        .add_arg("channel", "TextChannel", "Optional",
+            ja="対象のチャンネルです。", en=_c_d))
+
     @keeper.command(
         "list", aliases=LIST_ALIASES,
-        description="Displays a list of channels with threadkeeper enabled."
+        description="Displays a list of channels with thread keeper enabled."
     )
     async def list_keeper(self, ctx: commands.Context):
         await self._reply_list(ctx, "keeper", "Keeper")
 
+    _HELP.add_sub(Cog.HelpCommand(list_keeper)
+        .merge_description(ja="スレッドキーパーが設定されているチャンネルの一覧を表示します。"))
+
     @threading.group(
         aliases=("notice", "nof", "通知", "お知らせ"),
-        description="Thread creation and archive notification."
+        description="Thread unarchive notification."
     )
     async def notification(self, ctx: commands.Context):
         await self.group_index(ctx)
+
+    _HELP.add_sub(Cog.HelpCommand(notification)
+        .merge_description(ja="スレッドのアーカイブ解除時の通知機能です。"))
 
     @notification.command(
         "toggle", aliases=TOGGLE_ALIASES,
@@ -169,6 +202,14 @@ class Threading(Cog):
     ):
         await self._toggle(ctx, channel, "notification", "0" if role is None else str(role.id))
 
+    _HELP.add_sub(Cog.HelpCommand(toggle_notification)
+        .merge_description(ja="スレッドの通知を有効化します。")
+        .add_arg("role", "Role", "Optional",
+            ja="通知時にメンションをするロールです。", en=_r_d)
+        .add_arg("channel", "TextChannel", "Optional",
+            ja="対象のチャンネルです。", en=_c_d))
+    del _c_d, _r_d
+
     @notification.command(
         "list", aliases=LIST_ALIASES,
         description="Displays a list of channels for which thread event notifications are set."
@@ -179,6 +220,49 @@ class Threading(Cog):
             lambda data: "" if data.extras == "0" else f": <@&{data.extras}>"
         )
 
+    _HELP.add_sub(Cog.HelpCommand(list_notification)
+        .merge_description(ja="設定されているスレッドの通知の設定の一覧を表示します。"))
+
+    @threading.group(aliases=("m", "メンバー", "め"), description="Managements members.")
+    async def members(self, ctx: commands.Context):
+        await self.group_index(ctx)
+
+    _HELP.add_sub(Cog.HelpCommand(members)
+        .merge_description(ja="スレッドのメンバーの管理をするためのコマンドです。"))
+
+    async def _check_thread(self, ctx: commands.Context) -> bool:
+        if isinstance(ctx.channel, discord.Thread):
+            return True
+        await ctx.reply(t(dict(
+            ja="このコマンドはスレッドでないと使えません。",
+            en="This command must be used in a thread."
+        ), ctx))
+        return False
+
+    @members.command(aliases=ADD_ALIASES, description="Add member to the thread.")
+    @discord.app_commands.describe(member=(_m_d := "The member to be added to the thread."))
+    async def add(self, ctx: commands.Context, *, member: discord.Member):
+        if await self._check_thread(ctx):
+            assert isinstance(ctx.channel, discord.Thread)
+            await ctx.channel.add_user(member)
+            await ctx.reply("Ok")
+
+    _HELP.add_sub(Cog.HelpCommand(add)
+        .merge_description(ja="スレッドにメンバーを追加します。")
+        .add_arg("member", "Member", ja="スレッドに追加するメンバーです。", en=_m_d))
+
+    @members.command(aliases=REMOVE_ALIASES, description="Remove user from the thread.")
+    @discord.app_commands.describe(member=_m_d)
+    async def remove(self, ctx: commands.Context, *, member: discord.Member):
+        if await self._check_thread(ctx):
+            assert isinstance(ctx.channel, discord.Thread)
+            await ctx.channel.remove_user(member)
+            await ctx.reply("Ok")
+
+    _HELP.add_sub(Cog.HelpCommand(remove)
+        .merge_description(ja="スレッドからメンバーを削除します。")
+        .add_arg("member", "Member", ja="スレッドに追加するメンバーです。", en=_m_d))
+    del _m_d, _HELP
     _THREAD = {
         "ja": "スレッド：{name}", "en": "Thread: {name}"
     }
