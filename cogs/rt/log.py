@@ -6,6 +6,7 @@ from typing import ParamSpec, TypeVar, Optional, Any
 from collections.abc import Callable, Coroutine
 
 from functools import wraps
+from textwrap import shorten
 
 from discord.ext import commands, tasks
 import discord
@@ -212,7 +213,7 @@ class DiscordLog(Cog):
                     if embeds := embeds[10:]:
                         await channel.send(embeds=embeds[:10])
                 except Exception as e:
-                    self.bot.ignore(e, "\nEmbed:", embeds[int(str(e).split(".")[1])].title)
+                    self.bot.ignore(self, e, "\nEmbed:", embeds[int(str(e).split(".")[1])].title)
             del self.caches[channel]
 
     async def cog_unload(self):
@@ -405,6 +406,15 @@ class DiscordLog(Cog):
     ):
         self.on_member_punish(guild, user, logc, "Kick")
 
+    def truncate_long(self, text: str) -> str:
+        return shorten(text, 2000)
+
+    def truncate_medium(self, text: str) -> str:
+        return shorten(text, 1024)
+
+    def truncate_short(self, text: str) -> str:
+        return shorten(text, 512)
+
     @commands.Cog.listener()
     @log()
     async def on_message_edit(
@@ -419,11 +429,13 @@ class DiscordLog(Cog):
             if before.content != after.content:
                 if before.content:
                     embed.add_field(
-                        name=t(BEFORE_TEXT, logc.guild), value=before.content
+                        name=self.truncate_medium(t(BEFORE_TEXT, logc.guild)),
+                        value=self.truncate_medium(before.content)
                     )
                 if after.content:
                     embed.add_field(
-                        name=t(AFTER_TEXT, logc.guild), value=after.content
+                        name=self.truncate_medium(t(AFTER_TEXT, logc.guild)),
+                        value=self.truncate_medium(after.content)
                     )
             self.caches[logc].append(embed)
 

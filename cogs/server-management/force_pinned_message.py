@@ -348,7 +348,7 @@ class ForcePinnedMessage(Cog):
                     await before_message.delete()
                 except Exception as e:
                     if TEST:
-                        self.bot.ignore(e)
+                        self.bot.ignore(self, e)
 
             # 送信したメッセージのIDを次消すために保存しておく。
             await self.data.set_before_message(channel.id, new.id)
