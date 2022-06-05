@@ -48,12 +48,14 @@ class SearchResultShowButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer()
+        assert self.view is not None
+        self.view.remove_item(self.view.children[1])
         await self.message.reply(
             t(dict(
                 ja="{mention}により検索が行われました。\n{content}",
                 en="The search was performed by {mention} command.\n{content}"
             ), interaction, mention=interaction.user.mention, content=self.content),
-            allowed_mentions=discord.AllowedMentions.none()
+            allowed_mentions=discord.AllowedMentions.none(), view=self.view
         )
 
 
@@ -143,15 +145,23 @@ class ServerManagement(Cog):
         )
         # 検索URLを作って返信をする。
         view = TimeoutView()
-        view.add_item(SearchResultShowButton(
-            f"Search for this message: {make_google_url(content)}", message, label="みんなが見れるようにする。"
-                if self.bot.search_language(interaction.guild_id, interaction.user.id)
-                    == "ja"
-                else "Show everyone"
-        ))
-        await interaction.response.send_message(
-            getattr(view.children[0], "content"), ephemeral=True, view=view
-        )
+        view.add_item(discord.ui.Button(label=t(dict(
+            ja="検索結果を開く", en="Open result"
+        ), interaction), url=make_google_url(content)))
+        if len(getattr(view.children[0], "url")) > 512:
+            await interaction.response.send_message(t(dict(
+                ja="長すぎて検索できませんでした。", en="Too long to search."
+            ), interaction), ephemeral=True)
+        else:
+            view.add_item(SearchResultShowButton(t(dict(
+                    ja="このメッセージの検索結果を生成しました。",
+                    en="I generated search results for this message."
+                ), interaction), message, label=t(dict(
+                    ja="みんなに見せる", en="Show for everyone"
+            ), interaction)))
+            await interaction.response.send_message(
+                getattr(view.children[1], "content"), ephemeral=True, view=view
+            )
 
     @commands.command(
         aliases=("msgc", "メッセージカウント", "メッセージ数"), fsparent=FSPARENT,
