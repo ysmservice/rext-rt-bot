@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     from .log import LogCore
     from .rtevent import RTEvent
     from .help import HelpCore
+    from .general import Cog
 
 
 __all__ = ("RT",)
@@ -92,11 +93,14 @@ class RT(commands.Bot):
         "ログ出力をします。"
         print("[RT.Bot]", *args, **kwargs)
 
-    def ignore(self, error: Any, *args, subject: str = "error:", **kwargs) -> None:
+    def ignore(self, cog: Cog, error: Any, *args, subject: str = "error:", **kwargs) -> None:
         "出来事が無視されたという旨のログ出力をします。"
         if isinstance(error, Exception):
             error = make_simple_error_text(error)
-        self.print("[warning] Ignored %s" % subject, error, *args, **kwargs)
+        self.print(
+            "%s [warning] Ignored %s" % (f"[{cog.__cog_name__}]", subject),
+            error, *args, **kwargs
+        )
 
     async def _load(self, path: str):
         if path.endswith(".py") or isdir(path):
