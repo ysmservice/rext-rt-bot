@@ -11,6 +11,8 @@ from core import Cog, RT, DatabaseManager, cursor
 
 from data import ADD_ALIASES, REMOVE_ALIASES, LIST_ALIASES, FORBIDDEN
 
+from .__init__ import FSPARENT
+
 
 class DataManager(DatabaseManager):
     "セーブデータを管理するためのクラスです。"
@@ -101,8 +103,8 @@ class NgWord(Cog):
                 ))
 
     @commands.group(
-        aliases=("ng", "NGワード", "ngワード", "禁止言葉"),
-        description="NG word function."
+        aliases=("ng", "NGワード", "ngワード", "禁止言葉", "えじわ"),
+        description="NG word function.", fsparent=FSPARENT
     )
     @commands.has_guild_permissions(manage_messages=True)
     @commands.cooldown(1, 6, commands.BucketType.guild)

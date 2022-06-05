@@ -34,6 +34,8 @@ ANNOTATIONS = {
     "Member": {"ja": f"メンバー{CONV['ja']}", "en": f"Member{CONV['en']}"},
     "User": {"ja": f"ユーザー{CONV['ja']}", "en": f"User{CONV['en']}"},
     "Channel": {"ja": f"チャンネル{CONV['ja']}", "en": f"Channel{CONV['en']}"},
+    "TextChannel": {"ja": f"チャンネル{CONV['ja']}", "en": f"Channel{CONV['en']}"},
+    "VoiceChannel": {"ja": f"チャンネル{CONV['ja']}", "en": f"Channel{CONV['en']}"},
     "Guild": {"ja": f"サーバー{CONV['ja']}", "en": f"Server{CONV['en']}"},
     "Thread": {"ja": f"スレッド{CONV['ja']}", "en": f"Thread{CONV['en']}"},
     "Role": {"ja": f"ロール{CONV['ja']}", "en": f"Role{CONV['en']}"},

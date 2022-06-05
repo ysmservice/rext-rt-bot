@@ -131,6 +131,7 @@ class Threading(Cog):
         aliases=("thm", "thread_manager", "スレッド", "スレッディング", "スレッドマネージャー", "スレ"),
         description="The command for controling threads.", fsparent=FSPARENT
     )
+    @commands.has_guild_permissions(manage_threads=True)
     async def threading(self, ctx: commands.Context):
         await self.group_index(ctx)
 
@@ -141,6 +142,7 @@ class Threading(Cog):
         aliases=("kp", "monitor", "unarchiver", "監視", "キーパー"),
         description="Prevents automatic archiving of threads."
     )
+    @commands.cooldown(1, 10, commands.BucketType.guild)
     async def keeper(self, ctx: commands.Context):
         await self.group_index(ctx)
 
@@ -183,6 +185,7 @@ class Threading(Cog):
         aliases=("notice", "nof", "通知", "お知らせ"),
         description="Thread unarchive notification."
     )
+    @commands.cooldown(1, 10, commands.BucketType.guild)
     async def notification(self, ctx: commands.Context):
         await self.group_index(ctx)
 
@@ -224,6 +227,7 @@ class Threading(Cog):
         .merge_description(ja="設定されているスレッドの通知の設定の一覧を表示します。"))
 
     @threading.group(aliases=("m", "メンバー", "め"), description="Managements members.")
+    @commands.cooldown(1, 10, commands.BucketType.guild)
     async def members(self, ctx: commands.Context):
         await self.group_index(ctx)
 
