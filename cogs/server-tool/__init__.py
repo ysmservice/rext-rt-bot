@@ -71,6 +71,10 @@ class DataManager(DatabaseManager):
             (channel_id,)
         )
 
+    async def clean(self) -> None:
+        "データの掃除をします。"
+        await self.clean_data(cursor, "UnLockQueues", "ChannelId")
+
 
 class LockEventContext(Cog.EventContext):
     "チャンネルのロックまたは解除のイベントコンテキストです。"
