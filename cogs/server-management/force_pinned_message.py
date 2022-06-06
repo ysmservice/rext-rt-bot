@@ -51,7 +51,7 @@ class DataManager(DatabaseManager):
     def merge(self, channel_id: int, new: dict[int, Any]) -> Data:
         "既存のキャッシュと新しいデータをマージします。"
         return tuple(
-            new[index] if index in new else data
+            new[index] if index in new else data # type: ignore
             for index, data in enumerate(self.caches[channel_id])
         )
 

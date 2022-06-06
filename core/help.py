@@ -83,7 +83,7 @@ class Help:
         "説明をマージします。"
         self.description.update(**text)
         if copy is not None:
-            getattr(self, f"merge_{copy}")(**text)
+            getattr(self, f"merge_{copy}")(**self.description)
         return self
 
     def set_description(self: SelfT, **text: str) -> SelfT:
