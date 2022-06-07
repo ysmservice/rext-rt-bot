@@ -12,7 +12,7 @@ __all__ = (
     "TEST", "PREFIXES", "ADMINS", "Colors", "EMOJIS", "SUPPORT_SERVER", "PERMISSION_TEXTS",
     "SETTING_NOTFOUND", "ALREADY_NO_SETTING", "TOO_LARGE_NUMBER", "TOO_SMALL_NUMBER",
     "TOO_SMALL_OR_LARGE_NUMBER", "NO_MORE_SETTING", "NUMBER_CANT_USED",
-    "FORBIDDEN", "notfound", "NOTFOUND", "ROLE_NOTFOUND", "CHANNEL_NOTFOUND",
+    "FORBIDDEN", "notfound", "NOTFOUND", "ROLE_NOTFOUND", "CHANNEL_NOTFOUND", "MESSAGE_NOTFOUND",
     "SET_ALIASES", "DELETE_ALIASES", "ADD_ALIASES", "REMOVE_ALIASES", "SHOW_ALIASES",
     "LIST_ALIASES", "OFF_ALIASES", "ON_ALIASES", "TOGGLE_ALIASES", "START_ALIASES",
     "STOP_ALIASES"
@@ -167,6 +167,7 @@ notfound = lambda ja, en: dict(
 NOTFOUND = {"ja": "見つかりませんでした。", "en": "Not found."}
 ROLE_NOTFOUND = notfound("ロール", "Role")
 CHANNEL_NOTFOUND = notfound("チャンネル", "Channel")
+MESSAGE_NOTFOUND = notfound("メッセージ", "Message")
 
 
 SET_ALIASES = ("s", "設定")

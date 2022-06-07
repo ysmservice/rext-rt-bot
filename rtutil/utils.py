@@ -1,6 +1,6 @@
 # RT Util - Utils
 
-from typing import Optional, Any
+from typing import TypeVar, Optional, Any
 from collections.abc import Callable, Iterable, Iterator, Sequence
 
 from datetime import datetime, timedelta, timezone
@@ -44,10 +44,11 @@ def separate_from_iterable(texts: Iterable[str], max_: int = 2000, join: str = "
         yield tentative
 
 
+EmbedsT = TypeVar("EmbedsT", bound=Sequence[discord.Embed])
 def set_page(
-    embeds: Sequence[discord.Embed], adjustment: Callable[[int, int], str] \
+    embeds: EmbedsT, adjustment: Callable[[int, int], str] \
         = lambda i, length: f"{i}/{length}", length: Optional[int] = None
-):
+) -> EmbedsT:
     "渡された埋め込み達にページを追記します。"
     length = length or len(embeds)
     for i, embed in enumerate(embeds, 1):
@@ -55,6 +56,7 @@ def set_page(
             embed.footer.text or "", "" if embed.footer.text is None else " ",
             adjustment(i, length)
         )))
+    return embeds
 
 
 # Webhook
@@ -82,10 +84,12 @@ async def artificially_send(
     channel: discord.TextChannel | discord.Thread,
     member: discord.Member, content: str | None = None,
     additional_name: str = "", mode: str = "webhook", **kwargs
-) -> discord.WebhookMessage | discord.Message:
+) -> discord.WebhookMessage | discord.Message | None:
     "Webhookまたは埋め込みの送信で、あたかも渡されたメンバーが送信したメッセージのように、メッセージを送信します。"
     name = f"{member.display_name}{additional_name}"
     if isinstance(channel, discord.Thread) or mode != "webhook":
+        if "wait" in kwargs:
+            del kwargs["wait"]
         kwargs.setdefault("embeds", [])
         kwargs["embeds"].insert(0, discord.Embed(
             description=content, color=Colors.normal

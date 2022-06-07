@@ -3,8 +3,6 @@
 from typing import Any
 from collections.abc import Sequence, Callable
 
-import discord
-
 from emoji import UNICODE_EMOJI_ENGLISH
 
 
@@ -12,9 +10,12 @@ __all__ = ("make_panel", "tally_panel", "extract_emojis")
 EMOJIS = [chr(0x1f1e6 + i) for i in range(26)]
 
 
-def make_panel(data: dict[str, str], space: str = " ") -> str:
+def make_panel(
+    data: dict[str, str], space: str = " ",
+    on_line: Callable[[str], str] = lambda line: line
+) -> str:
     "パネルを作ります。"
-    return "\n".join(f"{key}{space}{value}" for key, value in data.items())
+    return "\n".join(map(on_line, (f"{key}{space}{value}" for key, value in data.items())))
 
 
 def tally_panel(panel: str, spaces: Sequence[str] = (" ", "　")) -> dict[str, str]:
