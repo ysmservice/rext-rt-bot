@@ -56,7 +56,7 @@ class DataManager(DatabaseManager):
         "テーブルを作ります。"
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS RequireSent (
-                GuildId BIGINT, ChannelId BIGINT, Deadline FLOAT
+                GuildId BIGINT, ChannelId BIGINT, Deadline DOUBLE
             );"""
         )
         await cursor.execute(
