@@ -422,8 +422,21 @@ class Poll(Cog):
         else:
             await interaction.response.edit_message(embed=embed, view=None)
 
-    @commands.command(aliases=("vote", "pl", "vt", "投票", "と"))
+    @commands.command(
+        aliases=("vote", "pl", "vt", "投票", "と"),
+        description="Create a polling panel."
+    )
     @discord.app_commands.rename(max_="max", min_="min")
+    @discord.app_commands.describe(
+        max_=(_d_mx := "The maximum number of votes. If set to `-1`, it will be unlimited."),
+        min_=(_d_mn := "The minimum number of votes. If set to `-1`, it will be unlimited."),
+        anonymous=(_d_a := "It is whether or not you want to go into anonymous mode."),
+        deadline=(_d_d := "It is how many days after the closing."),
+        hidden_result=(_d_h := "The voting results will not be known until the polls close."),
+        title=(_d_t := "The title of polling panel."),
+        detail=(_d_dt := "The detail of polling panel."),
+        content="Name or ID of role separated by `<nl>`."
+    )
     @commands.cooldown(1, 15, commands.BucketType.channel)
     async def poll(
         self, ctx: commands.Context, max_: int = -1, min_: int = -1,
@@ -487,23 +500,20 @@ class Poll(Cog):
             en="This command has many arguments, so it is better to execute it with a slash command."
         )
         .add_arg("max", "int", ("default", "-1"),
-            ja="投票数の上限です。`-1`にすると無制限となります。",
-            en="The maximum number of votes. If set to `-1`, it will be unlimited.")
+            ja="投票数の上限です。`-1`にすると無制限となります。", en=_d_mx)
         .add_arg("min", "int", ("default", "-1"),
-            ja="投票数の下限です。`-1`にすると無制限になります。",
-            en="The minimum number of votes. If set to `-1`, it will be unlimited.")
+            ja="投票数の下限です。`-1`にすると無制限になります。", en=_d_mn)
         .add_arg("anonymous", "bool", ("default", "False"),
             ja="匿名モードにするかどうかです。誰が投票しているかわからなくなります。",
-            en="It is whether or not you want to go into anonymous mode. You will not be able to see who is voting.")
+            en=f"{_d_a} You will not be able to see who is voting.")
         .add_arg("deadline", "float", ("default", str(MAX_DEADLINE_DAYS)),
-            ja="何日後に締め切るかです。", en="It is how many days after the closing.")
+            ja="何日後に締め切るかです。", en=_d_d)
         .add_arg("hidden_result", "bool", ("default", "False"),
-            ja="投票結果が投票終了までわからないようにします。",
-            en="The voting results will not be known until the polls close.")
+            ja="投票結果が投票終了までわからないようにします。", en=_d_h)
         .add_arg("title", "str", ("default", "Poll"),
-            ja="投票のタイトルです。", en="The title of polling panel.")
+            ja="投票のタイトルです。", en=_d_t)
         .add_arg("detail", "str", ("default", "..."),
-            ja="投票の内容です。", en="The detail of polling panel.")
+            ja="投票の内容です。", en=_d_dt)
         .add_arg("content", "str",
             ja="""投票の選択肢です。以下のように改行して分けます。
             ```
@@ -519,6 +529,7 @@ class Poll(Cog):
             Option 3
             ```
             Slash commands cannot contain line breaks, so instead of a line break, put `<nl>`."""))
+    del _d_mx, _d_mn, _d_a, _d_d, _d_h, _d_t, _d_dt
 
 
 async def setup(bot: RT) -> None:
