@@ -9,10 +9,11 @@ from orjson import loads
 
 __all__ = (
     "SECRET", "DATA", "CANARY", "get_category", "HOST_PORT", "URL", "API_URL", "SHARD",
-    "TEST", "PREFIXES", "ADMINS", "Colors", "EMOJIS", "SUPPORT_SERVER", "PERMISSION_TEXTS",
-    "SETTING_NOTFOUND", "ALREADY_NO_SETTING", "TOO_LARGE_NUMBER", "TOO_SMALL_NUMBER",
-    "TOO_SMALL_OR_LARGE_NUMBER", "NO_MORE_SETTING", "NUMBER_CANT_USED",
-    "FORBIDDEN", "notfound", "NOTFOUND", "ROLE_NOTFOUND", "CHANNEL_NOTFOUND", "MESSAGE_NOTFOUND",
+    "TEST", "PREFIXES", "TOPIC_PREFIX", "ADMINS", "Colors", "EMOJIS",
+    "SUPPORT_SERVER", "PERMISSION_TEXTS", "SETTING_NOTFOUND", "ALREADY_NO_SETTING",
+    "TOO_LARGE_NUMBER", "TOO_SMALL_NUMBER", "TOO_SMALL_OR_LARGE_NUMBER",
+    "NO_MORE_SETTING", "NUMBER_CANT_USED", "FORBIDDEN", "notfound", "NOTFOUND",
+    "ROLE_NOTFOUND", "CHANNEL_NOTFOUND", "MESSAGE_NOTFOUND",
     "SET_ALIASES", "DELETE_ALIASES", "ADD_ALIASES", "REMOVE_ALIASES", "SHOW_ALIASES",
     "LIST_ALIASES", "OFF_ALIASES", "ON_ALIASES", "TOGGLE_ALIASES", "START_ALIASES",
     "STOP_ALIASES"
@@ -65,6 +66,7 @@ else:
         "rt!", "Rt!", "rT!", "RT!", "rt.", "Rt.", "rT.", "RT.", "rt,", "Rt,", "rT,", "RT,",
         "りつ！", "りつ!", "りつ。", "りつ.", "りつ、", "りつ,"
     )
+TOPIC_PREFIX = f"{PREFIXES[0][:-1]}>"
 ADMINS = (
     634763612535390209, 667319675176091659, 266988527915368448,
     884692310166761504, 739702692393517076
@@ -75,6 +77,7 @@ ADMINS = (
 CATEGORIES = {
     "server-tool": {"ja": "サーバー ツール", "en": "Server Tool"},
     "server-management": {"ja": "サーバー 運営", "en": "Server Management"},
+    "server-management": {"ja": "サーバー 運営 ２", "en": "Server Management 2"},
     "individual": {"ja": "個人", "en": "Individual"}, "rt": {"ja": "RT", "en": "RT"},
     "entertainment": {"ja": "娯楽", "en": "Entertainment"},
     "music": {"ja": "音楽", "en": "Music"}, "tts": {"ja": "読み上げ", "en": "TTS"}
