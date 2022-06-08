@@ -16,14 +16,11 @@ pynacl
 reprypt
 # cogs.debug
 psutil
-# cogs.server-safety
-## Captcha
-captcha
 # cogs.server-management
-## translator
 deep_translator
+captcha
+emoji
 # cogs.entertainment
-## __init__
 bs4
 lxml
 pillow
