@@ -77,7 +77,7 @@ ADMINS = (
 CATEGORIES = {
     "server-tool": {"ja": "サーバー ツール", "en": "Server Tool"},
     "server-management": {"ja": "サーバー 運営", "en": "Server Management"},
-    "server-management": {"ja": "サーバー 運営 ２", "en": "Server Management 2"},
+    "server-management2": {"ja": "サーバー 運営 ２", "en": "Server Management 2"},
     "individual": {"ja": "個人", "en": "Individual"}, "rt": {"ja": "RT", "en": "RT"},
     "entertainment": {"ja": "娯楽", "en": "Entertainment"},
     "music": {"ja": "音楽", "en": "Music"}, "tts": {"ja": "読み上げ", "en": "TTS"}
