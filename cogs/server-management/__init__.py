@@ -18,7 +18,6 @@ from data import TOPIC_PREFIX
 
 
 FSPARENT = "server-management"
-FSPARENT2 = f"{FSPARENT}2"
 
 
 def swith_replace(
