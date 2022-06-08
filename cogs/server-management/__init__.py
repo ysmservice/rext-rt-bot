@@ -82,7 +82,7 @@ class ServerManagement(Cog):
         self.bot.tree.remove_command(self._CTX_MES_GC)
 
     @commands.Cog.listener()
-    async def on_setup(self):
+    async def on_help_load(self):
         self.bot.help_.set_help(Cog.Help()
             .set_title("Context Search")
             .set_headline(ja="お手軽検索", en="Easliy search")
