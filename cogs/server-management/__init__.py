@@ -117,7 +117,7 @@ class ServerManagement(Cog):
             ))
         self.bot.help_.set_help(Cog.Help()
             .set_title("autoThread")
-            .set_category(FSPARENT2)
+            .set_category(FSPARENT)
             .set_headline(ja="自動スレッド作成チャンネル", en="Automatic Thread Creation Channel")
             .set_description(
                 ja="""送られたメッセージから自動でスレッドを作成するチャンネルを作る機能です。
