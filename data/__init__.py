@@ -12,9 +12,10 @@ __all__ = (
     "TEST", "PREFIXES", "ADMINS", "Colors", "EMOJIS", "SUPPORT_SERVER", "PERMISSION_TEXTS",
     "SETTING_NOTFOUND", "ALREADY_NO_SETTING", "TOO_LARGE_NUMBER", "TOO_SMALL_NUMBER",
     "TOO_SMALL_OR_LARGE_NUMBER", "NO_MORE_SETTING", "NUMBER_CANT_USED",
-    "FORBIDDEN", "notfound", "NOTFOUND", "ROLE_NOTFOUND", "CHANNEL_NOTFOUND",
+    "FORBIDDEN", "notfound", "NOTFOUND", "ROLE_NOTFOUND", "CHANNEL_NOTFOUND", "MESSAGE_NOTFOUND",
     "SET_ALIASES", "DELETE_ALIASES", "ADD_ALIASES", "REMOVE_ALIASES", "SHOW_ALIASES",
-    "LIST_ALIASES", "OFF_ALIASES", "ON_ALIASES", "TOGGLE_ALIASES"
+    "LIST_ALIASES", "OFF_ALIASES", "ON_ALIASES", "TOGGLE_ALIASES", "START_ALIASES",
+    "STOP_ALIASES"
 )
 
 
@@ -166,6 +167,7 @@ notfound = lambda ja, en: dict(
 NOTFOUND = {"ja": "見つかりませんでした。", "en": "Not found."}
 ROLE_NOTFOUND = notfound("ロール", "Role")
 CHANNEL_NOTFOUND = notfound("チャンネル", "Channel")
+MESSAGE_NOTFOUND = notfound("メッセージ", "Message")
 
 
 SET_ALIASES = ("s", "設定")
@@ -177,3 +179,5 @@ SHOW_ALIASES = ("sw", "now", "見る", "現在")
 OFF_ALIASES = ("オフ", "無効", "disable", "dis")
 ON_ALIASES = ("オン", "有効", "enable", "ena")
 TOGGLE_ALIASES = ("オンオフ", "onoff", "tgl", "switch")
+START_ALIASES = ("st", "スタート", "開始", "すたと")
+STOP_ALIASES = ("sp", "ストップ", "停止", "すとぷ")
