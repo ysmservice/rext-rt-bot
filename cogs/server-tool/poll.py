@@ -307,6 +307,10 @@ class PollView(discord.ui.View):
             ), interaction))
 
 
+class PollAutoCloseEventContext(Cog.EventContext):
+    "投票パネルの自動終了時のイベントコンテキストです。"
+
+
 class Poll(Cog):
     "投票パネルのコグです。"
 
@@ -356,6 +360,13 @@ class Poll(Cog):
                             # 集計結果に更新する。
                             await self._tally(message, data)
 
+                    self.bot.rtevent.dispatch("on_poll_auto_close", PollAutoCloseEventContext(
+                        self.bot, guild, self.detail_or(error), {
+                            "ja": "投票パネル", "en": "Polling panel"
+                        }, {"ja": "自動集計終了", "en": "Automatic close polling panel"},
+                        self.poll, error
+                    ))
+
     @_auto_close_poll.before_loop
     async def _before_auto_close(self):
         await self.bot.wait_until_ready()
@@ -370,7 +381,6 @@ class Poll(Cog):
         interaction: discord.Interaction | None = None
     ) -> None:
         # 投票パネルを集計結果の埋め込みに編集して更新する。
-        edit = message.edit if interaction is None else interaction.response.edit_message
         emojis = extract_emojis_from_message(message)
 
         # 投票結果が書いてある投票パネルの埋め込みを作る。
@@ -398,7 +408,19 @@ class Poll(Cog):
             en='This is the result of voting for "{title}" and the number of votes is {count}.'
         ), message.guild, title=message.embeds[0].title, count=sum(counts.values())))
 
-        await edit(embed=embed, view=None)
+        if interaction is None:
+            assert self.bot.user is not None
+            if message.webhook_id is None:
+                await message.edit(embed=embed, view=None)
+            else:
+                assert isinstance(message.channel, discord.TextChannel)
+                webhook = discord.utils.get(
+                    await message.channel.webhooks(), id=message.webhook_id
+                )
+                if webhook is not None:
+                    await webhook.edit_message(message.id, embed=embed, view=None)
+        else:
+            await interaction.response.edit_message(embed=embed, view=None)
 
     @commands.command(aliases=("vote", "pl", "vt", "投票", "と"))
     @discord.app_commands.rename(max_="max", min_="min")
@@ -412,6 +434,8 @@ class Poll(Cog):
         assert ctx.guild is not None and isinstance(
             ctx.channel, discord.TextChannel | discord.Thread
         ) and isinstance(ctx.author, discord.Member)
+        content = content.replace("<nl>", "\n").replace("<改行>", "\n") \
+            .replace("＜改行＞", "\n")
         # 絵文字達を取り出す。
         data = extract_emojis(content)
         # 期限を計算する。
@@ -455,6 +479,46 @@ class Poll(Cog):
                 await ctx.interaction.response.send_message("Ok", ephemeral=True)
         else:
             await ctx.reply(t(reply, ctx))
+
+    (Cog.HelpCommand(poll)
+        .merge_description("headline", ja="Create a voting panel.")
+        .set_extra("Notes",
+            ja="このコマンドは引数が多いのでスラッシュコマンドで実行した方が良いです。",
+            en="This command has many arguments, so it is better to execute it with a slash command."
+        )
+        .add_arg("max", "int", ("default", "-1"),
+            ja="投票数の上限です。`-1`にすると無制限となります。",
+            en="The maximum number of votes. If set to `-1`, it will be unlimited.")
+        .add_arg("min", "int", ("default", "-1"),
+            ja="投票数の下限です。`-1`にすると無制限になります。",
+            en="The minimum number of votes. If set to `-1`, it will be unlimited.")
+        .add_arg("anonymous", "bool", ("default", "False"),
+            ja="匿名モードにするかどうかです。誰が投票しているかわからなくなります。",
+            en="It is whether or not you want to go into anonymous mode. You will not be able to see who is voting.")
+        .add_arg("deadline", "float", ("default", str(MAX_DEADLINE_DAYS)),
+            ja="何日後に締め切るかです。", en="It is how many days after the closing.")
+        .add_arg("hidden_result", "bool", ("default", "False"),
+            ja="投票結果が投票終了までわからないようにします。",
+            en="The voting results will not be known until the polls close.")
+        .add_arg("title", "str", ("default", "Poll"),
+            ja="投票のタイトルです。", en="The title of polling panel.")
+        .add_arg("detail", "str", ("default", "..."),
+            ja="投票の内容です。", en="The detail of polling panel.")
+        .add_arg("content", "str",
+            ja="""投票の選択肢です。以下のように改行して分けます。
+            ```
+            選択肢1
+            選択肢2
+            選択肢3
+            ```
+            スラッシュコマンドの場合は改行を入れることができないので、改行の代わりに`<nl>`または`<改行>`を入れてください。""",
+            en="""Voting options. Separate them with a new line as follows.
+            ````
+            Choice 1
+            Option 2
+            Option 3
+            ```
+            Slash commands cannot contain line breaks, so instead of a line break, put `<nl>`."""))
 
 
 async def setup(bot: RT) -> None:
