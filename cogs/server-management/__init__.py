@@ -9,12 +9,16 @@ from core import RT, Cog, t
 
 from rtlib.common.utils import code_block
 from rtlib.common.json import dumps
+
 from rtutil.collectors import make_google_url
 from rtutil.content_data import ContentData
 from rtutil.views import TimeoutView
 
+from data import TOPIC_PREFIX
+
 
 FSPARENT = "server-management"
+FSPARENT2 = f"{FSPARENT}2"
 
 
 def swith_replace(
@@ -78,7 +82,7 @@ class ServerManagement(Cog):
         self.bot.tree.remove_command(self._CTX_MES_GC)
 
     @commands.Cog.listener()
-    async def on_help_load(self):
+    async def on_setup(self):
         self.bot.help_.set_help(Cog.Help()
             .set_title("Context Search")
             .set_headline(ja="お手軽検索", en="Easliy search")
@@ -112,6 +116,23 @@ class ServerManagement(Cog):
                 en="""Automatically publish messages on news channels.
                     You can do this by putting `rt>autoPublish` in the news channel topic."""
             ))
+        self.bot.help_.set_help(Cog.Help()
+            .set_title("autoThread")
+            .set_category(FSPARENT2)
+            .set_headline(ja="自動スレッド作成チャンネル", en="Automatic Thread Creation Channel")
+            .set_description(
+                ja="""送られたメッセージから自動でスレッドを作成するチャンネルを作る機能です。
+                `rt>thread`をチャンネルトピックに入れれば有効になります。""",
+                en="""The ability to create a channel that automatically creates threads from messages sent to it.
+                Put `rt>thread` in the channel topic to enable it."""
+            )
+            .set_extra("Notes",
+                ja="""これを使うとチャンネルのスローモードは自動的に`10`秒に設定されます。
+                スローモードが`10`秒より小さい場合、この機能は使えません。
+                これは、誰かがメッセージを連続して投稿しているときに、たくさんのスレッドを作ってしまい、Discord が怒ってしまうのを避けるためです。""",
+                en="""This will automatically set the channel's slow mode to `10` seconds.
+                If the slow mode is lower than `10` seconds, this function cannot be used.
+                This is to avoid creating a lot of threads when someone is posting messages in a row, which will make Discord angry."""))
 
     async def get_embed(self, interaction: discord.Interaction, message: discord.Message):
         data = ContentData(content={}, author=message.author.id, json=True)
@@ -243,6 +264,16 @@ class ServerManagement(Cog):
                     option = line.split()[0]
                     if option == "check":
                         await message.add_reaction("✅")
+
+        if f"{TOPIC_PREFIX}thread" in message.channel.topic:
+            if message.channel.slowmode_delay >= 10:
+                await message.channel.create_thread(
+                    name=message.content[:message.content.find("\n")]
+                        if "\n" in message.content else message.content,
+                    message=message
+                )
+            else:
+                await message.channel.edit(slowmode_delay=10)
 
     @commands.command(
         description="Setting nsfw channel", fsparent=FSPARENT,
