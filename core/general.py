@@ -37,7 +37,7 @@ def _get_client(obj):
     return obj._state._get_client()
 
 
-def t(text: Text, ctx: Any, **kwargs) -> str:
+def t(text: Text, ctx: Any, ignore_key_error: bool = False, **kwargs) -> str:
     """Extracts strings in the correct language from a dictionary of language code keys and their corresponding strings, based on information such as the `ctx` guild passed in.
     You can use keyword arguments to exchange strings like f-string."""
     # Extract client
@@ -77,7 +77,13 @@ def t(text: Text, ctx: Any, **kwargs) -> str:
                 language = client.language.guild.get(ctx.id)
             if language is None: language = "en"
         text = gettext(text, "en") if language is None else gettext(text, language) # type: ignore
-    return text.format(**kwargs) # type: ignore
+    try:
+        return text.format(**kwargs) # type: ignore
+    except KeyError:
+        if ignore_key_error:
+            return text # type: ignore
+        else:
+            raise
 
 
 class BadRequest(Exception):

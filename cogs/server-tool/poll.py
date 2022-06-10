@@ -17,7 +17,7 @@ from core import RT, Cog, t, DatabaseManager, cursor
 from rtlib.common.json import loads, dumps
 from rtlib.common.utils import map_length
 
-from rtutil.utils import artificially_send, set_page
+from rtutil.utils import artificially_send, set_page, replace_nl
 from rtutil.panel import make_panel, extract_emojis
 from rtutil.views import EmbedPage
 
@@ -447,8 +447,7 @@ class Poll(Cog):
         assert ctx.guild is not None and isinstance(
             ctx.channel, discord.TextChannel | discord.Thread
         ) and isinstance(ctx.author, discord.Member)
-        content = content.replace("<nl>", "\n").replace("<改行>", "\n") \
-            .replace("＜改行＞", "\n")
+        content = replace_nl(content)
         # 絵文字達を取り出す。
         data = extract_emojis(content)
         # 期限を計算する。

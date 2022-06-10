@@ -14,8 +14,9 @@ from data import TEST, CANARY, PERMISSION_TEXTS, Colors
 
 
 __all__ = (
-    "is_json", "unwrap_or", "set_page", "webhook_send", "artificially_send",
-    "permissions_to_text", "make_nopermissions_text", "JST", "make_datetime_text"
+    "is_json", "unwrap_or", "set_page", "fetch_webhook", "webhook_send",
+    "artificially_send", "permissions_to_text", "make_nopermissions_text",
+    "JST", "make_datetime_text", "adjust_min_max", "replace_nl"
 )
 
 
@@ -66,6 +67,12 @@ elif TEST:
     WEBHOOK_NAME = "R3-Tool"
 else:
     WEBHOOK_NAME = "RT-Tool"
+
+
+async def fetch_webhook(channel: discord.TextChannel, name: str = WEBHOOK_NAME) \
+        -> discord.Webhook | None:
+    "ウェブフックを取得します。"
+    return discord.utils.get(await channel.webhooks(), name=name)
 
 
 async def webhook_send(
@@ -127,3 +134,36 @@ def make_datetime_text(time: datetime, format_: str = "%H:%M", timezone: ... = J
     "`datetime.datetime`を文字列にします。また、デフォルトでJSTのタイムゾーンに変換します。"
     time.astimezone(timezone)
     return time.strftime(format_)
+
+
+def adjust_min_max(
+    length: int, min_: int, max_: int, default_min: int = 0,
+    default_max: int = 25, reset_value: int = -1
+) -> tuple[int, int]:
+    "最大値と最低値が`length`より大きい場合はそれに合わせます。"
+    if min_ == reset_value:
+        min_ = default_min
+    if max_ == reset_value:
+        max_ = default_max
+
+    if min_ > length:
+        min_ = length
+    if max_ > length:
+        max_ = length
+
+    if min_ < default_min:
+        min_ = default_min
+    if max_ < default_min:
+        max_ = default_min
+
+    if min_ > default_max:
+        min_ = default_max
+    if max_ > default_max:
+        max_ = default_max
+    return (min_, max_)
+
+
+def replace_nl(text: str) -> str:
+    "`<nl>`等で区切られているものを改行に交換します。"
+    return text.replace("<nl>", "\n").replace("<改行>", "\n") \
+            .replace("＜改行＞", "\n")

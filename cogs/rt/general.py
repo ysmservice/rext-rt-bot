@@ -264,7 +264,7 @@ class General(Cog):
             elif isinstance(error, commands.BadArgument):
                 if error.__class__.__name__.endswith("NotFound"):
                     status = 404
-                    key = error.__class__.__name__
+                    key = error.__class__.__name__.replace("NotFound", "")
                     kind = t(ANNOTATIONS.get(key, make_default(key)), ctx)
                     for value in CONV.values():
                         kind = kind.replace(value, "")
