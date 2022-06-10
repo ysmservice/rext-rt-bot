@@ -312,10 +312,10 @@ class DiscordLog(Cog):
         else:
             self.caches[logc].append(embed)
 
-    def on_update(self, log_type: str, type_: Text, logc: discord.TextChannel):
+    def on_update(self, log_type: str, type_: Text, logc: discord.TextChannel, **kwargs):
         self.caches[logc].append(Cog.Embed(
-            t(globals()[f"{log_type}_TEXT"], logc.guild),
-            description=t(type_, logc.guild)
+            t(globals()[f"{log_type}_TEXT"], logc.guild, True),
+            description=t(type_, logc.guild, True, **kwargs)
         ))
 
     @commands.Cog.listener()

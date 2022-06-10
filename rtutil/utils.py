@@ -14,9 +14,9 @@ from data import TEST, CANARY, PERMISSION_TEXTS, Colors
 
 
 __all__ = (
-    "is_json", "unwrap_or", "set_page", "webhook_send", "artificially_send",
-    "permissions_to_text", "make_nopermissions_text", "JST", "make_datetime_text",
-    "adjust_min_max", "replace_nl"
+    "is_json", "unwrap_or", "set_page", "fetch_webhook", "webhook_send",
+    "artificially_send", "permissions_to_text", "make_nopermissions_text",
+    "JST", "make_datetime_text", "adjust_min_max", "replace_nl"
 )
 
 
@@ -67,6 +67,12 @@ elif TEST:
     WEBHOOK_NAME = "R3-Tool"
 else:
     WEBHOOK_NAME = "RT-Tool"
+
+
+async def fetch_webhook(channel: discord.TextChannel, name: str = WEBHOOK_NAME) \
+        -> discord.Webhook | None:
+    "ウェブフックを取得します。"
+    return discord.utils.get(await channel.webhooks(), name=name)
 
 
 async def webhook_send(

@@ -7,7 +7,10 @@ import discord
 
 from core import Cog, RT, t
 
-from rtutil.utils import artificially_send, adjust_min_max, replace_nl
+from rtlib.common.json import loads
+
+from rtutil.utils import artificially_send, adjust_min_max, replace_nl, is_json, fetch_webhook
+from rtutil.content_data import ContentData
 from rtutil.panel import extract_emojis
 
 from data import FORBIDDEN
@@ -29,12 +32,17 @@ class RolePanelView(discord.ui.View):
         self.cog = cog
         super().__init__(*args, **kwargs)
 
+    def extract_description(self, interaction: discord.Interaction) -> str:
+        # 説明を取り出します。
+        assert interaction.message is not None \
+            and interaction.message.embeds[0].description is not None
+        return interaction.message.embeds[0].description
+
     @discord.ui.select(custom_id="role_panel.add_roles")
     async def add_roles(self, interaction: discord.Interaction, select: discord.ui.Select):
-        assert interaction.guild is not None and interaction.message is not None \
-            and interaction.message.embeds[0].description is not None \
-            and isinstance(interaction.user, discord.Member)
-        description = interaction.message.embeds[0].description
+        # 役職を付与する。
+        assert interaction.guild is not None and isinstance(interaction.user, discord.Member)
+        description = self.extract_description(interaction)
 
         # 付与するロールのリストを作る。
         roles, error = set(), None
@@ -84,10 +92,23 @@ class RolePanelView(discord.ui.View):
             )), self.cog.role, error
         ))
 
-    @discord.ui.button(label="ロールを消す", custom_id)
+    @discord.ui.button(
+        custom_id="role_panel.remove_roles",
+        style=discord.ButtonStyle.danger,
+        emoji="🗑"
+    )
+    async def remove_roles(self, interaction: discord.Interaction, _):
+        # 役職を削除する。
+        description = self.extract_description(interaction)
+        assert isinstance(interaction.user, discord.Member)
+        if roles := set(role for role in interaction.user.roles if str(role.id) in description):
+            await interaction.user.remove_roles(*roles)
+        await interaction.response.send_message("Ok", ephemeral=True)
 
 
 class RolePanel(Cog):
+    "役職パネルのコグです。"
+
     def __init__(self, bot: RT):
         self.bot = bot
 
@@ -99,16 +120,31 @@ class RolePanel(Cog):
         aliases=("rp", "役職パネル", "ロールパネル", "やぱ", "ろぱ"), fsparent=FSPARENT,
         description="Create a role panel."
     )
+    @discord.app_commands.rename(min_="min", max_="max")
     @discord.app_commands.describe(
         min_=(_d_mi := "The minimum number of roles that can be added."),
         max_=(_d_ma := "The maximum number of roles that can be added."),
         title=(_d_t := "Title of role panel."),
         content="Enter the name or ID of the role to be included in the role panel, separated by `<nl>`.",
     )
+    @commands.has_guild_permissions(manage_roles=True)
+    @commands.cooldown(1, 10, commands.BucketType.channel)
     async def role(
         self, ctx: commands.Context, min_: int = -1,  max_: int = -1,
         title: str = "Role Panel", *, content: str
     ):
+        # テキストチャンネル以外は除外する。
+        if not isinstance(ctx.channel, discord.TextChannel):
+            raise Cog.BadRequest({
+                "ja": "テキストチャンネルである必要があります。",
+                "en": "Must be a text channel."
+            })
+
+        # `Get content`の場合は中身を取り出す。
+        if is_json(content):
+            data: ContentData = loads(content)
+            content = data["content"]["embeds"][0]["description"]
+
         assert isinstance(ctx.channel, discord.TextChannel | discord.Thread) \
             and isinstance(ctx.author, discord.Member)
         emojis, content = extract_emojis(content), replace_nl(content)
@@ -120,19 +156,69 @@ class RolePanel(Cog):
         )
         # ロールをオプションとして全て追加する。
         for emoji, role in (roles := [
-            (emoji, await commands.RoleConverter().convert(ctx, id_))
-            for emoji, id_ in emojis.items()
+            (emoji, await commands.RoleConverter().convert(ctx, target.strip()))
+            for emoji, target in emojis.items()
         ]):
             view.add_roles.add_option(label=role.name, value=str(role.id), emoji=emoji)
         view.add_roles.placeholder = t(dict(ja="ロールを設定する", en="Set roles"), ctx)
+        view.remove_roles.label = t(dict(ja="ロールをリセットする", en="Reset roles"), ctx)
 
-        await artificially_send(ctx.channel, ctx.author, embed=discord.Embed(
+        # 埋め込みを作る。
+        embed = discord.Embed(
             title=title, description="\n".join(
                 f"{emoji} {role.mention}" for emoji, role in roles
             ), color=ctx.author.color
-        ), view=view)
-        if ctx.interaction is not None:
-            await ctx.interaction.response.send_message("Ok", ephemeral=True)
+        )
+
+        if ctx.message.reference is None:
+            # 役職パネルを送信する。
+            await artificially_send(ctx.channel, ctx.author, embed=embed, view=view)
+            if ctx.interaction is not None:
+                await ctx.interaction.response.send_message("Ok", ephemeral=True)
+        else:
+            # 返信された際は返信先の役職パネルを更新する。
+            # メッセージを取得する。
+            if (message := ctx.message.reference.cached_message) is None:
+                assert ctx.message.reference.message_id is not None
+                message = await ctx.channel.fetch_message(ctx.message.reference.message_id)
+            if message is None:
+                await ctx.reply(t(dict(
+                    ja="更新するメッセージの取得に失敗しました。",
+                    en="Failed to retrieve message to be updated."
+                ), ctx))
+            else:
+                # メッセージを編集して更新をする。
+                assert self.bot.user is not None
+                if message.author.id == self.bot.user.id:
+                    await message.edit(embed=embed, view=view)
+                elif (webhook := await fetch_webhook(ctx.channel)) is not None:
+                    await webhook.edit_message(message.id, embed=embed, view=view)
+                else:
+                    await ctx.reply(t(dict(
+                        ja="それは編集できません。", en="I can't update that message."
+                    ), ctx))
+
+    (Cog.HelpCommand(role)
+        .merge_description("headline", ja="役職パネルを作ります。")
+        .add_arg("min", "int", ("default", "-1"),
+            ja="設定できるロールの最低個数です。", en=_d_mi)
+        .add_arg("max", "int", ("default", "-1"),
+            ja="設定できるロールの最大個数です。", en=_d_ma)
+        .add_arg("title", "str", ("default", "Role Panel"),
+            ja="役職パネルのタイトルです。", en=_d_t)
+        .add_arg("content", "str",
+            ja="""改行または`<nl>`か`<改行>`で分けた役職の名前かIDです。
+            `Get content`で取得したコードをこの引数に入れることも可能です。
+            その場合はコードに埋め込みの説明欄が含まれている必要があります。
+            これは、役職パネルの内容を簡単にコピーするために使用しましょう。""",
+            en="""The name or ID of the role, separated by a newline or `<nl>` or `<nl>`.
+            It is also possible to put code obtained with `Get content` into this argument.
+            In that case, the code must contain an embedded description field.
+            This should be used to easily copy the content of the position panel.""")
+        .set_extra("Notes",
+            ja="`rt!`形式のコマンドを役職パネルのメッセージに返信して実行すると、その役職パネルの内容を上書きすることができます。",
+            en="Executing a command of the form `rt!` in reply to a role panel message will overwrite the contents of that role panel."))
+    del _d_mi, _d_ma, _d_t
 
 
 async def setup(bot: RT) -> None:
