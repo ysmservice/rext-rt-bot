@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 import discord
 
 from core.utils import gettext
-from core import t
+from core import t, RT
 
 from data import TEST, CANARY, PERMISSION_TEXTS, Colors
 
@@ -16,7 +16,8 @@ from data import TEST, CANARY, PERMISSION_TEXTS, Colors
 __all__ = (
     "is_json", "unwrap_or", "set_page", "fetch_webhook", "webhook_send",
     "artificially_send", "permissions_to_text", "make_nopermissions_text",
-    "JST", "make_datetime_text", "adjust_min_max", "replace_nl"
+    "JST", "make_datetime_text", "adjust_min_max", "replace_nl",
+    "edit_reference"
 )
 
 
@@ -67,6 +68,32 @@ elif TEST:
     WEBHOOK_NAME = "R3-Tool"
 else:
     WEBHOOK_NAME = "RT-Tool"
+
+
+async def edit_reference(
+    bot: RT, original: discord.Message, **kwargs
+) -> discord.Message | str:
+    "渡されたメッセージの返信先のメッセージを編集します。"
+    assert original.reference is not None
+    if (message := original.reference.cached_message) is None:
+        assert original.reference.message_id is not None
+        message = await original.channel.fetch_message(original.reference.message_id)
+    if message is None:
+        return t(dict(
+            ja="更新するメッセージの取得に失敗しました。",
+            en="Failed to retrieve message to be updated."
+        ), original)
+    # メッセージを編集して更新をする。
+    assert bot.user is not None and isinstance(original.channel, discord.TextChannel)
+    if message.author.id ==bot.user.id:
+        await message.edit(**kwargs)
+    elif (webhook := await fetch_webhook(original.channel)) is not None:
+        await webhook.edit_message(message.id, **kwargs)
+    else:
+        return t(dict(
+            ja="それは編集できません。", en="I can't update that message."
+        ), original)
+    return message
 
 
 async def fetch_webhook(channel: discord.TextChannel, name: str = WEBHOOK_NAME) \

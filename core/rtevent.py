@@ -28,8 +28,10 @@ class EventContext:
 
     def __init__(
         self, bot: RT, target: Optional[Target | int] = None, status: str = "SUCCESS",
-        subject: str | Text = "", detail: str | Text = "", feature: Feature = ("Unknown", "..."),
-        extend_text: Iterable[str | Text | None] | None = None, log: bool = True, **kwargs
+        subject: str | Text = "", detail: str | Text = "",
+        feature: Feature = ("Unknown", "..."),
+        extend_text: Iterable[str | Text | None] | Text | None = None,
+        log: bool = True, **kwargs
     ):
         self.keys = []
         for key, value in kwargs.items():
@@ -46,8 +48,10 @@ class EventContext:
 
         # 拡張テキストがあるのなら全部追記する。
         if extend_text is not None:
-            for text in filter(lambda t: t is not None, extend_text):
-                self.detail = "{}{}".format(
+            if isinstance(extend_text, dict):
+                extend_text = (extend_text,) # type: ignore
+            for text in filter(lambda t: t is not None, extend_text): # type: ignore
+                self.detail = "{}\n{}".format(
                     self.detail, text if isinstance(text, str)
                         else t(text, target, client=bot) # type: ignore
                 )
