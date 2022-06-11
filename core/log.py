@@ -20,7 +20,7 @@ from .general import RT, Cog
 
 from rtlib.common.database import DatabaseManager, cursor
 
-from data import EMOJIS, TEST
+from data import EMOJIS, TEST, CANARY
 
 
 __all__ = (
@@ -127,7 +127,7 @@ class DataManager(DatabaseManager):
 
     TIMEOUT = 3600 if TEST else 259200
     "何秒までログデータを保持するかです。"
-    MAX_RECORDS = 30 if TEST else 50000
+    MAX_RECORDS = 30 if TEST and not CANARY else 50000
     "何個までログデータを保存するかです。"
 
     def __init__(self, pool: Pool):
