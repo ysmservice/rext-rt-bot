@@ -12,25 +12,19 @@ class ServerManagement(Cog):
         self.bot = bot
         
     @commands.command(description="Kick a user", fsparent=FSPARENT)
-    @discord.app_commands.describe(target="Target member", reason="Reason")
+    @discord.app_commands.describe(target="Target member", *, reason="Reason")
     async def kick(self, ctx, target: discord.Member, reason: str=None):
-        await target.kick(reason=readon)
-        await ctx.send(f"👋 Kicked {target.mention}")
+        await target.kick(reason=reason)
+        await ctx.send(f"👋 Kicked {self.name_and_id(target}")
         
     Cog.HelpCommand(kick) \
-        .merge_headline(ja="ユーザーをkickします。") \
+        .merge_description("headline", ja="ユーザーをkickします。") \
         .set_description(
             ja="ユーザーをkickします。",
             en=kick.description
         ) \
-        .add_args(
-            "target", "Member",
-            ja="対象とするユーザー",
-            en="Target member") \
-        .add_args(
-            "reason", "str",
-            ja="理由",
-            en="reason")
+        .add_args("target", "Member", ja="対象とするユーザー", en="Target member") \
+        .add_args("reason", "str", ja="理由", en="reason")
         
 
 async def setup(bot):
