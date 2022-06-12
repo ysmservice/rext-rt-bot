@@ -18,11 +18,7 @@ class ServerManagement(Cog):
         await ctx.reply(f"👋 Kicked {self.name_and_id(target}")
         
     Cog.HelpCommand(kick) \
-        .merge_description("headline", "ユーザーをkickします。") \
-        .set_description(
-            ja="ユーザーをkickします。",
-            en=kick.description
-        ) \
+        .merge_description("headline", ja="ユーザーをkickします。") \
         .add_args("target", "Member", ja="対象とするユーザー", en="Target member") \
         .add_args("reason", "str", ja="理由", en="reason")
         
