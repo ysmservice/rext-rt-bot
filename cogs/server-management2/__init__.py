@@ -25,4 +25,4 @@ class ServerManagement2(Cog):
         
 
 async def setup(bot):
-    await bot.add_cog(ServerManagement(bot))
+    await bot.add_cog(ServerManagement2(bot))
