@@ -20,7 +20,8 @@ body:
     id: version
     attributes:
       label: Version
-      description: `python -m discord -v` shellでこれを実行してください。
+      description: >
+        `python -m discord -v` shellでこれを実行してください。
     validations:
       required: true
   - type: textarea
