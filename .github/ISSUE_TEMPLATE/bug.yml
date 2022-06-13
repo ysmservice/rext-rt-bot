@@ -21,8 +21,8 @@ body:
     id: version
     attributes:
       label: Version
-      description: 実行していたd.py及びPythonのバージョンは?(python3 -m discord --versionで確認できます。)
-      placeholder: |
+      description: `python -m discord -v` shellでこれを実行してください。
+      placeholder: >
         Example:
           - Python v3.10.5-final
           - discord.py v2.0.0-alpha
