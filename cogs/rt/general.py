@@ -27,11 +27,11 @@ from .help import HelpView
 
 RT_INFO = {
     "ja": cleandoc(
-        """どうも、Rextが運営している有料のBotであるRTです。
+        """どうも、Rextが運営しているRTです。
         多機能で安定した高品質なBotを目指しています。
         詳細は[ここ](https://rt.rext.dev)をご覧ください。"""
     ), "en": cleandoc(
-        """Hi, this is RT, a paid bot operated by Rext.
+        """Hi, this is RT, operated by Rext.
         We aim to be a multifunctional, stable and high quality bot.
         For more information, please visit [here](https://rt.rext.dev)."""
     )
