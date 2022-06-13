@@ -20,8 +20,8 @@ class ServerManagement(Cog):
         
     Cog.HelpCommand(kick) \
         .merge_description("headline", ja="ユーザーをkickします。") \
-        .add_args("target", "Member", ja="対象とするユーザー", en="Target member") \
-        .add_args("reason", "str", ja="理由", en="reason")
+        .add_arg("target", "Member", ja="対象とするユーザー", en="Target member") \
+        .add_arg("reason", "str", ja="理由", en="reason")
         
 
 async def setup(bot):
