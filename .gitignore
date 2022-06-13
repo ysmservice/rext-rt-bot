@@ -9,3 +9,5 @@ secret.key
 
 cogs/tts/lib/OpenJTalk/dic
 cogs/tts/lib/OpenJTalk/*.htsvoice
+
+venv
