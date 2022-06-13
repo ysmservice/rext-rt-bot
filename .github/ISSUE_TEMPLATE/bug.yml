@@ -1,0 +1,33 @@
+name: Report bug(バグの報告)
+description: File a bug report
+title: "[Bug]: "
+labels: ["bug", "triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Bug報告をしてください。
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: また、生じると期待されていたことは何でしょうか？
+      placeholder: Tell us what you see!
+      value: "バグが生じました!"
+    validations:
+      required: true
+  - type: textarea
+    id: version
+    attributes:
+      label: Version
+      description: 実行していたd.py及びPythonのバージョンは?(python3 -m discord -Vで確認できます。)
+      placeholder: Please tell me some d.py and python version.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: 関連するログの出力をコピーしてペーストしてください。 これは自動的にコードにフォーマットされるので、バックティックは不要です。
+      render: shell
