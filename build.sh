@@ -9,7 +9,7 @@ cd ./common && python3 make_key.py
 cd ../../ && mv rtlib/common/secret.key ./
 echo "Do you want setup with nano?(y/n)"
 read input
-if [ $input = "y"] ; then
+if [ $input = "y" ] ; then
     nano secret.json
     nano data.json
 else
