@@ -8,7 +8,7 @@ from core import Cog
 FSPARENT = "server-management2"
 
 
-class ServerManagement(Cog):
+class ServerManagement2(Cog):
     def __init__(self, bot):
         self.bot = bot
         
