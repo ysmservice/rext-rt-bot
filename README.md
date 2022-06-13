@@ -14,6 +14,12 @@ RTのBotで、メインプログラムです。
 4. リポジトリ`rt-lib`を`clone`してフォルダの名前を`rtlib`にする。
 5. ルートに`secret.key`を`rtlib/rtlib/common/make_key.py`で作る。もしバックエンド側にあるならそれをコピーする。
 
+めんどくさければ、
+```bash
+bash build.sh
+```
+を実行することによって上記のことが簡単にできます。
+
 ## 起動方法
 `python3 main.py test`で起動が可能です。  
 本番時は`test`を`production`にしてください。  

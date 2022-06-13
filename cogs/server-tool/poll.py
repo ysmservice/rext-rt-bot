@@ -304,7 +304,7 @@ class PollView(discord.ui.View):
             await interaction.response.send_message(t(dict(
                 ja="あなたはこの投票パネルの作者ではないため、集計を終了することはできません。",
                 en="You are not the author of this voting panel and therefore cannot close the tally."
-            ), interaction))
+            ), interaction), ephemeral=True)
 
 
 class PollAutoCloseEventContext(Cog.EventContext):
