@@ -6,4 +6,4 @@ mv rt-lib rtlib
 cd ./rtlib && python3 -m pip install -r requirements.txt
 cd ./common && python3 make_key.py
 cd ../../ && mv rtlib/common/secret.key ./
-echo "\nAll setup is finish"
+echo "All setup is finish"
