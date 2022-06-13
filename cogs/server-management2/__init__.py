@@ -1,5 +1,6 @@
 # RT - Server Management 2
 import discord
+from discord.ext import commands
 
 from core import Cog
 
