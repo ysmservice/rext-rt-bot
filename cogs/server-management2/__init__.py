@@ -1,5 +1,6 @@
 # RT - Server Management 2
 import discord
+from discord.ext import commands
 
 from core import Cog
 
@@ -7,7 +8,7 @@ from core import Cog
 FSPARENT = "server-management2"
 
 
-class ServerManagement(Cog):
+class ServerManagement2(Cog):
     def __init__(self, bot):
         self.bot = bot
         
@@ -19,9 +20,9 @@ class ServerManagement(Cog):
         
     Cog.HelpCommand(kick) \
         .merge_description("headline", ja="ユーザーをkickします。") \
-        .add_args("target", "Member", ja="対象とするユーザー", en="Target member") \
-        .add_args("reason", "str", ja="理由", en="reason")
+        .add_arg("target", "Member", ja="対象とするユーザー", en="Target member") \
+        .add_arg("reason", "str", ja="理由", en="reason")
         
 
 async def setup(bot):
-    await bot.add_cog(ServerManagement(bot))
+    await bot.add_cog(ServerManagement2(bot))
