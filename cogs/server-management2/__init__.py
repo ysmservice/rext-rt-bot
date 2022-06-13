@@ -15,7 +15,7 @@ class ServerManagement(Cog):
     @discord.app_commands.describe(target="Target member", reason="Reason")
     async def kick(self, ctx, target: discord.Member, *, reason: str=None):
         await target.kick(reason=reason)
-        await ctx.reply(f"👋 Kicked {self.name_and_id(target}")
+        await ctx.reply(f"👋 Kicked {self.name_and_id(target)}")
         
     Cog.HelpCommand(kick) \
         .merge_description("headline", ja="ユーザーをkickします。") \
