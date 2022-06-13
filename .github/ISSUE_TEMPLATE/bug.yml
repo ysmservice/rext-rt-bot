@@ -21,8 +21,14 @@ body:
     id: version
     attributes:
       label: Version
-      description: 実行していたd.py及びPythonのバージョンは?(python3 -m discord -Vで確認できます。)
-      placeholder: Please tell me some d.py and python version.
+      description: 実行していたd.py及びPythonのバージョンは?(python3 -m discord --versionで確認できます。)
+      placeholder: |
+        Example:
+          - Python v3.10.5-final
+          - discord.py v2.0.0-alpha
+          - discord.py pkg_resources: v2.0.0a4354+g96e6261d
+          - aiohttp v3.8.0
+          - system info: Linux 4.18.0-372.9.1.el8.x86_64 #1 SMP Tue May 10 14:48:47 UTC 2022
     validations:
       required: true
   - type: textarea
