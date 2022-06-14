@@ -17,7 +17,7 @@ class DataManager(DatabaseManager):
         if (await cursor.fetchone()) is None:
             return False
         await cursor.execute(
-            "INSERT INTO GlobalChat VALUES(%s, %s);",
+            "INSERT INTO GlobalChat VALUES (%s, %s);",
             (name, channel.id)
         )
         return True
@@ -31,7 +31,7 @@ class DataManager(DatabaseManager):
 
     async def check_exist(self, channel: discord.TextChannel) -> None:
         await cursor.execute(
-            "SELECT * FROM GlobalChannel WHERE channelid=%s",
+            "SELECT * FROM GlobalChat WHERE channelid=%s",
             (channel.id,)
         )
         return (await cursor.fetchone()) is not None
