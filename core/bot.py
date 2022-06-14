@@ -44,6 +44,7 @@ if TYPE_CHECKING:
 __all__ = ("RT",)
 set_handler(logger)
 
+
 class Prefixes(TypedDict):
     Guild: dict[int, str]
     User: dict[int, str]
