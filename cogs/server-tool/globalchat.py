@@ -46,7 +46,7 @@ class DataManager(DatabaseManager):
     async def prepare_table(self) -> None:
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS GlobalChat(
-                name TEXT, channelid BIGINT
+                Name TEXT, ChannelId BIGINT PRIMARY KEY NOT NULL, Setting JSON
             );"""
         )
         await cursor.execute(
