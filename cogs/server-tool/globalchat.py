@@ -257,6 +257,14 @@ class GlobalChat(Cog):
                 ja="接続しました。"
             ), ctx
         ))
+        
+    Cog.HelpCommand(globalchat) \
+        .merge_description("headline", ja="グローバルチャット関連です。") \
+        .add_sub(Cog.HelpCommand(create)
+            .merge_description("headline", ja="グローバルチャットを作成します。")
+            .add_arg("name", "str", "Optional",
+                     ja="グローバルチャット名",
+                     en="Globalchat name"))
 
     @Cog.listener("on_message")
     async def on_message(self, message):
