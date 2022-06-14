@@ -283,24 +283,24 @@ class GlobalChat(Cog):
                 en="Leave from globalchat"
             ), ctx)
         )
-        
+
     Cog.HelpCommand(globalchat) \
         .merge_description("headline", ja="グローバルチャット関連です。") \
         .add_sub(Cog.HelpCommand(create)
-            .merge_description("headline", ja="グローバルチャットを作成します。")
-            .add_arg("name", "str", "Optional",
-                     ja="グローバルチャット名",
-                     en="Globalchat name")
-        ) \
+                 .merge_description("headline", ja="グローバルチャットを作成します。")
+                 .add_arg("name", "str", "Optional",
+                          ja="グローバルチャット名",
+                          en="Globalchat name")
+                 ) \
         .add_sub(Cog.HelpCommand(connect)
-            .merge_description("headline", ja="グローバルチャットに接続します。")
-            .add_arg("name", "str", "Optional",
-                     ja="グローバルチャット名",
-                     en="GlobalChat name")
-        ) \
+                 .merge_description("headline", ja="グローバルチャットに接続します。")
+                 .add_arg("name", "str", "Optional",
+                          ja="グローバルチャット名",
+                          en="GlobalChat name")
+                 ) \
         .add_sub(Cog.HelpCommand(leave)
-            .merge_description("headline", ja="グローバルチャットから退出します。")
-        )
+                 .merge_description("headline", ja="グローバルチャットから退出します。")
+                 )
 
     @Cog.listener("on_message")
     async def on_message(self, message):
