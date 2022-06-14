@@ -2,6 +2,7 @@
 from typing import AsyncIterator, Optional
 
 import discord
+from discord import utils, app_commands
 from discord.ext import commands
 
 from core import (
@@ -57,13 +58,20 @@ class DataManager(DatabaseManager):
         )
         return (await cursor.fetchone()) is not None
 
-    async def get_all_channel(self, name: str) -> AsyncIterator[discord.TextChannel]:
+    async def get_all_channel(self, name: str) -> AsyncIterator[int]:
         await cursor.execute(
             "SELECT * FROM GlobalChat WHERE name=%s",
             (name,)
         )
         for _, channelid in await cursor.fetchall():
-            yield self.bot.get_channel(channelid)
+            yield await self.get_channel(channelid)
+
+    async def get_channel(self, channelid: int):
+        channel = self.bot.get_channel(channelid)
+        if channel is not None:
+            return channel
+        else:
+            return await self.bot.fetch_channel(channelid)
 
     async def get_name(self, channel: discord.TextChannel) -> Optional[str]:
         await cursor.execute(
@@ -75,6 +83,7 @@ class DataManager(DatabaseManager):
 
 
 class GlobalChat(Cog):
+    WEBHOOK_NAME: str = "rt-globalchat-webhook"
     def __init__(self, bot: RT):
         self.bot = bot
         self.data = DataManager(bot)
@@ -163,7 +172,18 @@ class GlobalChat(Cog):
             return
         name = await self.data.get_name(message.channel)
         async for channel in self.data.get_all_channel(name):
-            print(channel.name)
+            if message.channel.id == channel.id:
+                continue
+            webhook = utils.get(await channel.webhooks(), name=self.WEBHOOK_NAME)
+            if webhook is None:
+                webhook = await channel.create_webhook(
+                    name=self.WEBHOOK_NAME
+                )
+            await webhook.send(
+                message.clean_content,
+                username=f"{message.author.display_name}({message.author.id}",
+                avatar_url=message.author.display.url
+            )
 
 
 async def setup(bot: RT):
