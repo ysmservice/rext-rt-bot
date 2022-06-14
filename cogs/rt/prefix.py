@@ -99,7 +99,7 @@ class Prefix(Cog):
                 raise commands.NoPrivateMessage()
             if not ctx.author.guild_permissions.administrator:
                 raise commands.MissingPermissions(["administrator"])
-        await self.data.set_guild(ctx.guild.id, prefix) # type: ignore
+        await self.data.set(mode, getattr(ctx, "guild" if mode == "server" else "author").id, prefix) # type: ignore
 
         mo_ja = f"{'このサーバー' if mode != "user" else 'あなた'}のカスタムプリフィックスを"
         mo_en = 'of yours' if mode == "user" else 'on this server'
