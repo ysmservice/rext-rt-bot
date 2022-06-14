@@ -17,14 +17,15 @@ from core import (
 class DataManager(DatabaseManager):
     """
     グローバルチャットのデータベースを管理します。
-    
+
     Args:
         bot (commands.Bot): botをここに
-        
+
     Attributes:
         pool (aiomysql.Pool): mysqlのpool
         bot (core.RT): ここにbot
     """
+
     def __init__(self, bot: RT):
         self.pool = bot.pool
         self.bot = bot
@@ -35,7 +36,7 @@ class DataManager(DatabaseManager):
         Args:
             name (str): グローバルチャット名
             channel (discord.TextChannel): 登録するチャンネル
-        
+
         Returns:
             bool: 追加できたか、返します。"""
         await cursor.execute(
@@ -53,7 +54,7 @@ class DataManager(DatabaseManager):
     async def connect(self, name: str, channel: discord.TextChannel) -> None:
         """
         グローバルチャットに接続します。
-        
+
         Args:
             name (str): グローバルチャット名
             channel (discord.TextChannel): 接続させる対象のチャンネル名
@@ -72,10 +73,10 @@ class DataManager(DatabaseManager):
     async def check_exist(self, channel: discord.TextChannel) -> bool:
         """
         これはすでに接続されているか確認するものです。
-        
+
         Args:
             channel (discord.TextChannel): 対象のチャンネル
-            
+
         Returns:
             bool: 接続されているならTrueを返します。
         """
@@ -88,10 +89,10 @@ class DataManager(DatabaseManager):
     async def check_exist_gc(self, name: str) -> bool:
         """
         すでにグローバルチャットが存在するか確認します。
-        
+
         Args:
             name (str): グローバルチャット名
-            
+
         Returns:
             bool: 存在するならば、Trueを返します。
         """
@@ -104,10 +105,10 @@ class DataManager(DatabaseManager):
     async def get_all_channel(self, name: str) -> AsyncIterator[disocrd.TextChannel]:
         """
         グローバルチャットに接続しているチャンネルを名前使って全部取得します。
-        
+
         Args:
             name (str): グローバルチャット名
-            
+
         Yields:
             discord.TextChannel: チャンネルのデータ
         """
@@ -125,10 +126,10 @@ class DataManager(DatabaseManager):
     async def get_channel(self, channelid: int) -> Optional[discord.TextChannel]:
         """
         チャンネルを取得します。
-        
+
         Args:
             channelid (int): 対象のチャンネルID
-        
+
         Returns:
             Optional[discord.TextChannel]: 存在するならば、返します
         """
@@ -144,10 +145,10 @@ class DataManager(DatabaseManager):
     async def get_name(self, channel: discord.TextChannel) -> Optional[str]:
         """
         チャンネルから接続しているグローバルチャット名を取得します。
-        
+
         Args:
             channel (discord.TextChannel): 対象のチャンネル
-            
+
         Returns:
             Optional[str]: 接続しているのであればグローバルチャット名を返します
         """
@@ -157,11 +158,11 @@ class DataManager(DatabaseManager):
         )
         data = await cursor.fetchone()
         return data[0] if data is not None else None
-    
+
     async def disconnect(self, channel: discord.TextChannel) -> None:
         """
         グローバルチャットから接続をやめます
-        
+
         Args:
             channel (discord.TextChannel): 対象のチャンネル
         """
