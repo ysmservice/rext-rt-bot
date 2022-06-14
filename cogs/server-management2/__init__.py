@@ -15,12 +15,14 @@ class ServerManagement2(Cog):
 
     @commands.command(description="Kick a user", fsparent=FSPARENT)
     @discord.app_commands.describe(target="Target member", reason="Reason")
+    @commands.has_permissions(kick_members=True)
     async def kick(self, ctx, target: discord.Member, *, reason: str = None):
         await target.kick(reason=reason)
         await ctx.reply(f"👋 Kicked {self.name_and_id(target)}")
         
     @commands.command(description="Ban a user", fsparent=FSPARENT)
     @discord.app_commands.describe(target_id="Target user id", reason="Reason")
+    @commands.has_permissions(ban_members=True)
     async def ban(self, ctx, target_id: int, *, reason: str = None):
         await ctx.guild.ban(discord.Object(target_id), reason=reason)
         await ctx.reply(f"👋 Baned `{target_id}`")
