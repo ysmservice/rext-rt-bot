@@ -22,8 +22,7 @@ class ServerManagement2(Cog):
     @commands.command(description="Ban a user", fsparent=FSPARENT)
     @discord.app_commands.describe(target="Target user", reason="Reason")
     async def ban(self, ctx, targetid: int, *, reason: str = None):
-        target = await self.bot.search_user(targetid)
-        await ctx.guild.ban(target, reason=reason)
+        await ctx.guild.ban(discord.Object(targetid), reason=reason)
         await ctx.reply(f"👋 Baned {self.name_and_id(target)}")
 
     Cog.HelpCommand(kick) \
