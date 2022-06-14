@@ -32,7 +32,7 @@ class ServerManagement2(Cog):
 
     Cog.HelpCommand(ban) \
         .merge_description("headline", ja="対象のユーザーをbanします。") \
-        .add_arg("target", "int", ja="対象とするユーザーID", en="Target user id") \
+        .add_arg("target_id", "int", ja="対象とするユーザーID", en="Target user id") \
         .add_arg("reason", "str", ja="理由", en="reason")
 
 
