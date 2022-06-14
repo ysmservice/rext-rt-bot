@@ -71,6 +71,11 @@ class DataManager(DatabaseManager):
             """CREATE TABLE IF NOT EXISTS GlobalChat(
                 name TEXT, channelid BIGINT);"""
         )
+        await cursor.execute(
+            """CREATE TABLE IF NOT EXISTS GlobalChatMessage(
+                source BIGINT, channelid BIGINT, messageid BIGINT
+            );"""
+        )
 
     async def check_exist(self, channel: discord.TextChannel) -> bool:
         """
@@ -176,6 +181,14 @@ class DataManager(DatabaseManager):
             "DELETE FROM GlobalChat WHERE channelid=%s", (channel.id,)
         )
 
+    async def insert_message(
+        self, source: int, channelid: int, message: discord.WebhookMessage
+    ) -> None:
+        await cursor.execute(
+            "INSERT INTO GlobalChatMessage VALUES(%s, %s, %s);",
+            (source, channelid, message.id)
+        )
+
 
 class GlobalChat(Cog):
     WEBHOOK_NAME: str = "rt-globalchat-webhook"
@@ -257,6 +270,19 @@ class GlobalChat(Cog):
                 ja="接続しました。"
             ), ctx
         ))
+
+    @commands.command(
+        description="Disconnect from globalchat",
+        aliases=("remove", "rm")
+    )
+    async def leave(self, ctx):
+        await self.data.disconnect(ctx.channel)
+        await ctx.reply(
+            t(dict(
+                ja="グローバルチャットから退出しました",
+                en="Leave from globalchat"
+            ), ctx)
+        )
         
     Cog.HelpCommand(globalchat) \
         .merge_description("headline", ja="グローバルチャット関連です。") \
@@ -264,7 +290,17 @@ class GlobalChat(Cog):
             .merge_description("headline", ja="グローバルチャットを作成します。")
             .add_arg("name", "str", "Optional",
                      ja="グローバルチャット名",
-                     en="Globalchat name"))
+                     en="Globalchat name")
+        ) \
+        .add_sub(Cog.HelpCommand(connect)
+            .merge_description("headline", ja="グローバルチャットに接続します。")
+            .add_arg("name", "str", "Optional",
+                     ja="グローバルチャット名",
+                     en="GlobalChat name")
+        ) \
+        .add_sub(Cog.HelpCommand(leave)
+            .merge_description("headline", ja="グローバルチャットから退出します。")
+        )
 
     @Cog.listener("on_message")
     async def on_message(self, message):
@@ -287,7 +323,7 @@ class GlobalChat(Cog):
             await webhook.send(
                 message.clean_content,
                 username=f"{message.author.display_name}({message.author.id}",
-                avatar_url=message.author.display.url
+                avatar_url=getattr(message.author.avatar, "url", None)
             )
 
 
