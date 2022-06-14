@@ -99,8 +99,10 @@ class GlobalChat(Cog):
     async def globalchat(self, ctx):
         if ctx.invoked_subcommand is None:
             await ctx.reply(t(
-                dict(en="Invaild command", ja="使い方が間違っているゾ"),
-                ctx
+                dict(
+                    en="Invaild command",
+                    ja="使い方が間違っているゾ"
+                ), ctx
             ))
 
     @globalchat.command(
@@ -128,8 +130,7 @@ class GlobalChat(Cog):
                 dict(
                     en="Allready created",
                     ja="すでに作成しているゾ"
-                ),
-                ctx
+                ), ctx
             ))
 
     @globalchat.command(
@@ -150,16 +151,14 @@ class GlobalChat(Cog):
                 dict(
                     en="Not found",
                     ja="見つかりませんでした。"
-                ),
-                ctx
+                ), ctx
             ))
         await self.data.connect(name, ctx.channel)
         await ctx.reply(t(
             dict(
                 en="Connected",
                 ja="接続しました。"
-            ),
-            ctx
+            ), ctx
         ))
 
     @Cog.listener("on_message")
