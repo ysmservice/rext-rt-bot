@@ -210,7 +210,7 @@ class GlobalChat(Cog):
 
     @globalchat.command(
         description="Create globalchat",
-        aliases=("make", "add")
+        aliases=("make", "add", "作成")
     )
     @discord.app_commands.describe(name="Global chat name")
     async def create(self, ctx, name: str = None):
@@ -239,7 +239,7 @@ class GlobalChat(Cog):
 
     @globalchat.command(
         description="Connect to global chat",
-        aliases=("join",)
+        aliases=("join", "参加")
     )
     @discord.app_commands.describe(name="Global chat name")
     async def connect(self, ctx, name: str = None):
@@ -268,7 +268,7 @@ class GlobalChat(Cog):
 
     @globalchat.command(
         description="Disconnect from globalchat",
-        aliases=("remove", "rm")
+        aliases=("remove", "rm", ")
     )
     async def leave(self, ctx):
         await self.data.disconnect(ctx.channel)
@@ -279,23 +279,22 @@ class GlobalChat(Cog):
             ), ctx)
         )
 
-    Cog.HelpCommand(globalchat) \
+    (Cog.HelpCommand(globalchat)
         .merge_description("headline", ja="グローバルチャット関連です。") \
         .add_sub(Cog.HelpCommand(create)
-                 .merge_description("headline", ja="グローバルチャットを作成します。")
-                 .add_arg("name", "str", "Optional",
+                     .merge_description("headline", ja="グローバルチャットを作成します。")
+                     .add_arg("name", "str", "Optional",
                           ja="グローバルチャット名",
                           en="Globalchat name")
                  ) \
         .add_sub(Cog.HelpCommand(connect)
-                 .merge_description("headline", ja="グローバルチャットに接続します。")
-                 .add_arg("name", "str", "Optional",
+                     .merge_description("headline", ja="グローバルチャットに接続します。")
+                     .add_arg("name", "str", "Optional",
                           ja="グローバルチャット名",
                           en="GlobalChat name")
                  ) \
-        .add_sub(Cog.HelpCommand(leave)
-                 .merge_description("headline", ja="グローバルチャットから退出します。")
-                 )
+        .add_sub(Cog.HelpCommand(leave).merge_description("headline", ja="グローバルチャットから退出します。"))
+    )
 
     @Cog.listener("on_message")
     async def on_message(self, message):
