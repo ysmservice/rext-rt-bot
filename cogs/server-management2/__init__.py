@@ -21,9 +21,9 @@ class ServerManagement2(Cog):
         
     @commands.command(description="Ban a user", fsparent=FSPARENT)
     @discord.app_commands.describe(target="Target user", reason="Reason")
-    async def ban(self, ctx, targetid: int, *, reason: str = None):
+    async def ban(self, ctx, target_id: int, *, reason: str = None):
         await ctx.guild.ban(discord.Object(targetid), reason=reason)
-        await ctx.reply(f"👋 Baned {self.name_and_id(target)}")
+        await ctx.reply(f"👋 Baned <@{target}>")
 
     Cog.HelpCommand(kick) \
         .merge_description("headline", ja="ユーザーをkickします。") \
