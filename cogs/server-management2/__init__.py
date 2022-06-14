@@ -30,10 +30,10 @@ class ServerManagement2(Cog):
         .merge_description("headline", ja="ユーザーをkickします。") \
         .add_arg("target", "Member", ja="対象とするユーザー", en="Target member") \
         .add_arg("reason", "str", ja="理由", en="reason")
-    
+
     Cog.HelpCommand(ban) \
         .merge_description("headline", ja="対象のユーザーをbanします。") \
-        .add_arg("target", "intger", ja="対象とするユーザーID", en="Target user id") \
+        .add_arg("target", "int", ja="対象とするユーザーID", en="Target user id") \
         .add_arg("reason", "str", ja="理由", en="reason")
 
 
