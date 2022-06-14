@@ -67,7 +67,8 @@ class RT(commands.Bot):
         kwargs["help_command"] = None
         super().__init__(*args, **kwargs)
 
-        self.prefixes = {}
+        self.guild_prefixes: dict[int, str] = {}
+        self.user_prefixes: dict[int, str] = {}
         self.language = Caches({}, {})
         self.ipcs = IpcsClient(str(self.shard_id))
         self.ipcs.set_route(self.exists_object, "exists")
@@ -86,8 +87,12 @@ class RT(commands.Bot):
         return ctx.guild is not None
 
     def _get_command_prefix(self, _, message: discord.Message):
-        return PREFIXES if message.guild is None or message.guild.id not in self.prefixes \
-            else PREFIXES + (self.prefixes[message.guild.id],)
+        pr = list(PREFIXES)
+        if message.guild is not None and (p := self.guild_prefixes.get(message.guild.id, "")):
+            pr.append(p)
+        if p := self.user_prefixes.get(message.author.id, ""):
+            pr.append(p)
+        return p
 
     def print(self, *args, **kwargs) -> None:
         "ログ出力をします。"
