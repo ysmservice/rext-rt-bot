@@ -168,8 +168,7 @@ class GlobalChat(Cog):
             return
         if not (await self.data.check_exist(message.channel)):
             return
-        name = await self.data.get_name(message.channel)
-        async for channel in self.data.get_all_channel(name):
+        async for channel in self.data.get_all_channel(await self.data.get_name(message.channel)):
             if message.channel.id == channel.id:
                 continue
             webhook = utils.get(await channel.webhooks(), name=self.WEBHOOK_NAME)
