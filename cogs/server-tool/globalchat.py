@@ -30,7 +30,9 @@ class DataManager(DatabaseManager):
         self.pool = bot.pool
         self.bot = bot
 
-    async def create_chat(self, name: str, channel: discord.TextChannel) -> bool:
+    async def create_chat(
+        self, name: str, channel: discord.TextChannel
+    ) -> bool:
         """
         主にグローバルチャットを作るために使います。
         Args:
@@ -260,10 +262,14 @@ class GlobalChat(Cog):
             return
         if not (await self.data.check_exist(message.channel)):
             return
-        async for channel in self.data.get_all_channel(await self.data.get_name(message.channel)):
+        async for channel in self.data.get_all_channel(
+            await self.data.get_name(message.channel)
+        ):
             if message.channel.id == channel.id:
                 continue
-            webhook = utils.get(await channel.webhooks(), name=self.WEBHOOK_NAME)
+            webhook = utils.get(
+                await channel.webhooks(), name=self.WEBHOOK_NAME
+            )
             if webhook is None:
                 webhook = await channel.create_webhook(
                     name=self.WEBHOOK_NAME
