@@ -62,8 +62,8 @@ class DataManager(DatabaseManager):
             "SELECT * FROM GlobalChat WHERE name=%s",
             (name,)
         )
-        for row in (await cursor.fetchall()):
-            yield await self.bot.search_channel(row[1])
+        for _, channelid in await cursor.fetchall():
+            yield self.bot.get_channel(channelid)
 
     async def get_name(self, channel: discord.TextChannel) -> Optional[str]:
         await cursor.execute(
