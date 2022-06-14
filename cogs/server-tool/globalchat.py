@@ -12,12 +12,12 @@ class DataManager(DatabaseManager):
     async def create_chat(self, name: str, channel: discord.TextChannel) -> bool:
         await cursor.execute(
             "SELECT * FROM GlobalChat WHERE name=%s",
-            (name, channel.id)
+            (name,)
         )
         if (await cursor.fetchone()) is None:
             return False
         await cursor.execute(
-            "INSERT INTO GlobalChat VALUES (%s, %s);",
+            "INSERT INTO GlobalChat VALUES (%s, %s)",
             (name, channel.id)
         )
         return True
@@ -25,8 +25,7 @@ class DataManager(DatabaseManager):
     async def prepare_table(self) -> None:
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS GlobalChat(
-                name TEXT, channelid BIGINT
-            );"""
+                name TEXT, channelid BIGINT);"""
         )
 
     async def check_exist(self, channel: discord.TextChannel) -> None:
@@ -51,7 +50,10 @@ class GlobalChat(Cog):
     )
     async def globalchat(self, ctx):
         if ctx.invoked_subcommand is None:
-            await ctx.reply(t(ctx, dict(en="Invaild command", ja="使い方が間違っているゾ")))
+            await ctx.reply(t(
+                dict(en="Invaild command", ja="使い方が間違っているゾ"),
+                ctx
+            ))
 
     @globalchat.command(
         description="Create globalchat",
@@ -59,13 +61,30 @@ class GlobalChat(Cog):
     )
     async def create(self, ctx, name: str = None):
         if (await self.data.check_exist(ctx.channel)):
-            return await ctx.reply(t(ctx, dict(en="You connected another one.", ja="もうすでにあなたは接続をしています。")))
+            return await ctx.reply(t(
+                dict(
+                    en="You connected another one.",
+                    ja="もうすでにあなたは接続をしています。"
+                )
+                ,ctx
+            ))
         name = "default" if name is None else name
         result = await self.data.create_chat(name, ctx.channel)
         if result:
-            await ctx.reply(t(ctx, dict(en="Created", ja="作成しました。")))
+            await ctx.reply(t(
+                dict(
+                    en="Created",
+                    ja="作成しました。"
+                )
+                ,ctx))
         else:
-            await ctx.reply(t(ctx, dict(en="Allready created", ja="すでに作成しているゾ")))
+            await ctx.reply(t(
+                dict(
+                    en="Allready created",
+                    ja="すでに作成しているゾ"
+                ),
+                ctx
+            ))
 
 
 async def setup(bot: RT):
