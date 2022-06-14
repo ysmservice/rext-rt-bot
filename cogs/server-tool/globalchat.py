@@ -129,7 +129,7 @@ class GlobalChat(Cog):
 
     "グローバルチャットのコグです。"
 
-    WEBHOOK_NAME: str = "rt-globalchat-webhook"
+    WEBHOOK_NAME = "rt-globalchat-webhook"
 
     def __init__(self, bot: RT):
         self.bot = bot
@@ -153,24 +153,20 @@ class GlobalChat(Cog):
     @discord.app_commands.describe(name="Global chat name")
     async def create(self, ctx, name: str = None):
         if await self.data.check_exist(ctx.channel):
-            return await ctx.reply(t(
-                dict(en="You connected another one.", ja="もうすでにあなたは接続をしています。"),
-                ctx
-            ))
+            return await ctx.reply(t(dict(
+                en="You connected another one.", ja="もうすでにあなたは接続をしています。"
+            ) ,ctx))
         result = await self.data.create_chat(
             "default" if name is None else name, ctx.channel
         )
         if result:
-            await ctx.reply(t(
-                dict(en="Created", ja="作成しました。"), ctx
-            ))
+            await ctx.reply(t(dict(
+                en="Created", ja="作成しました。"
+            ), ctx))
         else:
-            await ctx.reply(t(
-                dict(
-                    en="Allready created",
-                    ja="すでに作成しているゾ"
-                ), ctx
-            ))
+            await ctx.reply(t(dict(
+                en="Allready created", ja="すでに作成しているゾ"
+            ), ctx))
 
     @globalchat.command(
         description="Connect to global chat",
@@ -178,19 +174,19 @@ class GlobalChat(Cog):
     )
     @discord.app_commands.describe(name="Global chat name")
     async def connect(self, ctx, name: str = None):
-        if (await self.data.check_exist(ctx.channel)):
-            return await ctx.reply(t(
-                dict(en="You connected another one.", ja="もうすでにあなたは接続をしています。"), ctx
-            ))
+        if await self.data.check_exist(ctx.channel):
+            return await ctx.reply(t(dict(
+                en="You connected another one.", ja="もうすでにあなたは接続をしています。"
+            ), ctx))
         name = "default" if name is None else name
         if not (await self.data.check_exist_gc(name)):
-            return await ctx.reply(t(
-                dict(en="Not found", ja="見つかりませんでした。"), ctx
-            ))
+            return await ctx.reply(t(dict(
+                en="Not found", ja="見つかりませんでした。"
+            ), ctx))
         await self.data.connect(name, ctx.channel)
-        await ctx.reply(t(
-            dict(en="Connected", ja="接続しました。"), ctx
-        ))
+        await ctx.reply(t(dict(
+            en="Connected", ja="接続しました。"
+        ), ctx))
 
     @globalchat.command(
         description="Disconnect from globalchat",
@@ -198,9 +194,9 @@ class GlobalChat(Cog):
     )
     async def leave(self, ctx):
         await self.data.disconnect(ctx.channel)
-        await ctx.reply(t(
-            dict(ja="グローバルチャットから退出しました", en="Leave from globalchat"), ctx
-        ))
+        await ctx.reply(t(dict(
+            ja="グローバルチャットから退出しました", en="Leave from globalchat"
+        ), ctx))
 
     (Cog.HelpCommand(globalchat)
         .merge_description("headline", ja="グローバルチャット関連です。") \
