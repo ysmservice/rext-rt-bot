@@ -19,49 +19,49 @@ class DataManager(DatabaseManager):
                 GuildId BIGINT PRIMARY KEY NOT NULL, Prefix TEXT
             );"""
         )
-        await cursor.execute("SELECT * FROM GuildPrefix;")
-        for row in await cursor.fetchall():
-            self.bot.guild_prefixes[row[0]] = row[1]
+        async for rows in self.fetchstep(cursor, "SELECT * FROM GuildPrefix;"):
+            for row in rows:
+                self.bot.guild_prefixes[row[0]] = row[1]
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS UserPrefix (
                 UserId BIGINT PRIMARY KEY NOT NULL, Prefix TEXT
             );"""
         )
-        await cursor.execute("SELECT * FROM UserPrefix;")
-        for row in await cursor.fetchall():
-            self.bot.user_prefixes[row[0]] = row[1]
+        async for rows in self.fetchstep(cursor, "SELECT * FROM GuildPrefix;"):
+            for row in rows:
+                self.bot.user_prefixes[row[0]] = row[1]
 
-    async def set_guild(self, guild_id: int, prefix: Optional[str] = None):
-        "サーバープリフィックスを設定します。"
-        if prefix is None:
-            if guild_id in self.bot.guild_prefixes:
+    async def set(self, mode: Literal["server", "user"], id_: int, prefix: Optional[str] = None):
+        "プリフィックスを設定します。"
+        if mode == "server":
+            if prefix is None:
+                if id_ in self.bot.guild_prefixes:
+                    await cursor.execute(
+                        "DELETE FROM GuildPrefix WHERE GuildId = %s;", (id_,)
+                    )
+                    del self.bot.guild_prefixes[id_]
+            else:
                 await cursor.execute(
-                    "DELETE FROM GuildPrefix WHERE GuildId = %s;", (guild_id,)
+                    """INSERT INTO GuildPrefix VALUES (%s, %s)
+                        ON DUPLICATE KEY UPDATE Prefix = %s;""",
+                    (id_, prefix, prefix)
                 )
-                del self.bot.guild_prefixes[guild_id]
+                self.bot.guild_prefixes[id_] = prefix
         else:
-            await cursor.execute(
-                """INSERT INTO GuildPrefix VALUES (%s, %s)
-                    ON DUPLICATE KEY UPDATE Prefix = %s;""",
-                (guild_id, prefix, prefix)
-            )
-            self.bot.guild_prefixes[guild_id] = prefix
-
-    async def set_user(self, user_id: int, prefix: Optional[str] = None):
-        "ユーザープリフィックスを設定します。"
-        if prefix is None:
-            if user_id in self.bot.user_prefixes:
+            # ユーザープリフィックスを設定する。
+            if prefix is None:
+                if id_ in self.bot.user_prefixes:
+                    await cursor.execute(
+                        "DELETE FROM UserPrefix WHERE UserId = %s;", (id_,)
+                    )
+                    del self.bot.user_prefixes[id_]
+            else:
                 await cursor.execute(
-                    "DELETE FROM UserPrefix WHERE UserId = %s;", (user_id,)
+                    """INSERT INTO UserPrefix VALUES (%s, %s)
+                        ON DUPLICATE KEY UPDATE Prefix = %s;""",
+                    (id_, prefix, prefix)
                 )
-                del self.bot.user_prefixes[user_id]
-        else:
-            await cursor.execute(
-                """INSERT INTO UserPrefix VALUES (%s, %s)
-                    ON DUPLICATE KEY UPDATE Prefix = %s;""",
-                (user_id, prefix, prefix)
-            )
-            self.bot.user_prefixes[user_id] = prefix
+                self.bot.user_prefixes[id_] = prefix
 
     async def clean(self):
         "お掃除します。"
@@ -88,10 +88,10 @@ class Prefix(Cog):
         await self.data.prepare_table()
 
     @commands.command(description="Setting up a custom prefix.")
-    @commands.guild_only()
     @app_commands.describe(mode="Either of user or server", prefix="A Custom prefix")
-    async def prefix(self, ctx: commands.Context, 
-                     mode: Literal["user", "server"], *, prefix: Optional[str] = None):
+    async def prefix(
+        self, ctx: commands.Context, mode: Literal["user", "server"], *, prefix: Optional[str] = None
+    ):
         await ctx.typing()
         await self.data.prepare_table()
         if mode == "guild":
@@ -99,24 +99,22 @@ class Prefix(Cog):
                 raise commands.NoPrivateMessage()
             if not ctx.author.guild_permissions.administrator:
                 raise commands.MissingPermissions(["administrator"])
-            await self.data.set_guild(ctx.guild.id, prefix) # type: ignore
-        elif mode == "user":
-            await self.data.set_guild(ctx.author.id, prefix)  # type: ignore
-        
+        await self.data.set_guild(ctx.guild.id, prefix) # type: ignore
+
         mo_ja = f"{'このサーバー' if mode != "user" else 'あなた'}のカスタムプリフィックスを"
         mo_en = 'of yours' if mode == "user" else 'on this server'
         if prefix is None:
             await ctx.reply(embed=self.embed(
                 description=t(dict(
-                    ja=f"{se_ja}未設定にしました。",
-                    en=f"Unset custom prefixes {}."
+                    ja=f"{mo_ja}未設定にしました。",
+                    en=f"Unset custom prefixes {mo_en}."
                 ), ctx)
             ))
         else:
             await ctx.reply(embed=self.embed(
                 description=t(dict(
-                    ja=f"{se_ja}`{prefix}`に設定しました。",
-                    en=f"Custom prefix {se_en} set to `{prefix}`."
+                    ja=f"{mo_ja}`{prefix}`に設定しました。",
+                    en=f"Custom prefix {mo_en} set to `{prefix}`."
                 ), ctx)
             ))
 
