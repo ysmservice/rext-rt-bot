@@ -31,8 +31,6 @@ from data import DATA, CATEGORIES, PREFIXES, SECRET, TEST, SHARD, ADMINS, URL, A
 from rtlib.common.cacher import CacherPool, Cacher
 from rtlib.common.chiper import ChiperManager
 from rtlib.common.utils import make_simple_error_text
-
-from .types_ import Prefixes
 from .rtws import setup
 from . import tdpocket
 
