@@ -24,6 +24,7 @@ class DataManager(DatabaseManager):
     Attributes:
         pool (aiomysql.Pool): mysqlのpool
         bot (core.RT): ここにbot
+    """
     def __init__(self, bot: RT):
         self.pool = bot.pool
         self.bot = bot
