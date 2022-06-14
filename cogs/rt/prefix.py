@@ -15,22 +15,15 @@ class DataManager(DatabaseManager):
 
     async def prepare_table(self):
         "テーブルを用意します。"
-        await cursor.execute(
-            """CREATE TABLE IF NOT EXISTS GuildPrefix (
-                GuildId BIGINT PRIMARY KEY NOT NULL, Prefix TEXT
-            );"""
-        )
-        async for rows in self.fetchstep(cursor, "SELECT * FROM GuildPrefix;"):
-            for row in rows:
-                self.bot.prefixes["Guild"][row[0]] = row[1]
-        await cursor.execute(
-            """CREATE TABLE IF NOT EXISTS UserPrefix (
-                UserId BIGINT PRIMARY KEY NOT NULL, Prefix TEXT
-            );"""
-        )
-        async for rows in self.fetchstep(cursor, "SELECT * FROM UserPrefix;"):
-            for row in rows:
-                self.bot.prefixes["User"][row[0]] = row[1]
+        for table in ["Guild", "User"]:
+            await cursor.execute(
+                f"""CREATE TABLE IF NOT EXISTS {table}Prefix (
+                    {table}Id BIGINT PRIMARY KEY NOT NULL, Prefix TEXT
+                );"""
+            )
+            async for rows in self.fetchstep(cursor, "SELECT * FROM {table}Prefix;"):
+                for row in rows:
+                    self.bot.prefixes[table][row[0]] = row[1]
 
     async def set(self, table: TableType, id_: int, prefix: Optional[str] = None):
         "プリフィックスを設定します。"
