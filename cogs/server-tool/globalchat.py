@@ -15,6 +15,15 @@ from core import (
 
 
 class DataManager(DatabaseManager):
+    """
+    グローバルチャットのデータベースを管理します。
+    
+    Args:
+        bot (commands.Bot): botをここに
+        
+    Attributes:
+        pool (aiomysql.Pool): mysqlのpool
+        bot (core.RT): ここにbot
     def __init__(self, bot: RT):
         self.pool = bot.pool
         self.bot = bot
