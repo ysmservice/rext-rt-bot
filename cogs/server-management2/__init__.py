@@ -11,7 +11,7 @@ FSPARENT = "server-management2"
 
 class ServerManagement2(Cog):
     def __init__(self, bot: RT):
-        self.bot = bot
+        self.bot: RT = bot
 
     @commands.command(description="Kick a user", fsparent=FSPARENT)
     @discord.app_commands.describe(target="Target member", reason="Reason")
