@@ -4,6 +4,7 @@ from typing import Optional, Literal, TypeAlias
 
 from discord.ext import commands
 from discord import app_commands
+import discord
 
 from core import RT, Cog, t, DatabaseManager, cursor
 
@@ -15,13 +16,13 @@ class DataManager(DatabaseManager):
 
     async def prepare_table(self):
         "テーブルを用意します。"
-        for table in ["Guild", "User"]:
+        for table in ("Guild", "User"):
             await cursor.execute(
                 f"""CREATE TABLE IF NOT EXISTS {table}Prefix (
                     {table}Id BIGINT PRIMARY KEY NOT NULL, Prefix TEXT
                 );"""
             )
-            async for rows in self.fetchstep(cursor, "SELECT * FROM {table}Prefix;"):
+            async for rows in self.fetchstep(cursor, f"SELECT * FROM {table}Prefix;"):
                 for row in rows:
                     self.bot.prefixes[table][row[0]] = row[1]
 
@@ -43,7 +44,7 @@ class DataManager(DatabaseManager):
 
     async def clean(self):
         "お掃除します。"
-        for table in ["Guild", "User"]:
+        for table in ("Guild", "User"):
             for id_ in self.bot.prefixes[table]:
                 if not await self.bot.exists(table.lower(), id_):
                     await cursor.execute(
@@ -74,7 +75,7 @@ class Prefix(Cog):
         await ctx.typing()
         await self.data.prepare_table()
         if mode == "guild":
-            if not ctx.guild:
+            if not ctx.guild or not isinstance(ctx.author, discord.Member):
                 raise commands.NoPrivateMessage()
             if not ctx.author.guild_permissions.administrator:
                 raise commands.MissingPermissions(["administrator"])

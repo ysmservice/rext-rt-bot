@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 from collections.abc import Callable, Iterator
 
 from inspect import cleandoc, getfile
+import os
 
 from discord.ext import commands
 import discord
@@ -28,8 +29,8 @@ __all__ = (
 def get_fsparent(obj: Any) -> str:
     "オブジェクトからカテゴリーを取得します。"
     fsparent = getfile(obj)
-    fsparent = fsparent[:fsparent.rfind("/")]
-    fsparent = fsparent[fsparent.rfind("/")+1:]
+    fsparent = fsparent[:fsparent.rfind("/" if os.name != "nt" else "\\")]
+    fsparent = fsparent[fsparent.rfind("/" if os.name != "nt" else "\\")+1:]
     return fsparent
 
 

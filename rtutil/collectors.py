@@ -10,7 +10,7 @@ from orjson import loads
 
 
 __all__ = ("make_google_url", "AREA_CODES", "CITY_CODES", "tenki")
-with open("data/area_codes.json", "r") as f:
+with open("data/area_codes.json", "r", encoding="utf-8") as f:
     AREA_CODES = loads(f.read())
 CITY_CODES: defaultdict[str, dict[str, str]] = defaultdict(dict)
 for pref in AREA_CODES["pref"]:
