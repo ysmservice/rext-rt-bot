@@ -27,4 +27,7 @@ MentionIdObj: TypeAlias = discord.User | discord.Member | discord.abc.GuildChann
 class CommandInfo(TypedDict):
     name: str
     category: str
+class Prefixes(TypedDict):
+    Guild: dict[int, str]
+    User: dict[int, str]
 Feature: TypeAlias = CmdGrp | tuple[str, str]

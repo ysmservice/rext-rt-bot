@@ -32,6 +32,7 @@ from rtlib.common.cacher import CacherPool, Cacher
 from rtlib.common.chiper import ChiperManager
 from rtlib.common.utils import make_simple_error_text
 
+from .types_ import Prefixes
 from .rtws import setup
 from . import tdpocket
 
@@ -67,8 +68,7 @@ class RT(commands.Bot):
         kwargs["help_command"] = None
         super().__init__(*args, **kwargs)
 
-        self.guild_prefixes: dict[int, str] = {}
-        self.user_prefixes: dict[int, str] = {}
+        self.prefixes: Prefixes = {"User": {}, "Guild": {}}
         self.language = Caches({}, {})
         self.ipcs = IpcsClient(str(self.shard_id))
         self.ipcs.set_route(self.exists_object, "exists")
@@ -88,9 +88,9 @@ class RT(commands.Bot):
 
     def _get_command_prefix(self, _, message: discord.Message):
         pr = list(PREFIXES)
-        if message.guild is not None and (p := self.guild_prefixes.get(message.guild.id, "")):
+        if message.guild is not None and (p := self.prefixes["Guild"].get(message.guild.id, "")):
             pr.append(p)
-        if p := self.user_prefixes.get(message.author.id, ""):
+        if p := self.prefixes["User"].get(message.author.id, ""):
             pr.append(p)
         return p
 

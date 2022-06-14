@@ -1,6 +1,6 @@
 # RT - Prefix
 
-from typing import Optional, Literal
+from typing import Optional, Literal, TypeAlias
 
 from discord.ext import commands
 from discord import app_commands
@@ -8,6 +8,7 @@ from discord import app_commands
 from core import RT, Cog, t, DatabaseManager, cursor
 
 
+TableType: TypeAlias = Literal["Guild", "User"]
 class DataManager(DatabaseManager):
     def __init__(self, bot: RT):
         self.pool, self.bot = bot.pool, bot
@@ -21,62 +22,46 @@ class DataManager(DatabaseManager):
         )
         async for rows in self.fetchstep(cursor, "SELECT * FROM GuildPrefix;"):
             for row in rows:
-                self.bot.guild_prefixes[row[0]] = row[1]
+                self.bot.prefixes["Guild"][row[0]] = row[1]
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS UserPrefix (
                 UserId BIGINT PRIMARY KEY NOT NULL, Prefix TEXT
             );"""
         )
-        async for rows in self.fetchstep(cursor, "SELECT * FROM GuildPrefix;"):
+        async for rows in self.fetchstep(cursor, "SELECT * FROM UserPrefix;"):
             for row in rows:
-                self.bot.user_prefixes[row[0]] = row[1]
+                self.bot.prefixes["User"][row[0]] = row[1]
 
-    async def set(self, mode: Literal["server", "user"], id_: int, prefix: Optional[str] = None):
+    async def set(self, mode: TableType, id_: int, prefix: Optional[str] = None):
         "プリフィックスを設定します。"
-        if mode == "server":
-            if prefix is None:
-                if id_ in self.bot.guild_prefixes:
-                    await cursor.execute(
-                        "DELETE FROM GuildPrefix WHERE GuildId = %s;", (id_,)
-                    )
-                    del self.bot.guild_prefixes[id_]
-            else:
+        if prefix is None:
+            if id_ in self.bot.prefixes[mode]:
                 await cursor.execute(
-                    """INSERT INTO GuildPrefix VALUES (%s, %s)
-                        ON DUPLICATE KEY UPDATE Prefix = %s;""",
-                    (id_, prefix, prefix)
+                    f"DELETE FROM {mode}Prefix WHERE GuildId = %s;", (id_,)
                 )
-                self.bot.guild_prefixes[id_] = prefix
+                del self.bot.prefixes[mode][id_]
         else:
-            # ユーザープリフィックスを設定する。
-            if prefix is None:
-                if id_ in self.bot.user_prefixes:
-                    await cursor.execute(
-                        "DELETE FROM UserPrefix WHERE UserId = %s;", (id_,)
-                    )
-                    del self.bot.user_prefixes[id_]
-            else:
-                await cursor.execute(
-                    """INSERT INTO UserPrefix VALUES (%s, %s)
-                        ON DUPLICATE KEY UPDATE Prefix = %s;""",
-                    (id_, prefix, prefix)
-                )
-                self.bot.user_prefixes[id_] = prefix
+            await cursor.execute(
+                f"""INSERT INTO {mode}Prefix VALUES (%s, %s)
+                    ON DUPLICATE KEY UPDATE Prefix = %s;""",
+                (id_, prefix, prefix)
+            )
+            self.bot.prefixes[mode][id_] = prefix
 
     async def clean(self):
         "お掃除します。"
-        for guild_id in self.bot.guild_prefixes:
+        for guild_id in self.bot.prefixes["Guild"]:
             if not await self.bot.exists("guild", guild_id):
                 await cursor.execute(
                     "DELETE FROM GuildPrefix WHERE GuildId = %s;", (guild_id,)
                 )
-                del self.bot.guild_prefixes[guild_id]
-        for user_id in self.bot.user_prefixes:
+                del self.bot.prefixes["Guild"][guild_id]
+        for user_id in self.bot.prefixes["User"]:
             if not await self.bot.exists("user", user_id):
                 await cursor.execute(
                     "DELETE FROM UserPrefix WHERE UserId = %s;", (user_id,)
                 )
-                del self.bot.user_prefixes[user_id]
+                del self.bot.prefixes["User"][user_id]
 
 
 class Prefix(Cog):
@@ -87,10 +72,16 @@ class Prefix(Cog):
     async def cog_load(self):
         await self.data.prepare_table()
 
+    MO_MSG = {
+        "server": {"ja": f"このサーバー", "en": 'on this server'},
+        "user": {"ja": f"あなた", "en": 'of yours'}
+    }
+
     @commands.command(description="Setting up a custom prefix.")
     @app_commands.describe(mode="Either of user or server", prefix="A Custom prefix")
     async def prefix(
-        self, ctx: commands.Context, mode: Literal["user", "server"], *, prefix: Optional[str] = None
+        self, ctx: commands.Context, mode: Literal["user", "server"], 
+        *, prefix: Optional[str] = None
     ):
         await ctx.typing()
         await self.data.prepare_table()
@@ -99,22 +90,23 @@ class Prefix(Cog):
                 raise commands.NoPrivateMessage()
             if not ctx.author.guild_permissions.administrator:
                 raise commands.MissingPermissions(["administrator"])
-        await self.data.set(mode, getattr(ctx, "guild" if mode == "server" else "author").id, prefix) # type: ignore
+        await self.data.set(
+            "User" if mode == "user" else "Guild",
+            getattr(ctx, "guild" if mode == "server" else "author").id, prefix
+        ) # type: ignore
 
-        mo_ja = f"{'このサーバー' if mode != "user" else 'あなた'}のカスタムプリフィックスを"
-        mo_en = 'of yours' if mode == "user" else 'on this server'
         if prefix is None:
             await ctx.reply(embed=self.embed(
                 description=t(dict(
-                    ja=f"{mo_ja}未設定にしました。",
-                    en=f"Unset custom prefixes {mo_en}."
+                    ja=f"{self.MO_MSG[mode]['ja']}のカスタムプリフィックスを未設定にしました。",
+                    en=f"Unset custom prefixes {self.MO_MSG[mode]['en']}."
                 ), ctx)
             ))
         else:
             await ctx.reply(embed=self.embed(
                 description=t(dict(
-                    ja=f"{mo_ja}`{prefix}`に設定しました。",
-                    en=f"Custom prefix {mo_en} set to `{prefix}`."
+                    ja=f"{self.MO_MSG[mode]['ja']}のカスタムプリフィックスを`{prefix}`に設定しました。",
+                    en=f"Custom prefix {self.MO_MSG[mode]['en']} set to `{prefix}`."
                 ), ctx)
             ))
 
@@ -130,7 +122,7 @@ class Prefix(Cog):
         .add_arg("mode", {"en": "`server` or `user`", "ja": "`server`か`user`"},
             ja="サーバーに設定するかユーザーに設定するかです。`server`の場合はそのサーバーで管理者権限が必要です。",
             en="Whether set to server or user. If `server`, you must have administrator permission in the server."
-        )
+        ) \
         .add_arg("prefix", "str", "Optional",
             ja="設定するカスタムプリフィックスです。\n未入力の場合は設定解除として扱われます。",
             en="Custom prefix to be set. \nIf not entered, the setting is treated as cancelled."
