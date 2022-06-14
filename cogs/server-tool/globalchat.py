@@ -140,13 +140,7 @@ class GlobalChat(Cog):
         aliases=("gc", "gchat")
     )
     async def globalchat(self, ctx):
-        if ctx.invoked_subcommand is None:
-            await ctx.reply(t(
-                dict(
-                    en="Invaild command",
-                    ja="使い方が間違っているゾ"
-                ), ctx
-            ))
+        await self.group_index(ctx)
 
     @globalchat.command(
         description="Create globalchat",
