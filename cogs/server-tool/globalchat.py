@@ -102,7 +102,9 @@ class DataManager(DatabaseManager):
         )
         return (await cursor.fetchone()) is not None
 
-    async def get_all_channel(self, name: str) -> AsyncIterator[disocrd.TextChannel]:
+    async def get_all_channel(
+        self, name: str
+    ) -> AsyncIterator[discord.TextChannel]:
         """
         グローバルチャットに接続しているチャンネルを名前使って全部取得します。
 
@@ -123,7 +125,9 @@ class DataManager(DatabaseManager):
             else:
                 yield channel
 
-    async def get_channel(self, channelid: int) -> Optional[discord.TextChannel]:
+    async def get_channel(
+        self, channelid: int
+    ) -> Optional[discord.TextChannel]:
         """
         チャンネルを取得します。
 
