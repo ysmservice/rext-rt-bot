@@ -2,6 +2,7 @@
 from typing import Optional
 
 from collections.abc import AsyncIterator
+from functools import partial
 
 import discord
 from discord.ext import commands
@@ -85,7 +86,9 @@ class DataManager(DatabaseManager):
         self, channelid: int
     ) -> Optional[discord.TextChannel]:
         "チャンネルを取得します。"
-        channel = self.bot.get_channel(channelid)
+        channel = await self.bot.loop.run_in_executor(
+            None, partial(self.bot.get_channel, channelid)
+        )
         if channel is not None:
             return channel
         else:
