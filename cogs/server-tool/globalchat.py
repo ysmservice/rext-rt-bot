@@ -46,7 +46,7 @@ class GlobalChat(Cog):
         await self.data.prepare_table()
 
     @commands.group(
-        description="Setup global chat"
+        description="Setup global chat",
         aliases=("gc", "gchat")
     )
     async def globalchat(self, ctx):
