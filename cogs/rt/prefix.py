@@ -31,7 +31,8 @@ class DataManager(DatabaseManager):
         if prefix is None:
             if id_ in self.bot.prefixes[table]:
                 await cursor.execute(
-                    f"DELETE FROM {table}Prefix WHERE GuildId = %s;", (id_,)
+                    f"DELETE FROM {table}Prefix WHERE GuildId = %s;",
+                    (id_,)
                 )
                 del self.bot.prefixes[table][id_]
         else:
@@ -48,7 +49,8 @@ class DataManager(DatabaseManager):
             for id_ in self.bot.prefixes[table]:
                 if not await self.bot.exists(table.lower(), id_):
                     await cursor.execute(
-                        f"DELETE FROM {table}Prefix WHERE {table}Id = %s;", (id_,)
+                        f"DELETE FROM {table}Prefix WHERE {table}Id = %s;",
+                        (id_,)
                     )
                     del self.bot.prefixes[table][id_]
 
