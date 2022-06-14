@@ -10,6 +10,8 @@ from discord.ext import commands
 
 from core import Cog, RT, t, DatabaseManager, cursor
 
+from .__init__ import fsparent
+
 
 class DataManager(DatabaseManager):
     "グローバルチャットのデータベースを管理します。"
@@ -124,6 +126,7 @@ class DataManager(DatabaseManager):
 
 
 class GlobalChat(Cog):
+
     "グローバルチャットのコグです。"
 
     WEBHOOK_NAME: str = "rt-globalchat-webhook"
@@ -137,7 +140,8 @@ class GlobalChat(Cog):
 
     @commands.group(
         description="Setup global chat",
-        aliases=("gc", "gchat")
+        aliases=("gc", "gchat"),
+        fsparent=FSPARENT
     )
     async def globalchat(self, ctx):
         await self.group_index(ctx)
