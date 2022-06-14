@@ -1,17 +1,12 @@
 # RT - server-tool global
-from typing import AsyncIterator, Optional
+from typing import Optional
+
+from collections.abc import AsyncIterator
 
 import discord
-from discord import utils, app_commands
 from discord.ext import commands
 
-from core import (
-    Cog,
-    RT,
-    t,
-    DatabaseManager,
-    cursor
-)
+from core import Cog, RT, t, DatabaseManager, cursor
 
 
 class DataManager(DatabaseManager):
@@ -217,7 +212,7 @@ class GlobalChat(Cog):
         description="Create globalchat",
         aliases=("make", "add")
     )
-    @app_commands.describe(name="Global chat name")
+    @discord.app_commands.describe(name="Global chat name")
     async def create(self, ctx, name: str = None):
         if (await self.data.check_exist(ctx.channel)):
             return await ctx.reply(t(
@@ -246,7 +241,7 @@ class GlobalChat(Cog):
         description="Connect to global chat",
         aliases=("join",)
     )
-    @app_commands.describe(name="Global chat name")
+    @discord.app_commands.describe(name="Global chat name")
     async def connect(self, ctx, name: str = None):
         if (await self.data.check_exist(ctx.channel)):
             return await ctx.reply(t(
@@ -313,7 +308,7 @@ class GlobalChat(Cog):
         ):
             if message.channel.id == channel.id:
                 continue
-            webhook = utils.get(
+            webhook = discord.utils.get(
                 await channel.webhooks(), name=self.WEBHOOK_NAME
             )
             if webhook is None:
@@ -327,5 +322,5 @@ class GlobalChat(Cog):
             )
 
 
-async def setup(bot: RT):
+async def setup(bot: RT) -> None:
     await bot.add_cog(GlobalChat(bot))
