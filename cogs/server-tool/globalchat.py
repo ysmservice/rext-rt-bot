@@ -204,6 +204,7 @@ class GlobalChat(Cog):
         description="Create globalchat",
         aliases=("make", "add")
     )
+    @app_commands.describe(name="Global chat name")
     async def create(self, ctx, name: str = None):
         if (await self.data.check_exist(ctx.channel)):
             return await ctx.reply(t(
@@ -232,6 +233,7 @@ class GlobalChat(Cog):
         description="Connect to global chat",
         aliases=("join",)
     )
+    @app_commands.describe(name="Global chat name")
     async def connect(self, ctx, name: str = None):
         if (await self.data.check_exist(ctx.channel)):
             return await ctx.reply(t(
