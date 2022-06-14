@@ -152,7 +152,7 @@ class GlobalChat(Cog):
     )
     @discord.app_commands.describe(name="Global chat name")
     async def create(self, ctx, name: str = None):
-        if (await self.data.check_exist(ctx.channel)):
+        if await self.data.check_exist(ctx.channel):
             return await ctx.reply(t(
                 dict(en="You connected another one.", ja="もうすでにあなたは接続をしています。"),
                 ctx
