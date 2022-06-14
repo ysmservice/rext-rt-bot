@@ -18,10 +18,21 @@ class ServerManagement2(Cog):
     async def kick(self, ctx, target: discord.Member, *, reason: str = None):
         await target.kick(reason=reason)
         await ctx.reply(f"👋 Kicked {self.name_and_id(target)}")
+        
+    @commands.command(description="Ban a user", fsparent=FSPARENT)
+    @discord.app_commands.describe(target_id="Target user id", reason="Reason")
+    async def ban(self, ctx, target_id: int, *, reason: str = None):
+        await ctx.guild.ban(discord.Object(target_id), reason=reason)
+        await ctx.reply(f"👋 Baned `{target_id}`")
 
     Cog.HelpCommand(kick) \
         .merge_description("headline", ja="ユーザーをkickします。") \
         .add_arg("target", "Member", ja="対象とするユーザー", en="Target member") \
+        .add_arg("reason", "str", ja="理由", en="reason")
+
+    Cog.HelpCommand(ban) \
+        .merge_description("headline", ja="対象のユーザーをbanします。") \
+        .add_arg("target_id", "int", ja="対象とするユーザーID", en="Target user id") \
         .add_arg("reason", "str", ja="理由", en="reason")
 
 
