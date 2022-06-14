@@ -32,36 +32,31 @@ class DataManager(DatabaseManager):
             for row in rows:
                 self.bot.prefixes["User"][row[0]] = row[1]
 
-    async def set(self, mode: TableType, id_: int, prefix: Optional[str] = None):
+    async def set(self, table: TableType, id_: int, prefix: Optional[str] = None):
         "プリフィックスを設定します。"
         if prefix is None:
-            if id_ in self.bot.prefixes[mode]:
+            if id_ in self.bot.prefixes[table]:
                 await cursor.execute(
-                    f"DELETE FROM {mode}Prefix WHERE GuildId = %s;", (id_,)
+                    f"DELETE FROM {table}Prefix WHERE GuildId = %s;", (id_,)
                 )
-                del self.bot.prefixes[mode][id_]
+                del self.bot.prefixes[table][id_]
         else:
             await cursor.execute(
-                f"""INSERT INTO {mode}Prefix VALUES (%s, %s)
+                f"""INSERT INTO {table}Prefix VALUES (%s, %s)
                     ON DUPLICATE KEY UPDATE Prefix = %s;""",
                 (id_, prefix, prefix)
             )
-            self.bot.prefixes[mode][id_] = prefix
+            self.bot.prefixes[table][id_] = prefix
 
     async def clean(self):
         "お掃除します。"
-        for guild_id in self.bot.prefixes["Guild"]:
-            if not await self.bot.exists("guild", guild_id):
-                await cursor.execute(
-                    "DELETE FROM GuildPrefix WHERE GuildId = %s;", (guild_id,)
-                )
-                del self.bot.prefixes["Guild"][guild_id]
-        for user_id in self.bot.prefixes["User"]:
-            if not await self.bot.exists("user", user_id):
-                await cursor.execute(
-                    "DELETE FROM UserPrefix WHERE UserId = %s;", (user_id,)
-                )
-                del self.bot.prefixes["User"][user_id]
+        for table in ["Guild", "User"]:
+            for id_ in self.bot.prefixes[table]:
+                if not await self.bot.exists(table.lower(), id_):
+                    await cursor.execute(
+                        f"DELETE FROM {table}Prefix WHERE {table}Id = %s;", (id_,)
+                    )
+                    del self.bot.prefixes[table][id_]
 
 
 class Prefix(Cog):
@@ -73,8 +68,8 @@ class Prefix(Cog):
         await self.data.prepare_table()
 
     MO_MSG = {
-        "server": {"ja": f"このサーバー", "en": 'on this server'},
-        "user": {"ja": f"あなた", "en": 'of yours'}
+        "server": {"ja": "このサーバー", "en": 'on this server'},
+        "user": {"ja": "あなた", "en": 'of yours'}
     }
 
     @commands.command(description="Setting up a custom prefix.")
@@ -90,6 +85,7 @@ class Prefix(Cog):
                 raise commands.NoPrivateMessage()
             if not ctx.author.guild_permissions.administrator:
                 raise commands.MissingPermissions(["administrator"])
+
         await self.data.set(
             "User" if mode == "user" else "Guild",
             getattr(ctx, "guild" if mode == "server" else "author").id, prefix

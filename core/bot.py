@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Optional, Any
+from typing import TYPE_CHECKING, Literal, Optional, Any, TypedDict
 
 from functools import wraps
 from dataclasses import dataclass
@@ -46,6 +46,9 @@ if TYPE_CHECKING:
 __all__ = ("RT",)
 set_handler(logger)
 
+class Prefixes(TypedDict):
+    Guild: dict[int, str]
+    User: dict[int, str]
 
 @dataclass
 class Caches:
