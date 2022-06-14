@@ -89,7 +89,7 @@ class Prefix(Cog):
 
     @commands.command(description="Setting up a custom prefix.")
     @commands.guild_only()
-    @app_commands.describe(mode="Either of user or server"prefix="A Custom prefix")
+    @app_commands.describe(mode="Either of user or server", prefix="A Custom prefix")
     async def prefix(self, ctx: commands.Context, 
                      mode: Literal["user", "server"], *, prefix: Optional[str] = None):
         await ctx.typing()
