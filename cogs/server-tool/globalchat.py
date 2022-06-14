@@ -124,6 +124,8 @@ class DataManager(DatabaseManager):
 
 
 class GlobalChat(Cog):
+    "グローバルチャットのコグです。"
+
     WEBHOOK_NAME: str = "rt-globalchat-webhook"
 
     def __init__(self, bot: RT):
@@ -154,19 +156,16 @@ class GlobalChat(Cog):
     async def create(self, ctx, name: str = None):
         if (await self.data.check_exist(ctx.channel)):
             return await ctx.reply(t(
-                dict(
-                    en="You connected another one.",
-                    ja="もうすでにあなたは接続をしています。"
-                ), ctx
+                dict(en="You connected another one.", ja="もうすでにあなたは接続をしています。"),
+                ctx
             ))
-        name = "default" if name is None else name
-        result = await self.data.create_chat(name, ctx.channel)
+        result = await self.data.create_chat(
+            "default" if name is None else name, ctx.channel
+        )
         if result:
             await ctx.reply(t(
-                dict(
-                    en="Created",
-                    ja="作成しました。"
-                ), ctx))
+                dict(en="Created", ja="作成しました。"), ctx
+            ))
         else:
             await ctx.reply(t(
                 dict(
@@ -183,25 +182,16 @@ class GlobalChat(Cog):
     async def connect(self, ctx, name: str = None):
         if (await self.data.check_exist(ctx.channel)):
             return await ctx.reply(t(
-                dict(
-                    en="You connected another one.",
-                    ja="もうすでにあなたは接続をしています。"
-                ), ctx
+                dict(en="You connected another one.", ja="もうすでにあなたは接続をしています。"), ctx
             ))
         name = "default" if name is None else name
         if not (await self.data.check_exist_gc(name)):
             return await ctx.reply(t(
-                dict(
-                    en="Not found",
-                    ja="見つかりませんでした。"
-                ), ctx
+                dict(en="Not found", ja="見つかりませんでした。"), ctx
             ))
         await self.data.connect(name, ctx.channel)
         await ctx.reply(t(
-            dict(
-                en="Connected",
-                ja="接続しました。"
-            ), ctx
+            dict(en="Connected", ja="接続しました。"), ctx
         ))
 
     @globalchat.command(
@@ -210,12 +200,9 @@ class GlobalChat(Cog):
     )
     async def leave(self, ctx):
         await self.data.disconnect(ctx.channel)
-        await ctx.reply(
-            t(dict(
-                ja="グローバルチャットから退出しました",
-                en="Leave from globalchat"
-            ), ctx)
-        )
+        await ctx.reply(t(
+            dict(ja="グローバルチャットから退出しました", en="Leave from globalchat"), ctx
+        ))
 
     (Cog.HelpCommand(globalchat)
         .merge_description("headline", ja="グローバルチャット関連です。") \
