@@ -64,14 +64,21 @@ class DataManager(DatabaseManager):
             (name,)
         )
         for _, channelid in await cursor.fetchall():
-            yield await self.get_channel(channelid)
+            channel = await self.get_channel(channelid)
+            if channel is None:
+                await self.disconnect(channel)
+            else:
+                yield channel
 
-    async def get_channel(self, channelid: int):
+    async def get_channel(self, channelid: int) -> Optional[discord.TextChannel]:
         channel = self.bot.get_channel(channelid)
         if channel is not None:
             return channel
         else:
-            return await self.bot.fetch_channel(channelid)
+            try:
+                return await self.bot.fetch_channel(channelid)
+            except discord.errors.NotFound:
+                return None
 
     async def get_name(self, channel: discord.TextChannel) -> Optional[str]:
         await cursor.execute(
@@ -80,6 +87,11 @@ class DataManager(DatabaseManager):
         )
         data = await cursor.fetchone()
         return data[0] if data is not None else None
+    
+    async def disconnect(self, channel: discord.TextChannel) -> None:
+        await cursor.execute(
+            "DELETE FROM GlobalChat WHERE channelid=%s", (channel.id,)
+        )
 
 
 class GlobalChat(Cog):
