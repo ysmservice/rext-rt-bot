@@ -84,6 +84,7 @@ class DataManager(DatabaseManager):
 
 class GlobalChat(Cog):
     WEBHOOK_NAME: str = "rt-globalchat-webhook"
+
     def __init__(self, bot: RT):
         self.bot = bot
         self.data = DataManager(bot)
@@ -112,8 +113,7 @@ class GlobalChat(Cog):
                 dict(
                     en="You connected another one.",
                     ja="もうすでにあなたは接続をしています。"
-                )
-                ,ctx
+                ), ctx
             ))
         name = "default" if name is None else name
         result = await self.data.create_chat(name, ctx.channel)
@@ -122,8 +122,7 @@ class GlobalChat(Cog):
                 dict(
                     en="Created",
                     ja="作成しました。"
-                )
-                ,ctx))
+                ), ctx))
         else:
             await ctx.reply(t(
                 dict(
@@ -143,8 +142,7 @@ class GlobalChat(Cog):
                 dict(
                     en="You connected another one.",
                     ja="もうすでにあなたは接続をしています。"
-                )
-                ,ctx
+                ), ctx
             ))
         name = "default" if name is None else name
         if not (await self.data.check_exist_gc(name)):
