@@ -155,7 +155,7 @@ class GlobalChat(Cog):
         if await self.data.check_exist(ctx.channel):
             return await ctx.reply(t(dict(
                 en="You connected another one.", ja="もうすでにあなたは接続をしています。"
-            ) ,ctx))
+            ), ctx))
         result = await self.data.create_chat(
             "default" if name is None else name, ctx.channel
         )
@@ -199,21 +199,21 @@ class GlobalChat(Cog):
         ), ctx))
 
     (Cog.HelpCommand(globalchat)
-        .merge_description("headline", ja="グローバルチャット関連です。") \
+        .merge_description("headline", ja="グローバルチャット関連です。")
         .add_sub(Cog.HelpCommand(create)
-                     .merge_description("headline", ja="グローバルチャットを作成します。")
-                     .add_arg("name", "str", "Optional",
+                 .merge_description("headline", ja="グローバルチャットを作成します。")
+                 .add_arg("name", "str", "Optional",
                           ja="グローバルチャット名",
                           en="Globalchat name")
-                 ) \
+                 )
         .add_sub(Cog.HelpCommand(connect)
-                     .merge_description("headline", ja="グローバルチャットに接続します。")
-                     .add_arg("name", "str", "Optional",
+                 .merge_description("headline", ja="グローバルチャットに接続します。")
+                 .add_arg("name", "str", "Optional",
                           ja="グローバルチャット名",
                           en="GlobalChat name")
-                 ) \
+                 )
         .add_sub(Cog.HelpCommand(leave).merge_description("headline", ja="グローバルチャットから退出します。"))
-    )
+     )
 
     @Cog.listener("on_message")
     async def on_message(self, message):
