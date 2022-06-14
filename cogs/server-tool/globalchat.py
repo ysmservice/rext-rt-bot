@@ -271,7 +271,7 @@ class GlobalChat(Cog):
             ), ctx
         ))
 
-    @commands.command(
+    @globalchat.command(
         description="Disconnect from globalchat",
         aliases=("remove", "rm")
     )
