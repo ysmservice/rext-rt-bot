@@ -370,14 +370,14 @@ class Individual(Cog):
         embed.add_field(
             name=t({"ja": "Discord登録日時", "en": "Discord register time"}, ctx),
             value="..." if user.created_at is None
-                else f"<t:{int(user.created_at.timestamp())}> (UST)"
+                else discord.utils.format_dt(user.created_at)
         )
         embed.add_field(
             name=t({"ja": "アバターURL", "en": "Avatar url"}, ctx),
             value=getattr(user.avatar, "url", None) or t(dict(ja="なし", en="None"), ctx),
             inline=False
         )
-        embed.set_thumbnail(url=getattr(user.avatar, "url", ""))
+        embed.set_thumbnail(url=getattr(user.display_avatar, "url", ""))
         embeds = [embed]
 
         # もし実行したサーバーにいる人なら、サーバーでの情報も付け加える。
@@ -385,7 +385,7 @@ class Individual(Cog):
         if isinstance(user, discord.Member):
             embed = Cog.Embed(
                 title=t({"en": "At this server information", "ja": "このサーバーの情報"}, ctx),
-                description=", ".join(role.mention for role in user.roles)
+                description=", ".join(role.mention if role.name != "@everyone" else "@everyone" for role in user.roles)
             )
             embed.add_field(
                 name=t({"en": "Show name", "ja": "表示名"}, ctx),
@@ -394,8 +394,14 @@ class Individual(Cog):
             embed.add_field(
                 name=t({"en": "Joined at", "ja": "参加日時"}, ctx),
                 value="..." if user.joined_at is None
-                    else f"<t:{int(user.joined_at.timestamp())}> (UST)"
+                    else discord.utils.format_dt(user.joined_at)
             )
+            if user.voice:
+                embed.add_field(
+                    name={"ja": "接続中のボイスチャンネル",
+                          "en": "Connecting voice channel"},
+                    value=f"<#{user.voice.channel.id}>"
+                )
             embeds.append(embed)
         await ctx.send(embeds=embeds)
 
