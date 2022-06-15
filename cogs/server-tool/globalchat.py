@@ -27,7 +27,7 @@ class DataManager(DatabaseManager):
         )
 
     async def create_chat(
-        self, name: str, channel_id: int, settings: Dict[str, Any]
+        self, name: str, author_id: int, channel_id: int, settings: Dict[str, Any]
     ) -> bool:
         "主にグローバルチャットを作るために使います。"
         await cursor.execute(
@@ -38,14 +38,18 @@ class DataManager(DatabaseManager):
             return False
         await cursor.execute(
             "INSERT INTO GlobalChat VALUES (%s, %s, %s);",
-            (name, channel_id, settings)
+            (name, author_id, settings)
+        )
+        await cursor.execute(
+            "INSERT INTO GlobalChatChannel VALUES (%s, %s);",
+            (name, channel_id)
         )
         return True
 
     async def prepare_table(self) -> None:
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS GlobalChat(
-                Name TEXT, ChannelId BIGINT PRIMARY KEY NOT NULL, Setting JSON
+                Name TEXT, AuthorId BIGINT PRIMARY KEY NOT NULL, Setting JSON
             );"""
         )
         await cursor.execute(
@@ -53,11 +57,16 @@ class DataManager(DatabaseManager):
                 Source BIGINT, ChannelId BIGINT, MessageId BIGINT
             );"""
         )
+        await cursor.execute(
+            """CREATE TABLE IF NOT EXISTS GlobalChatChannel(
+                Name TEXT, ChannelId BIGINT
+            );"""
+        )
 
     async def is_connected(self, channel_id: int) -> bool:
         "これはすでに接続されているか確認するものです。"
         await cursor.execute(
-            "SELECT * FROM GlobalChat WHERE ChannelId = %s;",
+            "SELECT * FROM GlobalChatChannel WHERE ChannelId = %s;",
             (channel_id,)
         )
         return bool(await cursor.fetchone())
@@ -75,7 +84,7 @@ class DataManager(DatabaseManager):
     ) -> AsyncIterator[discord.TextChannel]:
         "グローバルチャットに接続しているチャンネルを名前使って全部取得します。"
         await cursor.execute(
-            "SELECT * FROM GlobalChat WHERE Name = %s;",
+            "SELECT * FROM GlobalChatChannel WHERE Name = %s;",
             (name,)
         )
         for _, channel_id in await cursor.fetchall():
@@ -88,7 +97,7 @@ class DataManager(DatabaseManager):
     async def get_name(self, channel_id: int) -> str | None:
         "チャンネルから接続しているグローバルチャット名を取得します。"
         await cursor.execute(
-            "SELECT * FROM GlobalChat WHERE ChannelId = %s;",
+            "SELECT * FROM GlobalChatChannel WHERE ChannelId = %s;",
             (channel_id,)
         )
         if row := await cursor.fetchone():
@@ -97,7 +106,7 @@ class DataManager(DatabaseManager):
     async def disconnect(self, channel_id: int, **kwargs) -> None:    
         "グローバルチャットから接続をやめます"
         await cursor.execute(
-            "DELETE FROM GlobalChat WHERE ChannelId = %s;", (channel_id,)
+            "DELETE FROM GlobalChatChannel WHERE ChannelId = %s;", (channel_id,)
         )
 
     async def insert_message(
@@ -142,7 +151,7 @@ class GlobalChat(Cog):
                 en="You connected another one.", ja="もうすでにあなたは接続をしています。"
             ), ctx))
         result = await self.data.create_chat(
-            "default" if name is None else name, ctx.channel.id, {"password": password}
+            "default" if name is None else name, ctx.author.id, ctx.channel.id, {"password": password}
         )
         if result:
             await ctx.reply(t(dict(
