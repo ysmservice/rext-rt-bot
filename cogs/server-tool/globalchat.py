@@ -72,7 +72,7 @@ class DataManager(DatabaseManager):
         )
         return bool(await cursor.fetchone())
 
-    async def check_exists(self, name: str, password: str = None) -> bool:
+    async def check_exists(self, name: str, password: str | None = None) -> bool:
         "すでにグローバルチャットが存在するか確認します。"
         await cursor.execute(
             "SELECT * FROM GlobalChat WHERE Name = %s AND Setting = %s;",
@@ -146,7 +146,7 @@ class GlobalChat(Cog):
         aliases=("make", "add", "作成")
     )
     @discord.app_commands.describe(name="Global chat name")
-    async def create(self, ctx, name: str, password: str = None):
+    async def create(self, ctx, name: str, password: str | None = None):
         if await self.data.is_connected(ctx.channel.id):
             return await ctx.reply(t(dict(
                 en="You connected another one.", ja="もうすでにあなたは接続をしています。"
@@ -167,7 +167,7 @@ class GlobalChat(Cog):
         aliases=("join", "参加")
     )
     @discord.app_commands.describe(name="Global chat name")
-    async def connect(self, ctx, name: str, password = None):
+    async def connect(self, ctx, name: str, password: str | None = None):
         if await self.data.is_connected(ctx.channel.id):
             return await ctx.reply(t(dict(
                 en="You connected another one.", ja="もうすでにあなたは接続をしています。"
@@ -214,9 +214,10 @@ class GlobalChat(Cog):
             return
         if not await self.data.is_connected(message.channel.id):
             return
-        async for channel in self.data.get_all_channel(
-            await self.data.get_name(message.channel.id)
-        ):
+        name = await self.data.get_name(message.channel.id)
+        if name is None:
+            return
+        async for channel in self.data.get_all_channel(name):
             if message.channel.id == channel.id:
                 continue
             webhook = discord.utils.get(
