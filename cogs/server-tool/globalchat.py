@@ -49,18 +49,18 @@ class DataManager(DatabaseManager):
         )
 
     async def create_chat(
-        self, name: str, author_id: int, channel_id: int, settings: SettingType
+        self, name: str, author_id: int, channel_id: int, setting: SettingType
     ) -> bool:
         "主にグローバルチャットを作るために使います。"
         await cursor.execute(
-            "SELECT * FROM GlobalChat WHERE name = %s;",
+            "SELECT * FROM GlobalChat WHERE Name = %s;",
             (name,)
         )
         if await cursor.fetchone() is not None:
             return False
         await cursor.execute(
             "INSERT INTO GlobalChat VALUES (%s, %s, %s);",
-            (name, author_id, dumps(settings))
+            (name, author_id, dumps(setting))
         )
         await cursor.execute(
             "INSERT INTO GlobalChatChannel VALUES (%s, %s);",
@@ -206,6 +206,8 @@ class GlobalChat(Cog):
             ja="グローバルチャット名", en="GlobalChat name"))
     
     _help.add_sub(Cog.HelpCommand(leave).merge_description("headline", ja="グローバルチャットから退出します。"))
+    
+    del _help
 
     @Cog.listener("on_message")
     async def on_message(self, message):
