@@ -83,11 +83,11 @@ class DataManager(DatabaseManager):
             else:
                 yield channel
 
-    async def get_name(self, channel: discord.TextChannel) -> str | None:
+    async def get_name(self, channelid: int) -> str | None:
         "チャンネルから接続しているグローバルチャット名を取得します。"
         await cursor.execute(
             "SELECT * FROM GlobalChat WHERE ChannelId = %s;",
-            (channel.id,)
+            (channelid,)
         )
         if row := await cursor.fetchone():
             return row[0]
@@ -135,12 +135,12 @@ class GlobalChat(Cog):
     )
     @discord.app_commands.describe(name="Global chat name")
     async def create(self, ctx, name: str = None):
-        if await self.data.check_exist(ctx.channel):
+        if await self.data.is_connected(ctx.channel.id):
             return await ctx.reply(t(dict(
                 en="You connected another one.", ja="もうすでにあなたは接続をしています。"
             ), ctx))
         result = await self.data.create_chat(
-            "default" if name is None else name, ctx.channel
+            "default" if name is None else name, ctx.channel.id
         )
         if result:
             await ctx.reply(t(dict(
@@ -157,7 +157,7 @@ class GlobalChat(Cog):
     )
     @discord.app_commands.describe(name="Global chat name")
     async def connect(self, ctx, name: str = None):
-        if await self.data.check_exist(ctx.channel):
+        if await self.data.is_connected(ctx.channel.id):
             return await ctx.reply(t(dict(
                 en="You connected another one.", ja="もうすでにあなたは接続をしています。"
             ), ctx))
@@ -166,7 +166,7 @@ class GlobalChat(Cog):
             return await ctx.reply(t(dict(
                 en="Not found", ja="見つかりませんでした。"
             ), ctx))
-        await self.data.connect(name, ctx.channel)
+        await self.data.connect(name, ctx.channel.id)
         await ctx.reply(t(dict(
             en="Connected", ja="接続しました。"
         ), ctx))
@@ -176,7 +176,7 @@ class GlobalChat(Cog):
         aliases=("remove", "rm", ")
     )
     async def leave(self, ctx):
-        await self.data.disconnect(ctx.channel)
+        await self.data.disconnect(ctx.channel.id)
         await ctx.reply(t(dict(
             ja="グローバルチャットから退出しました", en="Leave from globalchat"
         ), ctx))
@@ -202,10 +202,10 @@ class GlobalChat(Cog):
     async def on_message(self, message):
         if message.author.bot:
             return
-        if not (await self.data.check_exist(message.channel)):
+        if not await self.data.is_connected(message.channel):
             return
         async for channel in self.data.get_all_channel(
-            await self.data.get_name(message.channel)
+            await self.data.get_name(message.channel.id)
         ):
             if message.channel.id == channel.id:
                 continue
