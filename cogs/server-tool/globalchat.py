@@ -1,21 +1,25 @@
 # RT - server-tool global
 
-from typing import Any
+from typing import TypedDict
 
 from collections.abc import AsyncIterator
 
 import discord
 from discord.ext import commands
 
-from orjson import dumps
+from rtlib.common.json import dumps
 
 from core import Cog, RT, t, DatabaseManager, cursor
 
 from .__init__ import FSPARENT
 
 
+class SettingType(TypedDict):
+    password: str | None
+
+
 class DataManager(DatabaseManager):
-    "グローバルチャットのデータベースを管理します。"
+    "セーブデータを管理します"
 
     def __init__(self, bot: RT):
         self.pool = bot.pool
@@ -45,7 +49,7 @@ class DataManager(DatabaseManager):
         )
 
     async def create_chat(
-        self, name: str, author_id: int, channel_id: int, settings: dict[str, Any]
+        self, name: str, author_id: int, channel_id: int, settings: SettingType
     ) -> bool:
         "主にグローバルチャットを作るために使います。"
         await cursor.execute(
@@ -80,9 +84,7 @@ class DataManager(DatabaseManager):
         )
         return bool(await cursor.fetchone())
 
-    async def get_all_channel(
-        self, name: str
-    ) -> AsyncIterator[discord.TextChannel]:
+    async def get_all_channel(self, name: str) -> AsyncIterator[discord.TextChannel]:
         "グローバルチャットに接続しているチャンネルを名前使って全部取得します。"
         await cursor.execute(
             "SELECT * FROM GlobalChatChannel WHERE Name = %s;",
