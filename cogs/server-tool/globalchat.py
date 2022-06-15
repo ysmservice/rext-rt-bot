@@ -1,7 +1,5 @@
 # RT - server-tool global
 
-from typing import Optional
-
 from collections.abc import AsyncIterator
 from functools import partial
 
@@ -20,28 +18,27 @@ class DataManager(DatabaseManager):
         self.pool = bot.pool
         self.bot = bot
 
+    async def connect(self, name: str, channelid: int) -> None:
+        "グローバルチャットに接続します。"
+        await cursor.execute(
+            "INSERT INTO GlobalChat VALUES (%s, %s);", (name, channelid)
+        )
+
     async def create_chat(
-        self, name: str, channel: discord.TextChannel
+        self, name: str, channelid: int
     ) -> bool:
         "主にグローバルチャットを作るために使います。"
         await cursor.execute(
-            "SELECT * FROM GlobalChat WHERE name = %s",
+            "SELECT * FROM GlobalChat WHERE name = %s;",
             (name,)
         )
         if (await cursor.fetchone()) is not None:
             return False
         await cursor.execute(
-            "INSERT INTO GlobalChat VALUES (%s, %s)",
+            "INSERT INTO GlobalChat VALUES (%s, %s);",
             (name, channel.id)
         )
         return True
-
-    async def connect(self, name: str, channel: discord.TextChannel) -> None:
-        "グローバルチャットに接続します。"
-        await cursor.execute(
-            "INSERT INTO GlobalChat VALUES (%s, %s)",
-            (name, channel.id)
-        )
 
     async def prepare_table(self) -> None:
         await cursor.execute(
@@ -55,18 +52,18 @@ class DataManager(DatabaseManager):
             );"""
         )
 
-    async def check_exist(self, channel: discord.TextChannel) -> bool:
+    async def is_connected(self, channelid: int) -> bool:
         "これはすでに接続されているか確認するものです。"
         await cursor.execute(
-            "SELECT * FROM GlobalChat WHERE channelid = %s",
+            "SELECT * FROM GlobalChat WHERE ChannelId = %s;",
             (channel.id,)
         )
         return (await cursor.fetchone()) is not None
 
-    async def check_exist_gc(self, name: str) -> bool:
+    async def check_exists(self, name: str) -> bool:
         "すでにグローバルチャットが存在するか確認します。"
         await cursor.execute(
-            "SELECT * FROM GlobalChat WHERE name = %s",
+            "SELECT * FROM GlobalChat WHERE Name = %s;",
             (name,)
         )
         return (await cursor.fetchone()) is not None
@@ -76,49 +73,35 @@ class DataManager(DatabaseManager):
     ) -> AsyncIterator[discord.TextChannel]:
         "グローバルチャットに接続しているチャンネルを名前使って全部取得します。"
         await cursor.execute(
-            "SELECT * FROM GlobalChat WHERE name = %s",
+            "SELECT * FROM GlobalChat WHERE Name = %s;",
             (name,)
         )
         for _, channelid in await cursor.fetchall():
-            channel = await self.get_channel(channelid)
+            channel = await loop.run_in_executor(None, self.bot.get_channel, partial(channelid))
             if channel is None:
                 await self.disconnect(channel)
             else:
                 yield channel
 
-    async def get_channel(
-        self, channelid: int
-    ) -> Optional[discord.TextChannel]:
-        "チャンネルを取得します。"
-        channel = await self.bot.loop.run_in_executor(
-            None, partial(self.bot.get_channel, channelid)
-        )
-        if channel is not None:
-            return channel
-        else:
-            try:
-                return await self.bot.fetch_channel(channelid)
-            except discord.errors.NotFound:
-                return None
-
-    async def get_name(self, channel: discord.TextChannel) -> Optional[str]:
+    async def get_name(self, channel: discord.TextChannel) -> str | None:
         "チャンネルから接続しているグローバルチャット名を取得します。"
         await cursor.execute(
-            "SELECT * FROM GlobalChat WHERE channelid = %s",
+            "SELECT * FROM GlobalChat WHERE ChannelId = %s;",
             (channel.id,)
         )
-        data = await cursor.fetchone()
-        return data[0] if data is not None else None
+        if row := await cursor.fetchone():
+            return row[0]
 
-    async def disconnect(self, channel: discord.TextChannel) -> None:
+    async def disconnect(self, channelid: int) -> None:
         "グローバルチャットから接続をやめます"
         await cursor.execute(
-            "DELETE FROM GlobalChat WHERE channelid = %s", (channel.id,)
+            "DELETE FROM GlobalChat WHERE ChannelId = %s;", (channelid,)
         )
 
     async def insert_message(
-        self, source: int, channelid: int, message: discord.WebhookMessage
+        self, source: int, channelid: int, messageid: int
     ) -> None:
+        "メッセージを保存します。"
         await cursor.execute(
             "INSERT INTO GlobalChatMessage VALUES(%s, %s, %s);",
             (source, channelid, message.id)
@@ -139,7 +122,7 @@ class GlobalChat(Cog):
         await self.data.prepare_table()
 
     @commands.group(
-        description="Setup global chat",
+        description="The command of globalchat.に",
         aliases=("gc", "gchat"),
         fsparent=FSPARENT
     )
@@ -179,7 +162,7 @@ class GlobalChat(Cog):
                 en="You connected another one.", ja="もうすでにあなたは接続をしています。"
             ), ctx))
         name = "default" if name is None else name
-        if not (await self.data.check_exist_gc(name)):
+        if not (await self.data.check_exists(name)):
             return await ctx.reply(t(dict(
                 en="Not found", ja="見つかりませんでした。"
             ), ctx))
