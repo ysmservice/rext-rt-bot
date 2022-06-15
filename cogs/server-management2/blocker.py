@@ -12,7 +12,7 @@ import emoji
 
 from rtlib.common.json import loads, dumps
 
-from data import ADD_ALIASES, REMOVE_ALIASES
+from data import ADD_ALIASES, REMOVE_ALIASES, FORBIDDEN
 
 from core import Cog, DataBaseManager, cursor, RT
 from core.views import EmbedPage
@@ -135,7 +135,7 @@ class BlockerDeleteEventContect(Cog.EventContext):
 class BlockerDeleteEmojiEventContect(BlockerDeleteEventContect):
     "ブロッカー機能で絵文字を削除したときのイベントコンテキストです。"
 
-    emoji: discord.Emoji | None
+    emoji: discord.Emoji | str | None
 class BlockerDeleteStampEventContect(BlockerDeleteEventContect):
     "ブロッカー機能でスタンプを削除したときのイベントコンテキストです。"
 
@@ -237,15 +237,57 @@ class Blocker(Cog):
             or message.guild.id not in self.data.onoff_cache
                 or all(not m for m in self.data.onoff_cache[message.guild.id].values())):
             return
-        if c := findall(emoji.get_emoji_regexp(), message.content):
+        
+        async def sender(mode):
+            await message.channel.send(t(dict(
+                ja=f"{self.MODES_JA[mode]}の送信はサーバーの管理者により禁止されています。",
+                en=f"Sending {mode} is forbidden by server administrator."
+            )))
+        error = None
+        if c := findall(r"<a?:\w+:\d*>", message.content):
             # 絵文字ブロッカー
-            if self.data.onoff_cache[message.guild.id].get("emoji", False):
+            if self.data.onoff_cache[message.guild.id].get("emoji", False) and any(
+                c in message.author.roles 
+                for c in self.data.get_now_roles(message.guild.id, "Emoji")
+            ):
                 try:
                     await message.delete()
-                except:
-                    pass
-                else:
-                    pass
+                    await sender("emoji")
+                except discord.Forbidden:
+                    error =  FORBIDDEN
+                except discord.HTTPException:
+                    error = {"ja": "なんらかのエラーが発生しました。", "en": "Something went wrong."}
+                self.bot.rtevent.dispatch("on_delete_message_emoji_blocker",
+                    BlockerDeleteEmojiEventContect(
+                        self.bot, message.guild, self.detail_or(error),
+                        {"ja": "絵文字ブロッカー", "en": "Emoji blocker"},
+                        {"ja": f"ユーザー:{message.author}", "en": f"User: {message.author}"},
+                        self.blocker, channel=message.channel, message=message, member=message.author,
+                        emoji=discord.utils.get(message.guild.roles, name=c[0].split(":")[1]) or c[0]
+                ))
+                return
+        if c := message.stickers:
+            # スタンプブロッカー
+            if self.data.onoff_cache[message.guild.id].get("stamp", False) and any(
+                c in message.author.roles 
+                for c in self.data.get_now_roles(message.guild.id, "Stamp")
+            ):
+                try:
+                    await message.delete()
+                    await sender("stamp")
+                except discord.Forbidden:
+                    error =  FORBIDDEN
+                except discord.HTTPException:
+                    error = {"ja": "なんらかのエラーが発生しました。", "en": "Something went wrong."}
+                self.bot.rtevent.dispatch("on_delete_message_stamp_blocker",
+                    BlockerDeleteStampEventContect(
+                        self.bot, message.guild, self.detail_or(error),
+                        {"ja": "スタンプブロッカー", "en": "Stamp blocker"},
+                        {"ja": f"ユーザー:{message.author}", "en": f"User: {message.author}"},
+                        self.blocker, channel=message.channel, message=message, member=message.author,
+                        stamp=c
+                ))
+                return
 
 
 async def setup(bot: RT):
