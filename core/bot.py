@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Optional, Any
+from typing import TYPE_CHECKING, Literal, Optional, Any, TypedDict
 
 from functools import wraps
 from dataclasses import dataclass
@@ -31,7 +31,6 @@ from data import DATA, CATEGORIES, PREFIXES, SECRET, TEST, SHARD, ADMINS, URL, A
 from rtlib.common.cacher import CacherPool, Cacher
 from rtlib.common.chiper import ChiperManager
 from rtlib.common.utils import make_simple_error_text
-
 from .rtws import setup
 from . import tdpocket
 
@@ -45,6 +44,10 @@ if TYPE_CHECKING:
 __all__ = ("RT",)
 set_handler(logger)
 
+
+class Prefixes(TypedDict):
+    Guild: dict[int, str]
+    User: dict[int, str]
 
 @dataclass
 class Caches:
@@ -67,7 +70,7 @@ class RT(commands.Bot):
         kwargs["help_command"] = None
         super().__init__(*args, **kwargs)
 
-        self.prefixes = {}
+        self.prefixes: Prefixes = {"User": {}, "Guild": {}}
         self.language = Caches({}, {})
         self.ipcs = IpcsClient(str(self.shard_id))
         self.ipcs.set_route(self.exists_object, "exists")
@@ -86,8 +89,12 @@ class RT(commands.Bot):
         return ctx.guild is not None
 
     def _get_command_prefix(self, _, message: discord.Message):
-        return PREFIXES if message.guild is None or message.guild.id not in self.prefixes \
-            else PREFIXES + (self.prefixes[message.guild.id],)
+        pr = list(PREFIXES)
+        if message.guild is not None and (p := self.prefixes["Guild"].get(message.guild.id, "")):
+            pr.append(p)
+        if p := self.prefixes["User"].get(message.author.id, ""):
+            pr.append(p)
+        return p
 
     def print(self, *args, **kwargs) -> None:
         "ログ出力をします。"
