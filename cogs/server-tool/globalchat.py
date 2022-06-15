@@ -3,7 +3,6 @@
 from typing import Any
 
 from collections.abc import AsyncIterator
-from functools import partial
 
 import discord
 from discord.ext import commands
