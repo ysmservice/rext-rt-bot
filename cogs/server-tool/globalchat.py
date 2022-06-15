@@ -1,6 +1,6 @@
 # RT - server-tool global
 
-from typing import Dict, Any
+from typing import Any
 
 from collections.abc import AsyncIterator
 from functools import partial
@@ -22,32 +22,6 @@ class DataManager(DatabaseManager):
         self.pool = bot.pool
         self.bot = bot
 
-    async def connect(self, name: str, channelid: int) -> None:
-        "グローバルチャットに接続します。"
-        await cursor.execute(
-            "INSERT INTO GlobalChatChannel VALUES (%s, %s);", (name, channelid)
-        )
-
-    async def create_chat(
-        self, name: str, author_id: int, channel_id: int, settings: Dict[str, Any]
-    ) -> bool:
-        "主にグローバルチャットを作るために使います。"
-        await cursor.execute(
-            "SELECT * FROM GlobalChat WHERE name = %s;",
-            (name,)
-        )
-        if (await cursor.fetchone()) is not None:
-            return False
-        await cursor.execute(
-            "INSERT INTO GlobalChat VALUES (%s, %s, %s);",
-            (name, author_id, dumps(settings))
-        )
-        await cursor.execute(
-            "INSERT INTO GlobalChatChannel VALUES (%s, %s);",
-            (name, channel_id)
-        )
-        return True
-
     async def prepare_table(self) -> None:
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS GlobalChat(
@@ -64,6 +38,32 @@ class DataManager(DatabaseManager):
                 Name TEXT, ChannelId BIGINT
             );"""
         )
+
+    async def connect(self, name: str, channelid: int) -> None:
+        "グローバルチャットに接続します。"
+        await cursor.execute(
+            "INSERT INTO GlobalChatChannel VALUES (%s, %s);", (name, channelid)
+        )
+
+    async def create_chat(
+        self, name: str, author_id: int, channel_id: int, settings: dict[str, Any]
+    ) -> bool:
+        "主にグローバルチャットを作るために使います。"
+        await cursor.execute(
+            "SELECT * FROM GlobalChat WHERE name = %s;",
+            (name,)
+        )
+        if await cursor.fetchone() is not None:
+            return False
+        await cursor.execute(
+            "INSERT INTO GlobalChat VALUES (%s, %s, %s);",
+            (name, author_id, dumps(settings))
+        )
+        await cursor.execute(
+            "INSERT INTO GlobalChatChannel VALUES (%s, %s);",
+            (name, channel_id)
+        )
+        return True
 
     async def is_connected(self, channel_id: int) -> bool:
         "これはすでに接続されているか確認するものです。"
@@ -99,7 +99,7 @@ class DataManager(DatabaseManager):
     async def get_name(self, channel_id: int) -> str | None:
         "チャンネルから接続しているグローバルチャット名を取得します。"
         await cursor.execute(
-            "SELECT * FROM GlobalChatChannel WHERE ChannelId = %s;",
+            "SELECT Name FROM GlobalChatChannel WHERE ChannelId = %s LIMIT 1;",
             (channel_id,)
         )
         if row := await cursor.fetchone():
@@ -108,7 +108,8 @@ class DataManager(DatabaseManager):
     async def disconnect(self, channel_id: int, **kwargs) -> None:    
         "グローバルチャットから接続をやめます"
         await cursor.execute(
-            "DELETE FROM GlobalChatChannel WHERE ChannelId = %s;", (channel_id,)
+            "DELETE FROM GlobalChatChannel WHERE ChannelId = %s;",
+            (channel_id,)
         )
 
     async def insert_message(
@@ -135,8 +136,7 @@ class GlobalChat(Cog):
         await self.data.prepare_table()
 
     @commands.group(
-        description="The command of globalchat.に",
-        aliases=("gc", "gchat"),
+        description="The command of globalchat.", aliases=("gc", "gchat"),
         fsparent=FSPARENT
     )
     async def globalchat(self, ctx):
@@ -147,15 +147,14 @@ class GlobalChat(Cog):
         aliases=("make", "add", "作成")
     )
     @discord.app_commands.describe(name="Global chat name")
-    async def create(self, ctx, name: str = None, password: str = None):
+    async def create(self, ctx, name: str, password: str = None):
         if await self.data.is_connected(ctx.channel.id):
             return await ctx.reply(t(dict(
                 en="You connected another one.", ja="もうすでにあなたは接続をしています。"
             ), ctx))
-        result = await self.data.create_chat(
-            "default" if name is None else name, ctx.author.id, ctx.channel.id, {"password": password}
-        )
-        if result:
+        if await self.data.create_chat(
+            name, ctx.author.id, ctx.channel.id, {"password": password}
+        ):
             await ctx.reply(t(dict(
                 en="Created", ja="作成しました。"
             ), ctx))
@@ -169,12 +168,11 @@ class GlobalChat(Cog):
         aliases=("join", "参加")
     )
     @discord.app_commands.describe(name="Global chat name")
-    async def connect(self, ctx, name: str = None, password = None):
+    async def connect(self, ctx, name: str, password = None):
         if await self.data.is_connected(ctx.channel.id):
             return await ctx.reply(t(dict(
                 en="You connected another one.", ja="もうすでにあなたは接続をしています。"
             ), ctx))
-        name = "default" if name is None else name
         if not await self.data.check_exists(name, password):
             return await ctx.reply(t(dict(
                 en="Not found", ja="見つかりませんでした。"
