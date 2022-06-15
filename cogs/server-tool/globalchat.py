@@ -8,9 +8,11 @@ from functools import partial
 import discord
 from discord.ext import commands
 
+from orjson import dumps
+
 from core import Cog, RT, t, DatabaseManager, cursor
 
-from .__init__ import fsparent
+from .__init__ import FSPARENT
 
 
 class DataManager(DatabaseManager):
@@ -20,10 +22,10 @@ class DataManager(DatabaseManager):
         self.pool = bot.pool
         self.bot = bot
 
-    async def connect(self, name: str, channelid: int, password) -> None:
+    async def connect(self, name: str, channelid: int) -> None:
         "グローバルチャットに接続します。"
         await cursor.execute(
-            "INSERT INTO GlobalChat VALUES (%s, %s);", (name, channelid)
+            "INSERT INTO GlobalChatChannel VALUES (%s, %s);", (name, channelid)
         )
 
     async def create_chat(
@@ -38,7 +40,7 @@ class DataManager(DatabaseManager):
             return False
         await cursor.execute(
             "INSERT INTO GlobalChat VALUES (%s, %s, %s);",
-            (name, author_id, settings)
+            (name, author_id, dumps(settings))
         )
         await cursor.execute(
             "INSERT INTO GlobalChatChannel VALUES (%s, %s);",
@@ -75,7 +77,7 @@ class DataManager(DatabaseManager):
         "すでにグローバルチャットが存在するか確認します。"
         await cursor.execute(
             "SELECT * FROM GlobalChat WHERE Name = %s AND Setting = %s;",
-            (name, {"password": password})
+            (name, dumps({"password": password}))
         )
         return bool(await cursor.fetchone())
 
@@ -184,7 +186,7 @@ class GlobalChat(Cog):
 
     @globalchat.command(
         description="Disconnect from globalchat",
-        aliases=("remove", "rm", ")
+        aliases=("remove", "rm", "退出")
     )
     async def leave(self, ctx):
         await self.data.disconnect(ctx.channel.id)
@@ -213,7 +215,7 @@ class GlobalChat(Cog):
     async def on_message(self, message):
         if message.author.bot:
             return
-        if not await self.data.is_connected(message.channel):
+        if not await self.data.is_connected(message.channel.id):
             return
         async for channel in self.data.get_all_channel(
             await self.data.get_name(message.channel.id)
@@ -229,7 +231,7 @@ class GlobalChat(Cog):
                 )
             await webhook.send(
                 message.clean_content,
-                username=f"{message.author.display_name}({message.author.id}",
+                username=f"{message.author.display_name}({message.author.id})",
                 avatar_url=getattr(message.author.avatar, "url", None)
             )
 
