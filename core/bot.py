@@ -94,7 +94,7 @@ class RT(commands.Bot):
             pr.append(p)
         if p := self.prefixes["User"].get(message.author.id, ""):
             pr.append(p)
-        return p
+        return pr
 
     def print(self, *args, **kwargs) -> None:
         "ログ出力をします。"

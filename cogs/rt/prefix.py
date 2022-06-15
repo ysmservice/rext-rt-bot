@@ -76,7 +76,7 @@ class Prefix(Cog):
         *, prefix: Optional[str] = None
     ):
         await ctx.typing()
-        await self.data.prepare_table()
+
         if mode == "guild":
             if not ctx.guild or not isinstance(ctx.author, discord.Member):
                 raise commands.NoPrivateMessage()
@@ -84,24 +84,20 @@ class Prefix(Cog):
                 raise commands.MissingPermissions(["administrator"])
 
         await self.data.set(
-            "User" if mode == "user" else "Guild",
-            getattr(ctx, "guild" if mode == "server" else "author").id, prefix
-        ) # type: ignore
+            "User" if mode == "user" else "Guild", getattr(
+                ctx, "guild" if mode == "server" else "author"
+            ).id, prefix
+        )
 
-        if prefix is None:
-            await ctx.reply(embed=self.embed(
-                description=t(dict(
-                    ja=f"{self.MO_MSG[mode]['ja']}のカスタムプリフィックスを未設定にしました。",
-                    en=f"Unset custom prefixes {self.MO_MSG[mode]['en']}."
-                ), ctx)
-            ))
-        else:
-            await ctx.reply(embed=self.embed(
-                description=t(dict(
-                    ja=f"{self.MO_MSG[mode]['ja']}のカスタムプリフィックスを`{prefix}`に設定しました。",
-                    en=f"Custom prefix {self.MO_MSG[mode]['en']} set to `{prefix}`."
-                ), ctx)
-            ))
+        await ctx.reply(embed=self.embed(
+            description=t(dict(
+                ja=f"{self.MO_MSG[mode]['ja']}のカスタムプリフィックスを未設定にしました。",
+                en=f"Unset custom prefixes {self.MO_MSG[mode]['en']}."
+            ) if prefix is None else dict(
+                ja=f"{self.MO_MSG[mode]['ja']}のカスタムプリフィックスを`{prefix}`に設定しました。",
+                en=f"Custom prefix {self.MO_MSG[mode]['en']} set to `{prefix}`."
+            ), ctx)
+        ))
 
     Cog.HelpCommand(prefix) \
         .set_description(
@@ -123,5 +119,5 @@ class Prefix(Cog):
         .merge_headline(ja="カスタムプリフィックスを設定します。")
 
 
-async def setup(bot: RT):
+async def setup(bot: RT) -> None:
     await bot.add_cog(Prefix(bot))
