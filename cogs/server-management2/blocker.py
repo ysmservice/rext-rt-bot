@@ -202,7 +202,7 @@ class Blocker(Cog):
     async def toggle(self, ctx, mode: DataManager.MODES_L):
         result = await self.data.toggle(ctx.guild.id, mode)
         if isinstance(result, tuple):
-            await ctx.send(t(dict(
+            return await ctx.send(t(dict(
                 ja="全機能の設定を反転しました。",
                 en="Inverted settings of all blocker."
             ), ctx))
