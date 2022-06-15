@@ -1,21 +1,21 @@
 # RT - blocker
 
+from __future__ import annotations
+
 from typing import Literal, TypeAlias
 
 from discord.ext import commands
-from discord import app_commands
 import discord
 
 from collections import defaultdict
 from re import findall
-import emoji
+
+from core import Cog, DataBaseManager, cursor, RT
+from core.views import EmbedPage
 
 from rtlib.common.json import loads, dumps
 
 from data import ADD_ALIASES, REMOVE_ALIASES, FORBIDDEN
-
-from core import Cog, DataBaseManager, cursor, RT
-from core.views import EmbedPage
 
 from .__init__ import FSPARENT
 
@@ -23,8 +23,8 @@ from .__init__ import FSPARENT
 class DataManager(DataBaseManager):
 
     MODES = ("emoji", "stamp", "reaction")
-    MODES_CL: TypeAlias = Literal["Emoji", "Stamp", "Reaction"]
-    MODES_L: TypeAlias = Literal["emoji", "stamp", "reaction", "all"]
+    Tables: TypeAlias = Literal["Emoji", "Stamp", "Reaction"]
+    Modes: TypeAlias = Literal["emoji", "stamp", "reaction", "all"]
 
     def __init__(self, cog: Blocker):
         # 設定のonoffだけキャッシュに入れておく。
@@ -44,7 +44,7 @@ class DataManager(DataBaseManager):
                 for row in rows:
                     self.onoff_cache[row[0]][table] = row[1]
 
-    async def toggle(self, guild_id: int, table: MODES_L, **_) -> bool | tuple[bool]:
+    async def toggle(self, guild_id: int, table: Modes, **_) -> bool | tuple[bool]:
         "設定のオンオフを切り替えます。"
         if table == "all":
             return (await self.toggle(guild_id, mo, cursor=cursor) for mo in self.MODES)
@@ -67,7 +67,7 @@ class DataManager(DataBaseManager):
         self.onoff_cache[guild_id][table] = onoff
         return onoff
 
-    async def add_role(self, guild_id: int, table: MODES_L, role_id: int, **_) -> None:
+    async def add_role(self, guild_id: int, table: Modes, role_id: int, **_) -> None:
         "ロールを追加します。"
         if table == "all":
             for mo in ("emoji", "stamp", "reaction"):
@@ -87,8 +87,8 @@ class DataManager(DataBaseManager):
         )
 
     async def remove_role(
-        self, guild_id: int, table: MODES_L, role_id: int, **_
-    ) -> list[MODES_L] | None:
+        self, guild_id: int, table: Modes, role_id: int, **_
+    ) -> list[Modes] | None:
         """ロールを削除します。未設定orそのロールが設定されていない場合はValueErrorを送出します。
         table引数が`all`だった場合には削除に成功したテーブルのリストを返します。"""
         if table == "all":
@@ -111,7 +111,7 @@ class DataManager(DataBaseManager):
         )
 
     async def get_settings(
-        self, guild_id: int, mode: MODES_CL, get_type: str | None = None, **_
+        self, guild_id: int, mode: Tables, get_type: str | None = None, **_
     ) -> tuple:
         "設定を取得します。get_typeが指定されていなければ全て返します。"
         await cursor.execute(
@@ -121,7 +121,7 @@ class DataManager(DataBaseManager):
         )
         return await cursor.fetchone()
 
-    async def get_now_roles(self, guild_id: int, mode: MODES_CL, **_) -> list:
+    async def get_now_roles(self, guild_id: int, mode: Tables, **_) -> list:
         "現在のロール設定を取得します。設定されていない場合は[]です。"
         if (g := guild_id in self.cache.data) and mode in self.cache[guild_id].data:
             return self.cache[guild_id].data[mode]
@@ -154,7 +154,7 @@ class BlockerDeleteReactionEventContect(BlockerDeleteEventContect):
 class Blocker(Cog):
     def __init__(self, bot: RT):
         self.bot = bot
-        self.data = DataManager(bot)
+        self.data = DataManager(self)
 
     MODES_JA = {
         "stamp": "スタンプ",
@@ -166,9 +166,8 @@ class Blocker(Cog):
     async def cog_load(self) -> None:
         await self.data.prepare_table()
 
-    @commands.group(aliases=("block", "ブロッカー"), description="Setting blocker.", fsparent=FSPARENT)
+    @commands.group(aliases=("block", "ブロッカー"), description="Block sending emojj/stamp.", fsparent=FSPARENT)
     @commands.has_guild_permissions(administrator=True)
-    @commands.guild_only()
     async def blocker(self, ctx):
         if ctx.invoked_subcommand: return
 
@@ -197,9 +196,12 @@ class Blocker(Cog):
         m = await ctx.send(embed=embeds[0], view=view)
         view.set_message(m)
 
+    _HELP = Cog.HelpCommand(blocker) \
+        .merge_description("headline", ja="絵文字やスタンプの送信を防止します。")
+
     @blocker.command(description="Toggle blocker.")
-    @app_commands.describe(mode="Blocking type")
-    async def toggle(self, ctx, mode: DataManager.MODES_L):
+    @discord.app_commands.describe(mode=(_c_d := "Blocking type"))
+    async def toggle(self, ctx, mode: DataManager.Modes):
         result = await self.data.toggle(ctx.guild.id, mode)
         if isinstance(result, tuple):
             return await ctx.send(t(dict(
@@ -211,13 +213,27 @@ class Blocker(Cog):
             en=f"{'Enabled' if result else 'Disabled'} {mode} blocker."
         ), ctx))
 
+    _HELP.add_sub(Cog.HelpCommand(toggle)
+        .merge_description("headline", "ブロッカーのオンオフを切り替えます。")
+        .add_arg("mode", "str", ja=(_c_d_ja := "ブロックする種類"), en=_c_d)
+        .set_extra("Notes",
+            ja="modeにallを指定すると全ての種類のブロッカー(絵文字、スタンプ、リアクション)に適用します。\n"
+               "その場合全機能の設定が反転しますので実行は最初に設定を確認してからをお勧めします。\n"
+               "また、全てのコマンドに対して`all`は使用可能です。",
+            en="If `all` set to mode, Changes will be applied to all types of blocker(emoji, stamp, reaction).\n"
+               "In that case, All settings will be inverted so you had better check settings at first.\n"
+               "Also, you can use `all` for all commands."))
+
     @blocker.group(description="Set blocking roles.")
     async def role(self, ctx):
         pass
 
+    _HELP.add_sub(Cog.HelpCommand(role)
+        .merge_description("headline", "ブロックするロールを指定できます。"))
+
     @role.command(aliases=ADD_ALIASES, description="Add Blocking Roles.")
-    @app_commands.describe(mode="Blocking type", role="Adding role")
-    async def add(self, ctx, mode: DataManager.MODES_L, role: discord.Role):
+    @discord.app_commands.describe(mode="Blocking type", role=(_c_d2 := "Adding role"))
+    async def add(self, ctx, mode: DataManager.Modes, role: discord.Role):
         try:
             self.data.add_role(ctx.guild.id, mode, role.id)
         except ValueError as e:
@@ -226,9 +242,14 @@ class Blocker(Cog):
             )))
         await ctx.send("Ok")
 
+    _HELP.add_sub(Cog.HelpCommand(add)
+        .merge_description("headline", "ブロックするロールを追加できます。")
+        .add_arg("mode", "str", ja=_c_d_ja, en=_c_d)
+        .add_arg("role", "Role", ja="追加するロール", en=_c_d2))
+
     @role.command(aliases=REMOVE_ALIASES, description="Remove Blocking Roles.")
-    @app_commands.describe(mode="Blocking type", role="Removing role")
-    async def remove(self, ctx, mode: DataManager.MODES_L, role: discord.Role):
+    @discord.app_commands.describe(mode="Blocking type", role=(_c_d2 := "Removing role"))
+    async def remove(self, ctx, mode: DataManager.Modes, role: discord.Role):
         try:
             result = self.data.remove_role(ctx.guild.id, mode, role.id)
         except ValueError as e:
@@ -245,7 +266,12 @@ class Blocker(Cog):
         else:
             await ctx.send("Ok")
 
-    @commands.Cog.listener()
+    _HELP.add_sub(Cog.HelpCommand(remove)
+        .merge_description("headline", "ブロックするロールを削除します。")
+        .add_arg("mode", "str", ja=_c_d_ja, en=_c_d)
+        .add_arg("role", "Role", ja="削除するロール", en=_c_d2))
+
+    @Cog.listener()
     async def on_message(self, message: discord.Message):
         if (not message.guild or message.author.bot or not isinstance(message.author, discord.Member)
             or message.guild.id not in self.data.onoff_cache
@@ -302,7 +328,7 @@ class Blocker(Cog):
                         stamp=c
                 ))
 
-    @commands.Cog.listener()
+    @Cog.listener()
     async def on_reaction_add(self, reaction):
         if (not reaction.guild or reaction.author.bot or not isinstance(reaction.author, discord.Member)
             or reaction.guild.id not in self.data.onoff_cache
@@ -323,6 +349,8 @@ class Blocker(Cog):
                     self.blocker, channel=reaction.message.channel, message=reaction.message, 
                     member=reaction.author, reaction=reaction
             ))
+    
+    del _HELP, _c_d, _c_d2, _c_d_ja
 
 
 async def setup(bot: RT):
