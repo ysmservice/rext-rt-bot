@@ -1,5 +1,7 @@
 # RT - server-tool global
 
+from typing import Dict, Any
+
 from collections.abc import AsyncIterator
 from functools import partial
 
@@ -18,14 +20,14 @@ class DataManager(DatabaseManager):
         self.pool = bot.pool
         self.bot = bot
 
-    async def connect(self, name: str, channelid: int) -> None:
+    async def connect(self, name: str, channelid: int, password) -> None:
         "グローバルチャットに接続します。"
         await cursor.execute(
             "INSERT INTO GlobalChat VALUES (%s, %s);", (name, channelid)
         )
 
     async def create_chat(
-        self, name: str, channelid: int
+        self, name: str, channelid: int, settings: Dict[str, Any]
     ) -> bool:
         "主にグローバルチャットを作るために使います。"
         await cursor.execute(
@@ -35,8 +37,8 @@ class DataManager(DatabaseManager):
         if (await cursor.fetchone()) is not None:
             return False
         await cursor.execute(
-            "INSERT INTO GlobalChat VALUES (%s, %s);",
-            (name, channel.id)
+            "INSERT INTO GlobalChat VALUES (%s, %s, %s);",
+            (name, channel.id, settings)
         )
         return True
 
@@ -58,15 +60,15 @@ class DataManager(DatabaseManager):
             "SELECT * FROM GlobalChat WHERE ChannelId = %s;",
             (channel.id,)
         )
-        return (await cursor.fetchone()) is not None
+        return bool(await cursor.fetchone())
 
-    async def check_exists(self, name: str) -> bool:
+    async def check_exists(self, name: str, password: str = None) -> bool:
         "すでにグローバルチャットが存在するか確認します。"
         await cursor.execute(
-            "SELECT * FROM GlobalChat WHERE Name = %s;",
-            (name,)
+            "SELECT * FROM GlobalChat WHERE Name = %s AND Setting = %s;",
+            (name, {"password": password})
         )
-        return (await cursor.fetchone()) is not None
+        return bool(await cursor.fetchone())
 
     async def get_all_channel(
         self, name: str
@@ -79,7 +81,7 @@ class DataManager(DatabaseManager):
         for _, channelid in await cursor.fetchall():
             channel = await loop.run_in_executor(None, self.bot.get_channel, partial(channelid))
             if channel is None:
-                await self.disconnect(channel)
+                await self.disconnect(channel, cursor=cursor)
             else:
                 yield channel
 
@@ -92,7 +94,7 @@ class DataManager(DatabaseManager):
         if row := await cursor.fetchone():
             return row[0]
 
-    async def disconnect(self, channelid: int) -> None:
+    async def disconnect(self, channelid: int, **kwargs) -> None:    
         "グローバルチャットから接続をやめます"
         await cursor.execute(
             "DELETE FROM GlobalChat WHERE ChannelId = %s;", (channelid,)
@@ -134,13 +136,13 @@ class GlobalChat(Cog):
         aliases=("make", "add", "作成")
     )
     @discord.app_commands.describe(name="Global chat name")
-    async def create(self, ctx, name: str = None):
+    async def create(self, ctx, name: str = None, password: str = None):
         if await self.data.is_connected(ctx.channel.id):
             return await ctx.reply(t(dict(
                 en="You connected another one.", ja="もうすでにあなたは接続をしています。"
             ), ctx))
         result = await self.data.create_chat(
-            "default" if name is None else name, ctx.channel.id
+            "default" if name is None else name, ctx.channel.id, {"password": password}
         )
         if result:
             await ctx.reply(t(dict(
@@ -156,13 +158,13 @@ class GlobalChat(Cog):
         aliases=("join", "参加")
     )
     @discord.app_commands.describe(name="Global chat name")
-    async def connect(self, ctx, name: str = None):
+    async def connect(self, ctx, name: str = None, password = None):
         if await self.data.is_connected(ctx.channel.id):
             return await ctx.reply(t(dict(
                 en="You connected another one.", ja="もうすでにあなたは接続をしています。"
             ), ctx))
         name = "default" if name is None else name
-        if not (await self.data.check_exists(name)):
+        if not await self.data.check_exists(name, password):
             return await ctx.reply(t(dict(
                 en="Not found", ja="見つかりませんでした。"
             ), ctx))
