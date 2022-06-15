@@ -26,10 +26,11 @@ class DataManager(DataBaseManager):
     MODES_CL: TypeAlias = Literal["Emoji", "Stamp", "Reaction"]
     MODES_L: TypeAlias = Literal["emoji", "stamp", "reaction", "all"]
 
-    def __init__(self, bot: RT):
-        self.bot = bot
+    def __init__(self, cog: Blocker):
         # 設定のonoffだけキャッシュに入れておく。
+        self.cog = cog
         self.onoff_cache = defaultdict(dict)
+        self.cache = self.cog.bot.cachers.acquire(30.0)  # 荒らし防止用キャッシュ
 
     async def prepare_table(self) -> None:
         "テーブルを準備します。"
@@ -121,9 +122,13 @@ class DataManager(DataBaseManager):
         return await cursor.fetchone()
 
     async def get_now_roles(self, guild_id: int, mode: MODES_CL, **_) -> list:
-        "現在のロール設定を取得します。この機能が設定されていない場合は[]です。"
+        "現在のロール設定を取得します。設定されていない場合は[]です。"
+        if (g := guild_id in self.cache.data) and mode in self.cache[guild_id].data:
+            return self.cache[guild_id].data[mode]
         now_roles = self.get_settings(guild_id, mode, "Roles", cursor=cursor)
-        return loads(now_roles[0][0]) if now_roles else []
+        roles = loads(now_roles[0][0]) if now_roles else []
+        self.cache.set(guild_id, {mode: roles} if g else self.cache[guild_id].data + {mode: roles})
+        return roles
 
 
 class BlockerDeleteEventContect(Cog.EventContext):
@@ -140,6 +145,10 @@ class BlockerDeleteStampEventContect(BlockerDeleteEventContect):
     "ブロッカー機能でスタンプを削除したときのイベントコンテキストです。"
 
     stamp: discord.Sticker | discord.StickerItem | None
+class BlockerDeleteReactionEventContect(BlockerDeleteEventContect):
+    "ブロッカー機能でリアクションを削除したときのイベントコンテキストです。"
+
+    reaction: discord.Reaction | None
 
 
 class Blocker(Cog):
@@ -192,6 +201,11 @@ class Blocker(Cog):
     @app_commands.describe(mode="Blocking type")
     async def toggle(self, ctx, mode: DataManager.MODES_L):
         result = await self.data.toggle(ctx.guild.id, mode)
+        if isinstance(result, tuple):
+            await ctx.send(t(dict(
+                ja="全機能の設定を反転しました。",
+                en="Inverted settings of all blocker."
+            ), ctx))
         await ctx.send(t(dict(
             ja=f"{self.MODES_JA[mode]}を{'有効化' if result else '無効化'}しました。",
             en=f"{'Enabled' if result else 'Disabled'} {mode} blocker."
@@ -233,7 +247,7 @@ class Blocker(Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if (not ctx.guild or message.author.bot or not isinstance(message.author, discord.Member)
+        if (not message.guild or message.author.bot or not isinstance(message.author, discord.Member)
             or message.guild.id not in self.data.onoff_cache
                 or all(not m for m in self.data.onoff_cache[message.guild.id].values())):
             return
@@ -242,7 +256,7 @@ class Blocker(Cog):
             await message.channel.send(t(dict(
                 ja=f"{self.MODES_JA[mode]}の送信はサーバーの管理者により禁止されています。",
                 en=f"Sending {mode} is forbidden by server administrator."
-            )))
+            ), message))
         error = None
         if c := findall(r"<a?:\w+:\d*>", message.content):
             # 絵文字ブロッカー
@@ -287,7 +301,28 @@ class Blocker(Cog):
                         self.blocker, channel=message.channel, message=message, member=message.author,
                         stamp=c
                 ))
-                return
+
+    @commands.Cog.listener()
+    async def on_reaction_add(self, reaction):
+        if (not reaction.guild or reaction.author.bot or not isinstance(reaction.author, discord.Member)
+            or reaction.guild.id not in self.data.onoff_cache
+                or not self.data.onoff_cache[reaction.guild.id].get("reaction", False)):
+            return
+        if any(c in reaction.author.roles 
+            for c in self.data.get_now_roles(reaction.guild.id, "Reaction")
+        ):
+            await reaction.channel.send(t(dict(
+                ja="リアクションの追加はサーバーの管理者により禁止されています。",
+                en="Adding reaction is forbidden by server administrator."
+            ), reaction.author))
+            self.bot.rtevent.dispatch("on_delete_reaction_stamp_blocker",
+                BlockerDeleteReactionEventContect(
+                    self.bot, reaction.guild, self.detail_or(error),
+                    {"ja": "スタンプブロッカー", "en": "Stamp blocker"},
+                    {"ja": f"ユーザー:{reaction.author}", "en": f"User: {reaction.author}"},
+                    self.blocker, channel=reaction.message.channel, message=reaction.message, 
+                    member=reaction.author, reaction=reaction
+            ))
 
 
 async def setup(bot: RT):
