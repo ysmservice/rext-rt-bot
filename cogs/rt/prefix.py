@@ -46,9 +46,9 @@ class DataManager(DatabaseManager):
     async def clean(self):
         "お掃除します。"
         for table in ("Guild", "User"):
-            lower = table.lower()
+            lowered = table.lower()
             for id_ in self.bot.prefixes[table]:
-                if not await self.bot.exists(lower, id_):
+                if not await self.bot.exists(lowered, id_):
                     await cursor.execute(
                         f"DELETE FROM {table}Prefix WHERE {table}Id = %s;",
                         (id_,)
