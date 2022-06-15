@@ -87,10 +87,10 @@ class DataManager(DatabaseManager):
     async def get_all_channel(self, name: str) -> AsyncIterator[discord.TextChannel]:
         "グローバルチャットに接続しているチャンネルを名前使って全部取得します。"
         await cursor.execute(
-            "SELECT * FROM GlobalChatChannel WHERE Name = %s;",
+            "SELECT ChannelId FROM GlobalChatChannel WHERE Name = %s;",
             (name,)
         )
-        for _, channel_id in await cursor.fetchall():
+        for channel_id in await cursor.fetchall():
             channel = self.bot.get_channel(channel_id)
             if channel is None:
                 await self.disconnect(channel, cursor=cursor)
