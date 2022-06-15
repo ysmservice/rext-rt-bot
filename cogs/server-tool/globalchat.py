@@ -122,7 +122,6 @@ class DataManager(DatabaseManager):
 
 
 class GlobalChat(Cog):
-
     "グローバルチャットのコグです。"
 
     WEBHOOK_NAME = "rt-globalchat-webhook"
