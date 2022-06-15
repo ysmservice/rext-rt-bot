@@ -7,6 +7,8 @@ from discord import app_commands
 import discord
 
 from collections import defaultdict
+from re import findall
+import emoji
 
 from rtlib.common.json import loads, dumps
 
@@ -148,7 +150,8 @@ class Blocker(Cog):
     MODES_JA = {
         "stamp": "スタンプ",
         "emoji": "絵文字",
-        "reaction": "リアクション"
+        "reaction": "リアクション",
+        "all": "すべての"
     }
 
     async def cog_load(self) -> None:
@@ -174,7 +177,7 @@ class Blocker(Cog):
             ), ctx))
 
             if not se or se[0][0]:
-                continue
+                continue  # 設定されていなかった場合。
             embed.add_field(
                 name=t({"ja": "設定済みロール", "en": "Setting Roles"}, ctx),
                 value=", ".join(ctx.guild.get_role(r).mention for r in se[0][1]) or "..."
@@ -229,11 +232,20 @@ class Blocker(Cog):
             await ctx.send("Ok")
 
     @commands.Cog.listener()
-    async def on_message(self, message):
-        if not ctx.guild or message.author.bot or \
-                message.guild.id not in self.data.onoff_cache:
+    async def on_message(self, message: discord.Message):
+        if (not ctx.guild or message.author.bot or not isinstance(message.author, discord.Member)
+            or message.guild.id not in self.data.onoff_cache
+                or all(not m for m in self.data.onoff_cache[message.guild.id].values())):
             return
-        pass
+        if c := findall(emoji.get_emoji_regexp(), message.content):
+            # 絵文字ブロッカー
+            if self.data.onoff_cache[message.guild.id].get("emoji", False):
+                try:
+                    await message.delete()
+                except:
+                    pass
+                else:
+                    pass
 
 
 async def setup(bot: RT):
