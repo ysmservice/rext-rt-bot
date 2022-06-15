@@ -7,9 +7,9 @@ from collections.abc import AsyncIterator
 import discord
 from discord.ext import commands
 
-from rtlib.common.json import dumps
-
 from core import Cog, RT, t, DatabaseManager, cursor
+
+from rtlib.common.json import dumps
 
 from .__init__ import FSPARENT
 
