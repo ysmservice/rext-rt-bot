@@ -90,7 +90,7 @@ class DataManager(DatabaseManager):
             "SELECT ChannelId FROM GlobalChatChannel WHERE Name = %s;",
             (name,)
         )
-        for channel_id in await cursor.fetchall():
+        for (channel_id,) in await cursor.fetchall():
             channel = self.bot.get_channel(channel_id)
             if channel is None:
                 await self.disconnect(channel, cursor=cursor)
@@ -194,19 +194,15 @@ class GlobalChat(Cog):
 
     _help = (Cog.HelpCommand(globalchat)
         .merge_description("headline", ja="グローバルチャット関連です。"))
-    
     _help.add_sub(Cog.HelpCommand(create)
         .merge_description("headline", ja="グローバルチャットを作成します。")
         .add_arg("name", "str", "Optional",
             ja="グローバルチャット名", en="Globalchat name"))
-    
     _help.add_sub(Cog.HelpCommand(connect)
         .merge_description("headline", ja="グローバルチャットに接続します。")
         .add_arg("name", "str", "Optional",
             ja="グローバルチャット名", en="GlobalChat name"))
-    
     _help.add_sub(Cog.HelpCommand(leave).merge_description("headline", ja="グローバルチャットから退出します。"))
-    
     del _help
 
     @Cog.listener("on_message")
