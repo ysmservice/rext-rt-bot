@@ -45,7 +45,8 @@ class DataManager(DatabaseManager):
     async def connect(self, name: str, channelid: int) -> None:
         "グローバルチャットに接続します。"
         await cursor.execute(
-            "INSERT INTO GlobalChatChannel VALUES (%s, %s);", (name, channelid)
+            "INSERT INTO GlobalChatChannel VALUES (%s, %s);",
+            (name, channelid)
         )
 
     async def create_chat(
