@@ -106,7 +106,7 @@ class DataManager(DatabaseManager):
         if row := await cursor.fetchone():
             return row[0]
 
-    async def disconnect(self, channel_id: int, **kwargs) -> None:    
+    async def disconnect(self, channel_id: int, **kwargs) -> None:
         "グローバルチャットから接続をやめます"
         await cursor.execute(
             "DELETE FROM GlobalChatChannel WHERE ChannelId = %s;",
@@ -193,16 +193,17 @@ class GlobalChat(Cog):
         ), ctx))
 
     _help = (Cog.HelpCommand(globalchat)
-        .merge_description("headline", ja="グローバルチャット関連です。"))
+             .merge_description("headline", ja="グローバルチャット関連です。"))
     _help.add_sub(Cog.HelpCommand(create)
-        .merge_description("headline", ja="グローバルチャットを作成します。")
-        .add_arg("name", "str", "Optional",
-            ja="グローバルチャット名", en="Globalchat name"))
+                  .merge_description("headline", ja="グローバルチャットを作成します。")
+                  .add_arg("name", "str", "Optional",
+                           ja="グローバルチャット名", en="Globalchat name"))
     _help.add_sub(Cog.HelpCommand(connect)
-        .merge_description("headline", ja="グローバルチャットに接続します。")
-        .add_arg("name", "str", "Optional",
-            ja="グローバルチャット名", en="GlobalChat name"))
-    _help.add_sub(Cog.HelpCommand(leave).merge_description("headline", ja="グローバルチャットから退出します。"))
+                  .merge_description("headline", ja="グローバルチャットに接続します。")
+                  .add_arg("name", "str", "Optional",
+                           ja="グローバルチャット名", en="GlobalChat name"))
+    _help.add_sub(Cog.HelpCommand(leave).merge_description(
+        "headline", ja="グローバルチャットから退出します。"))
     del _help
 
     @Cog.listener("on_message")
