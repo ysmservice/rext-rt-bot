@@ -61,7 +61,7 @@ class DataManager(DatabaseManager):
             for row in rows:
                 yield row[0]
 
-    async def get_all_guilds_setting(self) -> AsyncIterator[tuple[int]]:
+    async def get_all_guilds(self) -> AsyncIterator[tuple[int]]:
         "全サーバーの設定を抽出します。"
         async for rows in self.fetchstep(cursor, "SELECT * FROM GBanSetting;"):
             for row in rows:
@@ -80,6 +80,18 @@ class DataManager(DatabaseManager):
                 ON DUPLICATE KEY UPDATE Enabled = %s;""",
             (guild_id, onoff, onoff)
         )
+
+    async def clean(self) -> None:
+        "データを掃除します。"
+        for table in ("GBanSetting", "GlobalBan"):
+            user_or_guild = "User" if table == "GlobalBan" else "Guild"
+            lowered = user_or_guild.lower()
+            async for id_ in getattr(self, f"get_all_{lowered}")():
+                if not await self.bot.exists(lowered, id_):
+                    await cursor.execute(
+                        f"DELETE FROM {table} WHERE {user_or_guild}Id = %s;",
+                        (id_,)
+                    )
 
 
 class GBan(Cog):
