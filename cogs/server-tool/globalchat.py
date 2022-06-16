@@ -2,6 +2,7 @@
 
 from typing import TypedDict
 
+import io
 from collections.abc import AsyncIterator
 
 import discord
@@ -226,10 +227,19 @@ class GlobalChat(Cog):
                 webhook = await channel.create_webhook(
                     name=self.WEBHOOK_NAME
                 )
+            files = []
+            if len(message.attachments) > 0:
+                for attachment in message.attachments:
+                    async with self.bot.session.get(attachment.url) as resp:
+                        files.append(discord.File(
+                            io.BytesIO(await resp.read()),
+                            attachment.filename
+                        ))
             await webhook.send(
                 message.clean_content,
                 username=f"{message.author.display_name}({message.author.id})",
-                avatar_url=getattr(message.author.avatar, "url", None)
+                avatar_url=getattr(message.author.avatar, "url", None),
+                files=files
             )
 
 
