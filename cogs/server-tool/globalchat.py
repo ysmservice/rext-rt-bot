@@ -3,6 +3,7 @@
 from typing import TypedDict
 
 import io
+import asyncio
 from collections.abc import AsyncIterator
 
 import discord
