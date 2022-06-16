@@ -1,10 +1,10 @@
 # RT - server-tool global
 
 from typing import TypedDict
+from collections.abc import AsyncIterator
 
 import io
 import asyncio
-from collections.abc import AsyncIterator
 
 import discord
 from discord.ext import commands
