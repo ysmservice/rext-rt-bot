@@ -228,7 +228,7 @@ class GlobalChat(Cog):
     del _help
 
     @Cog.listener("on_message")
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         if message.author.bot:
             return
         if not await self.data.is_connected(message.channel.id):
