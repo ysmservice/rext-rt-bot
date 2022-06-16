@@ -193,7 +193,7 @@ class Blocker(Cog):
             embeds.append(embed)
 
         view = EmbedPage(embeds)
-        m = await ctx.send(embed=embeds[0], view=view)
+        m = await ctx.reply(embed=embeds[0], view=view)
         view.set_message(m)
 
     _HELP = Cog.HelpCommand(blocker) \
@@ -204,11 +204,11 @@ class Blocker(Cog):
     async def toggle(self, ctx, mode: DataManager.Modes):
         result = await self.data.toggle(ctx.guild.id, mode)
         if isinstance(result, tuple):
-            return await ctx.send(t(dict(
+            return await ctx.reply(t(dict(
                 ja="全機能の設定を反転しました。",
                 en="Inverted settings of all blocker."
             ), ctx))
-        await ctx.send(t(dict(
+        await ctx.reply(t(dict(
             ja=f"{self.MODES_JA[mode]}を{'有効化' if result else '無効化'}しました。",
             en=f"{'Enabled' if result else 'Disabled'} {mode} blocker."
         ), ctx))
@@ -237,10 +237,10 @@ class Blocker(Cog):
         try:
             self.data.add_role(ctx.guild.id, mode, role.id)
         except ValueError as e:
-            return await ctx.send(t(dict(
+            return await ctx.reply(t(dict(
                 ja=e.args[0], en="Already set this role or you can't set more."
             )))
-        await ctx.send("Ok")
+        await ctx.reply("Ok")
 
     _HELP.add_sub(Cog.HelpCommand(add)
         .merge_description("headline", "ブロックするロールを追加できます。")
@@ -253,18 +253,18 @@ class Blocker(Cog):
         try:
             result = self.data.remove_role(ctx.guild.id, mode, role.id)
         except ValueError as e:
-            return await ctx.send(t(dict(
+            return await ctx.reply(t(dict(
                 ja=e.args[0], en="You didn't set the role."
             )))
         if result:
-            await ctx.send(t(dict(
+            await ctx.reply(t(dict(
                 ja=f"{'ブロッカー, '.join(self.MODES_JA[mode] for mode in result)}ブロッカーのそのロールの設定を解除しました。"
                    if len(result) != 0 else "どのブロッカーもそのロールは設定していませんでした。",
                 en=f"Removed that role setting of {' blocker, '.join(self.MODES_JA[mode] for mode in result)}blocker."
                    if len(result) != 0 else "Any type of blocker didn't set the role."
             )))
         else:
-            await ctx.send("Ok")
+            await ctx.reply("Ok")
 
     _HELP.add_sub(Cog.HelpCommand(remove)
         .merge_description("headline", "ブロックするロールを削除します。")
@@ -282,7 +282,7 @@ class Blocker(Cog):
             await message.channel.send(t(dict(
                 ja=f"{self.MODES_JA[mode]}の送信はサーバーの管理者により禁止されています。",
                 en=f"Sending {mode} is forbidden by server administrator."
-            ), message))
+            ), message), delete_after=5.0)
         error = None
         if c := findall(r"<a?:\w+:\d*>", message.content):
             # 絵文字ブロッカー
@@ -340,7 +340,7 @@ class Blocker(Cog):
             await reaction.channel.send(t(dict(
                 ja="リアクションの追加はサーバーの管理者により禁止されています。",
                 en="Adding reaction is forbidden by server administrator."
-            ), reaction.author))
+            ), reaction.author), delete_after=5.0)
             self.bot.rtevent.dispatch("on_delete_reaction_stamp_blocker",
                 BlockerDeleteReactionEventContect(
                     self.bot, reaction.guild, self.detail_or(error),
