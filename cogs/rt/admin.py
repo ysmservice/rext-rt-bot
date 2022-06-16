@@ -105,6 +105,14 @@ class Admin(Cog):
         embed.add_field(name="Tasks", value=len(all_tasks()))
         await ctx.reply(embed=embed)
 
+    @admin.command(aliases=("mod_globalban", "グローバルバン操作"), description="Modify gban user.")
+    @discord.app_commands.describe(mode="Add or Remove", user="User ID")
+    async def mod_gban(self, ctx, mode: Literal["add", "remove"], user_id: int):
+        await ctx.typing()
+        assert self.bot.cogs["GBan"]
+        result = await getattr(self.bot.cogs["GBan"].data, f"{mode}_user")(user_id)
+        await ctx.reply(f"Ok Status: `{'succeeded' if result else 'failed'}`")
+
 
 async def setup(bot):
     await bot.add_cog(Admin(bot))

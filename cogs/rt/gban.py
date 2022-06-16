@@ -28,10 +28,24 @@ class DataManager(DatabaseManager):
             )"""
         )
 
-    async def add_user(self, user_id: int) -> None:
+    async def add_user(self, user_id: int) -> bool:
         "ユーザーを追加します。"
-        if not await is_exists(user_id, cursor=cursor):
+        if not await self.is_user_exists(user_id, cursor=cursor):
             await cursor.execute("INSERT INTO GlobalBan VALUES (%s);", (user_id,))
+            return True
+        else:
+            return False
+
+    async def remove_user(self, user_id: int) -> bool:
+        "ユーザーを削除します。"
+        if await self.is_user_exists(user_id, cursor=cursor):
+            await cursor.execute(
+                "DELETE FROM GlobalBan WHERE UserId = %s;",
+                (user_id,)
+            )
+            return True
+        else:
+            return False
 
     async def is_user_exists(self, user_id: int, **_) -> bool:
         "ユーザーがデータ内に存在するか調べます。"
@@ -41,19 +55,26 @@ class DataManager(DatabaseManager):
         )
         return bool(await cursor.fetchone())
 
-    async def get_all_users(self) -> AsyncIterator[tuple[int]]:
+    async def get_all_users(self) -> AsyncIterator[int]:
         "データベース内に存在する全ユーザーを検索します。"
-        async for rows in self.fetchstep(cursor, "SELECT * FROM GlobalBan;"):
+        async for rows in self.fetchstep(cursor, "SELECT UserId FROM GlobalBan;"):
+            for row in rows:
+                yield row[0]
+
+    async def get_all_guilds_setting(self) -> AsyncIterator[tuple[int]]:
+        "全サーバーの設定を抽出します。"
+        async for rows in self.fetchstep(cursor, "SELECT * FROM GBanSetting;"):
             for row in rows:
                 yield row
-    
+
     async def toggle_gban(self, guild_id) -> bool:
         "サーバーのGBAN機能のオンオフを切り替えます。"
         await cursor.execute(
             "SELECT Enabled FROM GBanSetting WHERE GuildId = %s LIMIT 1;",
             (guild_id,)
         )
-        onoff = False if not (r := await cursor.fetchone()) else not r[0]
+        onoff = False if not (r := await cursor.fetchone()) else not r[0][0]
+        # データがなければ(デフォルトONなら)False、あればその値を反転
         await cursor.execute(
             """INSERT INTO GBanSetting VALUES (%s, %s)
                 ON DUPLICATE KEY UPDATE Enabled = %s;""",
@@ -70,20 +91,20 @@ class GBan(Cog):
     async def cog_load(self) -> None:
         await self.data.prepare_table()
 
-    @commands.command(description="Toggle gban(default true).")
+    @commands.command(description="Toggle gban(default ON).")
     async def gban(self, ctx):
         await ctx.typing()
-        result = True
+        result = await self.data.toggle_gban(ctx.guild.id)
         await ctx.reply(t(dict(
             ja=f"GBANの設定を{'オン' if result else 'オフ'}にしました。",
             en=f"{'Enabled' if result else 'Disabled'} GBAN setting."
         )))
 
-    @commands.command(description="Check User Gbanned")
-    @discord.app_commands.describe(user=(_c_d := "Check user"))
-    async def check(self, ctx, user: discord.User):
+    @commands.command(description="Check if user is Gbanned")
+    @discord.app_commands.describe(user=(_c_d := "Target user"))
+    async def check(self, ctx, user: discord.User | discord.Object):
         await ctx.typing()
-        result = True
+        result = self.data.is_user_exists(user.id)
         await ctx.reply(t(dict(
             ja=f"その人はGBANリストに入っていま{'す' if result else 'せん'}。",
             en=f"The user is {'not ' if not result else ''}found in Gban users."
