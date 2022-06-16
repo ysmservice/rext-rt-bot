@@ -10,7 +10,7 @@ from discord.ext import commands
 
 from core import Cog, RT, t, DatabaseManager, cursor
 
-from rtlib.common.json import dumps
+from rtlib.common.json import dumps, loads
 
 from .__init__ import FSPARENT
 
@@ -29,12 +29,12 @@ class DataManager(DatabaseManager):
     async def prepare_table(self) -> None:
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS GlobalChat(
-                Name TEXT, AuthorId BIGINT PRIMARY KEY NOT NULL, Setting JSON
+                Name TEXT, AuthorId BIGINT, Setting JSON
             );"""
         )
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS GlobalChatMessage(
-                Source BIGINT, ChannelId BIGINT, MessageId BIGINT
+                Source BIGINT, ChannelId BIGINT PRIMARY KEY NOT NULL, MessageId BIGINT
             );"""
         )
         await cursor.execute(
@@ -78,13 +78,23 @@ class DataManager(DatabaseManager):
         )
         return bool(await cursor.fetchone())
 
-    async def check_exists(self, name: str, password: str | None = None) -> bool:
+    async def check_exists(self, name: str) -> bool:
         "すでにグローバルチャットが存在するか確認します。"
         await cursor.execute(
-            "SELECT * FROM GlobalChat WHERE Name = %s AND Setting = %s;",
-            (name, dumps({"password": password}))
+            "SELECT * FROM GlobalChat WHERE Name = %s;",
+            (name)
         )
         return bool(await cursor.fetchone())
+
+    async def check_password(self, name: str, password: str | None) -> bool | None:
+        "パスワードを確認します。"
+        await cursor.execute(
+            "SELECT Setting FROM GlobalChat WHERE Name = %s;",
+            (name,)
+        )
+        if row := await cursor.fetchone():
+            setting = loads(row[0])
+            return setting["password"] == password
 
     async def get_all_channel(self, name: str) -> AsyncIterator[discord.TextChannel]:
         "グローバルチャットに接続しているチャンネルを名前使って全部取得します。"
@@ -175,9 +185,13 @@ class GlobalChat(Cog):
             return await ctx.reply(t(dict(
                 en="You connected another one.", ja="もうすでにあなたは接続をしています。"
             ), ctx))
-        if not await self.data.check_exists(name, password):
+        if not await self.data.check_exists(name):
             return await ctx.reply(t(dict(
                 en="Not found", ja="見つかりませんでした。"
+            ), ctx))
+        if not await self.data.check_password(name, password):
+            return await ctx.reply(t(dict(
+                en="Wrong password", ja="パスワードが間違っています。"
             ), ctx))
         await self.data.connect(name, ctx.channel.id)
         await ctx.reply(t(dict(
