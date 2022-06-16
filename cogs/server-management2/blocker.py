@@ -10,7 +10,7 @@ import discord
 from collections import defaultdict
 from re import findall
 
-from core import Cog, DataBaseManager, cursor, RT
+from core import Cog, DatabaseManager, cursor, RT
 from core.views import EmbedPage
 
 from rtlib.common.json import loads, dumps
@@ -20,7 +20,7 @@ from data import ADD_ALIASES, REMOVE_ALIASES, FORBIDDEN
 from .__init__ import FSPARENT
 
 
-class DataManager(DataBaseManager):
+class DataManager(DatabaseManager):
 
     MODES = ("emoji", "stamp", "reaction")
     Tables: TypeAlias = Literal["Emoji", "Stamp", "Reaction"]
