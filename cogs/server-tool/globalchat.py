@@ -34,7 +34,8 @@ class DataManager(DatabaseManager):
         )
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS GlobalChatMessage(
-                Source BIGINT, ChannelId BIGINT PRIMARY KEY NOT NULL, MessageId BIGINT
+                Source BIGINT, ChannelId BIGINT PRIMARY KEY NOT NULL,
+                MessageId BIGINT
             );"""
         )
         await cursor.execute(
@@ -86,7 +87,9 @@ class DataManager(DatabaseManager):
         )
         return bool(await cursor.fetchone())
 
-    async def check_password(self, name: str, password: str | None) -> bool | None:
+    async def check_password(
+        self, name: str, password: str | None
+    ) -> bool | None:
         "パスワードを確認します。"
         await cursor.execute(
             "SELECT Setting FROM GlobalChat WHERE Name = %s;",
@@ -96,7 +99,9 @@ class DataManager(DatabaseManager):
             setting = loads(row[0])
             return setting["password"] == password
 
-    async def get_all_channel(self, name: str) -> AsyncIterator[discord.TextChannel]:
+    async def get_all_channel(
+        self, name: str
+    ) -> AsyncIterator[discord.TextChannel]:
         "グローバルチャットに接続しているチャンネルを名前使って全部取得します。"
         await cursor.execute(
             "SELECT ChannelId FROM GlobalChatChannel WHERE Name = %s;",
