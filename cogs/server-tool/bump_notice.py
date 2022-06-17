@@ -39,7 +39,7 @@ class DataManager(DatabaseManager):
         )
         return bool(await cursor.fetchone())
 
-    async def toggle(self, mode: Modes, guild_id: int) -> bool:
+    async def toggle(self, mode: Modes, guild_id: int, **_) -> bool:
         "設定のオンオフを切り替えます。結果がboolになって返ります。"
         if await self.should_notice(mode, guild_id, cursor=cursor):
             await cursor.execute(
@@ -52,6 +52,14 @@ class DataManager(DatabaseManager):
             (guild_id,)
         )
         return True
+
+    async def clean(self) -> None:
+        "データを掃除します。"
+        for table in self.TABLES:
+            lowered = table.lower()
+            async for row in self.fetchstep(cursor, f"SELECT * FROM {table}Notice;"):
+                if not await self.cog.bot.exists("guild", row[0]):
+                    await self.toggle(lowered, row[0], cursor=cursor)
 
 
 class BumpNotice(Cog):
