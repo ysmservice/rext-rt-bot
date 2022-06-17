@@ -130,6 +130,17 @@ class DataManager(DatabaseManager):
         self.cache.set(guild_id, {mode: roles} if g else self.cache[guild_id].data + {mode: roles})
         return roles
 
+    async def clean(self):
+        "データを掃除します。"
+        for guild_id in self.onoff_cache:
+            if await self.bot.exists("guild", guild_id):
+                continue
+            for table in ("Emoji", "Stamp", "Reaction"):
+                await cursor.execute(
+                    f"DELETE FROM {table}Blocker WHERE GuildId = %s;",
+                    (guild_id,)
+                )  # 見つからなくても正常に実行されるらしい
+
 
 class BlockerDeleteEventContect(Cog.EventContext):
     "ブロッカー機能で何かを削除したときのベースイベントコンテキストです。"
