@@ -115,6 +115,17 @@ class Admin(Cog):
             if await getattr(self.bot.cogs["GBan"].data, f"{mode}_user")(user_id) 
             else 'failed', "`"))
         )
+        if mode == "add":
+            ignores = list(await self.bot.cogs["GBan"].data.get_all_guilds())
+            for g in self.bot.guilds:
+                if g.id in ignores:
+                    continue
+                try:
+                    await g.ban(discord.Object(id=user_id),
+                        reason="RTグローバルBANのため。"
+                    )
+                except (discord.Forbidden, discord.HTTPException):
+                    pass
 
 
 async def setup(bot):
