@@ -14,6 +14,7 @@ from core import Cog, DatabaseManager, cursor, RT
 from core.views import EmbedPage
 
 from rtlib.common.json import loads, dumps
+from rtlib.common.cacher import Cacher
 
 from data import ADD_ALIASES, REMOVE_ALIASES, FORBIDDEN
 
@@ -30,19 +31,19 @@ class DataManager(DatabaseManager):
         # 設定のonoffだけキャッシュに入れておく。
         self.cog = cog
         self.onoff_cache = defaultdict(dict)
-        self.cache = self.cog.bot.cachers.acquire(30.0)  # 荒らし防止用キャッシュ
+        self.cache: Cacher = self.cog.bot.cachers.acquire(30.0)  # 荒らし防止用キャッシュ
 
     async def prepare_table(self) -> None:
         "テーブルを準備します。"
-        for table in ("Emoji", "Stamp", "Reaction"):
-            await cursor.execute(
-                f"""CREATE TABLE IF NOT EXISTS {table}Blocker(
-                    GuildId BIGINT PRIMARY KEY NOT NULL, Blocking BOOLEAN,
-                    Roles JSON, Exceptions JSON
-                );""")
-            async for rows in self.fetchstep(cursor, f"SELECT GuildId, Blocking FROM {table}Blocker;"):
-                for row in rows:
-                    self.onoff_cache[row[0]][table] = row[1]
+        await cursor.execute(
+            f"""CREATE TABLE IF NOT EXISTS Blocker(
+                GuildId BIGINT PRIMARY KEY NOT NULL,
+                Mode ENUM('emoji', 'stamp', 'reaction'),
+                Blocking BOOLEAN, Roles JSON, Exceptions JSON
+            );"""
+        )
+        async for row in self.fetchstep(cursor, "SELECT GuildId, Mode, Blocking FROM Blocker;"):
+            self.onoff_cache[row[0]][table] = row[1]
 
     async def toggle(self, guild_id: int, table: Modes, **_) -> bool | tuple[bool]:
         "設定のオンオフを切り替えます。"
