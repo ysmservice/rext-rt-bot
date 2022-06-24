@@ -7,6 +7,8 @@ import discord
 
 from core import Cog, t, DatabaseManager, cursor, RT
 
+from data import FORBIDDEN
+
 
 class DataManager(DatabaseManager):
     "GBAN関連のデータを管理するマネージャーです。"
@@ -21,7 +23,6 @@ class DataManager(DatabaseManager):
                 UserId BIGINT PRYMARY KEY NOT NULL
             );"""
         )
-        # GBanのオンオフ切り替え用のデータベースを作成する。
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS GlobalBanSetting (
                 GuildId BIGINT PRYMARY KEY NOT NULL
@@ -53,15 +54,23 @@ class DataManager(DatabaseManager):
         )
         return bool(await cursor.fetchone())
 
-    async def get_all_users(self) -> AsyncIterator[int]:
+    async def is_guild_exists(self, guild_id: int, **_) -> bool:
+        "サーバーがデータ内に存在するか調べます。"
+        await cursor.execute(
+            "SELECT * FROM GlobalBanSetting WHERE GuildId = %s LIMIT 1;",
+            (guild_id,)
+        )
+        return bool(await cursor.fetchone())
+
+    async def get_all_user_ids(self) -> AsyncIterator[int]:
         "データベース内に存在する全ユーザーを検索します。"
         async for row in self.fetchstep(cursor, "SELECT UserId FROM GlobalBan;"):
             yield row[0]
 
-    async def get_all_guilds(self) -> AsyncIterator[tuple[int]]:
-        "全サーバーの設定を抽出します。"
+    async def get_all_guild_ids(self) -> AsyncIterator[int]:
+        "機能を無効化している全サーバーの設定を抽出します。"
         async for row in self.fetchstep(cursor, "SELECT * FROM GlobalBanSetting;"):
-            yield row
+            yield row[0]
 
     async def toggle_gban(self, guild_id) -> bool:
         "サーバーのGBAN機能のオンオフを切り替えます。"
@@ -69,28 +78,35 @@ class DataManager(DatabaseManager):
             "SELECT * FROM GBanSetting WHERE GuildId = %s LIMIT 1;",
             (guild_id,)
         )
-        if not await cursor.fetchone():
-            await cursor.execute(
-                """INSERT INTO GlobalBanSetting VALUES (%s)""",
-                (guild_id,)
-            )
-        else:
+        if await cursor.fetchone():
             await cursor.execute(
                 "DELETE FROM GlobalBanSetting WHERE GuildId = %s;",
                 (guild_id,)
             )
+            return True
+        else:
+            await cursor.execute(
+                "INSERT INTO GlobalBanSetting VALUES (%s);",
+                (guild_id,)
+            )
+            return False
 
     async def clean(self) -> None:
         "データを掃除します。"
-        for table in ("GlobalBanSetting", "GlobalBan"):
-            user_or_guild = "User" if table == "GlobalBan" else "Guild"
-            lowered = user_or_guild.lower()
-            async for id_ in getattr(self, f"get_all_{lowered}")():
+        for table in (("GlobalBanSetting", "Guild"), ("GlobalBan", "User")):
+            column = table[1]
+            lowered = column.lower()
+            async for id_ in getattr(self, f"get_all_{lowered}_ids")():
                 if not await self.bot.exists(lowered, id_):
                     await cursor.execute(
-                        f"DELETE FROM {table} WHERE {user_or_guild}Id = %s;",
+                        f"DELETE FROM {table[0]} WHERE {column}Id = %s;",
                         (id_,)
                     )
+
+class GlobalBanEventContext(Cog.EventContext):
+     "ユーザーをGBANしたときのイベントコンテキストです。"
+
+     member: discord.Member | None
 
 
 class GBan(Cog):
@@ -103,31 +119,66 @@ class GBan(Cog):
     async def cog_load(self) -> None:
         await self.data.prepare_table()
 
-    @commands.group(description="Toggle gban(default ON).")
+    @commands.group(description="GlobalBan commands")
     async def gban(self, ctx):
+        pass
+
+    @gban.command(description="Toggle gban(default ON).")
+    async def toggle(self, ctx)
         await ctx.typing()
         result = await self.data.toggle_gban(ctx.guild.id)
         await ctx.reply(t(dict(
             ja=f"GBANの設定を{'オン' if result else 'オフ'}にしました。",
             en=f"{'Enabled' if result else 'Disabled'} GBAN setting."
-        )))
+        ), ctx))
 
     @gban.command(description="Check if user is Gbanned")
     @discord.app_commands.describe(user=(_c_d := "Target user"))
     async def check(self, ctx, *, user: discord.User | discord.Object):
         await ctx.typing()
-        result = self.data.is_user_exists(user.id)
+        result = await self.data.is_user_exists(user.id)
         await ctx.reply(t(dict(
             ja=f"その人はGBANリストに入っていま{'す' if result else 'せん'}。",
-            en=f"The user is {'not ' if not result else ''}found in Gban users."
-        )))
+            en=f"The user is {'' if result else 'not '}found in Gban users."
+        ), ctx))
+
+    def call_gban_event(
+        self, guild: discord.Guild, error: dict[str, str] | None,
+        member: discord.Member | None
+    ) -> None:
+        "ユーザーをBANしたイベントを呼び出します。"
+        self.bot.rtevent.dispatch("on_global_ban_member", GlobalBanEventContext(
+            self.bot, guild, self.detail_or(error),
+                {"ja": "グローバルBAN", "en": "Global BAN"}, {
+                    "ja": f"ユーザー:{Cog.name_and_id(member) if member else '不明'}",
+                    "en": f"User: {Cog.name_and_id(member) if member else 'unknown'}"
+                }, self.gban, member=member
+        ))
+
+    @Cog.listener()
+    async def on_member_join(self, member: discord.Member):
+        if await self.data.is_guild_exists(member.guild.id):
+            return
+        if await self.data.is_user_exists(member.id):
+            error = None
+            try:
+                await member.ban(reason=t(dict(
+                    ja="RTグローバルBANのため。",
+                    en="for RT global BAN."
+                ), member.guild))
+            except discord.Forbidden:
+                error = FORBIDDEN
+            except discord.HTTPException:
+                error = {"ja": "なんらかのエラーが発生しました。", "en": "Something went wrong."}
+            self.call_gban_event(member.guild, error, member)
 
     Cog.HelpCommand(gban) \
-        .merge_description("headline", ja="GBAN機能のオンオフを変えます(デフォルトはオン)。")
-    Cog.HelpCommand(check) \
-        .merge_description("headline", ja="ユーザーがGBANされているか確認します。") \
-        .add_arg("user", "User", ja="対象のユーザー", en=_c_d)
-
+        .merge_description("headline", ja="GBAN機能です。")
+        .add_sub(Cog.HelpCommand(toggle)
+            .merge_description("headline", ja="GBANのオンオフを変えます(デフォルトはオン)。"))
+        .add_sub(Cog.HelpCommand(check)
+            .merge_description("headline", ja="ユーザーがGBANされているか確認します。")
+            .add_arg("user", "User", ja="対象のユーザー", en=_c_d))
     del _c_d
 
 

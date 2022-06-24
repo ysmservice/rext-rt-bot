@@ -105,27 +105,35 @@ class Admin(Cog):
         embed.add_field(name="Tasks", value=len(all_tasks()))
         await ctx.reply(embed=embed)
 
-    @admin.command(aliases=("globalban", "グローバルバン操作"), description="Modify gban user.")
+    @admin.command(aliases=("globalban", "グローバルBAN"), description="Modify gban user.")
     @discord.app_commands.describe(mode="Add or Remove", user="User ID")
     async def gban(self, ctx, mode: Literal["add", "remove"], user_id: int):
-        await ctx.typing()
+        message = await ctx.reply("GBAN中...")
         assert self.bot.cogs["GBan"]
-        await ctx.reply(
-            "".join(("Ok Status: `", 'succeeded' 
+        await message.edit(content="".join(("Ok: ", 'succeeded' 
             if await getattr(self.bot.cogs["GBan"].data, f"{mode}_user")(user_id) 
-            else 'failed', "`"))
-        )
+            else 'failed')))
         if mode == "add":
-            ignores = list(await self.bot.cogs["GBan"].data.get_all_guilds())
-            for g in self.bot.guilds:
-                if g.id in ignores:
+            unavailable_guild_ids = set(await self.bot.cogs["GBan"].data.get_all_guilds())
+
+            for guild in self.bot.guilds:
+                if guild.id in unavailable_guild_ids:
                     continue
+
+                error = None
                 try:
-                    await g.ban(discord.Object(id=user_id),
-                        reason="RTグローバルBANのため。"
-                    )
-                except (discord.Forbidden, discord.HTTPException):
-                    pass
+                    await guild.ban(discord.Object(user_id), reason=t(dict(
+                            ja="RTグローバルBANのため。",
+                            en="for RT global BAN."
+                    ), guild))
+                except discord.Forbidden:
+                    error = FORBIDDEN
+                except discord.HttpException:
+                    error = {"ja": "なんらかのエラーが発生しました。", "en": "Something went wrong."}
+
+                self.bot.cogs["GBan"].call_gban_event(
+                    guild, error, await self.bot.search_user(user_id)
+                )
 
 
 async def setup(bot):
