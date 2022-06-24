@@ -4,14 +4,15 @@ from __future__ import annotations
 
 from typing import Literal, TypeAlias
 
-from discord.ext import commands
-import discord
-
 from collections import defaultdict
 from re import findall
 
-from core import Cog, DatabaseManager, cursor, RT
-from core.views import EmbedPage
+from discord.ext import commands
+import discord
+
+from core import Cog, DatabaseManager, cursor, RT, t
+
+from rtutil.views import EmbedPage
 
 from rtlib.common.json import loads, dumps
 from rtlib.common.cacher import Cacher
@@ -25,6 +26,7 @@ class DataManager(DatabaseManager):
 
     MODES = ("emoji", "stamp", "reaction", "url")
     Modes: TypeAlias = Literal["emoji", "stamp", "reaction", "url", "all"]
+    MODES: tuple[Modes, Modes, Modes, Modes]
 
     def __init__(self, cog: Blocker):
         # 設定のonoffだけキャッシュに入れておく。
@@ -47,11 +49,11 @@ class DataManager(DatabaseManager):
     async def toggle(self, guild_id: int, mode: Modes, **_) -> bool | tuple[bool, bool, bool]:
         "設定のオンオフを切り替えます。"
         if mode == "all":
-            return (await self.toggle(guild_id, mo, cursor=cursor) for mo in self.MODES)
+            return (await self.toggle(guild_id, mo, cursor=cursor) for mo in self.MODES)  # type: ignore
 
         if guild_id not in self.onoff_cache:
             await cursor.execute(
-                f"INSERT INTO Blocker VALUES (%s, %s, 1, %s, %s)",
+                "INSERT INTO Blocker VALUES (%s, %s, 1, %s, %s)",
                 (guild_id, mode, "[]", "{}")
             )
             self.onoff_cache[guild_id][mode] = True
@@ -68,10 +70,10 @@ class DataManager(DatabaseManager):
     async def add_role(self, guild_id: int, mode: Modes, role_id: int, **_) -> None:
         "ロールを追加します。"
         if mode == "all":
-            await self.add_role(guild_id, mo, role_id, cursor=cursor) for mo in self.MODES
+            for mode in self.MODES: await self.add_role(guild_id, mode, role_id, cursor=cursor)
             return
 
-        if role_id in (now := self.get_now_roles(guild_id, mode, cursor=cursor)) or len(now) > 15:
+        if role_id in (now := await self.get_now_roles(guild_id, mode, cursor=cursor)) or len(now) > 15:
             raise ValueError("既に登録しているまたはこれ以上設定できません。")
 
         await cursor.execute(
@@ -91,10 +93,10 @@ class DataManager(DatabaseManager):
             for mode in self.MODES:
                 try: await self.remove_role(guild_id, mode, role_id, cursor=cursor)
                 except ValueError: pass
-                else: succeed.append(mo)
+                else: succeed.append(mode)
             return succeed
 
-        if not (now := self.get_now_roles(guild_id, mode, cursor=cursor)) or role_id not in now:
+        if not (now := await self.get_now_roles(guild_id, mode, cursor=cursor)) or role_id not in now:
             raise ValueError("そのロールは設定されていません。")
 
         now.remove(guild_id)
@@ -109,7 +111,7 @@ class DataManager(DatabaseManager):
         "設定を取得します。targetsが指定されていなければ全て返します。"
         if mode == "all":
             return (await self.get_settings(guild_id, mo, targets, cursor=cursor)
-                    for mo in self.MODES)
+                    for mo in self.MODES)  # type: ignore
         await cursor.execute(
             f"""SELECT {targets or '*'} FROM Blocker
                 WHERE GuildId = %s AND Mode = %s LIMIT 1;""",
@@ -121,7 +123,7 @@ class DataManager(DatabaseManager):
         "現在のロール設定を取得します。設定されていない場合は[]です。"
         if (g := guild_id in self.cache.data) and mode in self.cache[guild_id].data:
             return self.cache[guild_id].data[mode]
-        now_roles = self.get_settings(guild_id, mode, "Roles", cursor=cursor)
+        now_roles = await self.get_settings(guild_id, mode, "Roles", cursor=cursor)
         roles = loads(now_roles[0][0]) if now_roles else []
         self.cache.set(guild_id, self.cache[guild_id].data + {mode: roles} if g else {mode: roles})
         return roles
@@ -129,7 +131,7 @@ class DataManager(DatabaseManager):
     async def clean(self):
         "データを掃除します。"
         for guild_id in self.onoff_cache:
-            if await self.bot.exists("guild", guild_id):
+            if await self.cog.bot.exists("guild", guild_id):
                 continue
             for mode in self.MODES:
                 await cursor.execute(
@@ -189,7 +191,7 @@ class Blocker(Cog):
             # 今後例外機能を追加する場合はExceptionsを処理する。
 
             embed = Cog.Embed(t(dict(
-                ja=f"{MODES_JA[mo]}ブロッカーの設定", en=f"Settings of {mo} blocker"
+                ja=f"{self.MODES_JA[mo]}ブロッカーの設定", en=f"Settings of {mo} blocker"
             ), ctx), description=t(dict(
                 ja="設定されていません。", en="Not setting."
             ), ctx) if not se else t(dict(
@@ -212,7 +214,7 @@ class Blocker(Cog):
         .merge_description("headline", ja="絵文字やスタンプの送信を防止します。")
 
     @blocker.command(description="Toggle blocker.")
-    @discord.app_commands.describe(mode=(_c_d := "Blocking type"))
+    @discord.app_commands.describe(mode="Blocking type")
     async def toggle(self, ctx, mode: DataManager.Modes):
         result = await self.data.toggle(ctx.guild.id, mode)
         if isinstance(result, tuple):
@@ -226,8 +228,8 @@ class Blocker(Cog):
         ), ctx))
 
     _HELP.add_sub(Cog.HelpCommand(toggle)
-        .merge_description("headline", "ブロッカーのオンオフを切り替えます。")
-        .add_arg("mode", "str", ja=(_c_d_ja := "ブロックする種類"), en=_c_d)
+        .merge_description("headline", ja="ブロッカーのオンオフを切り替えます。")
+        .add_arg("mode", "str", ja=(_c_d_ja := "ブロックする種類"), en=(_c_d := "Blocking type"))
         .set_extra("Notes",
             ja="modeにallを指定すると全ての種類のブロッカー(絵文字、スタンプ、リアクション)に適用します。\n"
                "その場合全機能の設定が反転しますので実行は最初に設定を確認してからをお勧めします。\n"
@@ -241,13 +243,13 @@ class Blocker(Cog):
         pass
 
     _HELP.add_sub(Cog.HelpCommand(role)
-        .merge_description("headline", "ブロックするロールを指定できます。"))
+        .merge_description("headline", ja="ブロックするロールを指定できます。"))
 
     @role.command(aliases=ADD_ALIASES, description="Add Blocking Roles.")
-    @discord.app_commands.describe(mode="Blocking type", role=(_c_d2 := "Adding role"))
+    @discord.app_commands.describe(mode="Blocking type", role="Adding role")
     async def add(self, ctx, mode: DataManager.Modes, role: discord.Role):
         try:
-            self.data.add_role(ctx.guild.id, mode, role.id)
+            await self.data.add_role(ctx.guild.id, mode, role.id)
         except ValueError as e:
             raise Cog.BadRequest(t(dict(
                 ja=e.args[0], en="Already set this role or you can't set more."
@@ -255,15 +257,15 @@ class Blocker(Cog):
         await ctx.reply("Ok")
 
     _HELP.add_sub(Cog.HelpCommand(add)
-        .merge_description("headline", "ブロックするロールを追加できます。")
+        .merge_description("headline", ja="ブロックするロールを追加できます。")
         .add_arg("mode", "str", ja=_c_d_ja, en=_c_d)
-        .add_arg("role", "Role", ja="追加するロール", en=_c_d2))
+        .add_arg("role", "Role", ja="追加するロール", en=(_c_d2 := "Adding role")))
 
     @role.command(aliases=REMOVE_ALIASES, description="Remove Blocking Roles.")
-    @discord.app_commands.describe(mode="Blocking type", role=(_c_d2 := "Removing role"))
+    @discord.app_commands.describe(mode="Blocking type", role="Removing role")
     async def remove(self, ctx, mode: DataManager.Modes, role: discord.Role):
         try:
-            result = self.data.remove_role(ctx.guild.id, mode, role.id)
+            result = await self.data.remove_role(ctx.guild.id, mode, role.id)
         except ValueError as e:
             raise Cog.BadRequest(t(dict(
                 ja=e.args[0], en="The role wasn't set."
@@ -274,14 +276,14 @@ class Blocker(Cog):
                    if len(result) != 0 else "どのブロッカーもそのロールは設定していませんでした。",
                 en=f"Removed that role setting of {' blocker, '.join(self.MODES_JA[mode] for mode in result)}blocker."
                    if len(result) != 0 else "Any type of blocker didn't set the role."
-            )))
+            ), ctx))
         else:
             await ctx.reply("Ok")
 
     _HELP.add_sub(Cog.HelpCommand(remove)
-        .merge_description("headline", "ブロックするロールを削除します。")
+        .merge_description("headline", ja="ブロックするロールを削除します。")
         .add_arg("mode", "str", ja=_c_d_ja, en=_c_d)
-        .add_arg("role", "Role", ja="削除するロール", en=_c_d2))
+        .add_arg("role", "Role", ja="削除するロール", en=_c_d2.replace("Add", "Remov")))
 
     @Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -300,8 +302,8 @@ class Blocker(Cog):
         if c := findall(r"<a?:\w+:\d*>", message.content):
             # 絵文字ブロッカー
             if self.data.onoff_cache[message.guild.id].get("emoji", False) and any(
-                c in message.author.roles 
-                for c in self.data.get_now_roles(message.guild.id, "Emoji")
+                c in message.author.roles
+                for c in await self.data.get_now_roles(message.guild.id, "emoji")
             ):
                 try:
                     await message.delete()
@@ -322,8 +324,8 @@ class Blocker(Cog):
         if c := message.stickers:
             # スタンプブロッカー
             if self.data.onoff_cache[message.guild.id].get("stamp", False) and any(
-                c in message.author.roles 
-                for c in self.data.get_now_roles(message.guild.id, "Stamp")
+                c in message.author.roles
+                for c in await self.data.get_now_roles(message.guild.id, "stamp")
             ):
                 try:
                     await message.delete()
@@ -344,8 +346,8 @@ class Blocker(Cog):
         if c := findall(r"https?://.*", message.content):
             # URLブロッカー
             if self.data.onoff_cache[message.guild.id].get("url", False) and any(
-                c in message.author.roles 
-                for c in self.data.get_now_roles(message.guild.id, "url")
+                c in message.author.roles
+                for c in await self.data.get_now_roles(message.guild.id, "url")
             ):
                 try:
                     await message.delete()
@@ -364,27 +366,36 @@ class Blocker(Cog):
                 ))
 
     @Cog.listener()
-    async def on_reaction_add(self, reaction):
-        if (not reaction.guild or reaction.author.bot or not isinstance(reaction.author, discord.Member)
-            or reaction.guild.id not in self.data.onoff_cache
-                or not self.data.onoff_cache[reaction.guild.id].get("reaction", False)):
+    async def on_reaction_add(
+        self, reaction: discord.Reaction, user: discord.Member | discord.User
+    ):
+        if (not reaction.message.guild or user.bot or not isinstance(user, discord.Member)
+            or reaction.message.guild.id not in self.data.onoff_cache
+                or not self.data.onoff_cache[reaction.message.guild.id].get("reaction", False)):
             return
-        if any(c in reaction.author.roles 
-            for c in self.data.get_now_roles(reaction.guild.id, "reaction")
+        if any(c in user.roles
+            for c in await self.data.get_now_roles(reaction.message.guild.id, "reaction")
         ):
-            await reaction.channel.send(t(dict(
+            error = None
+            try:
+                await reaction.remove(user)
+            except discord.Forbidden:
+                error = FORBIDDEN
+            except discord.HTTPException:
+                error = {"ja": "何らかのエラーが発生しました。", "en": "Something went wrong."}
+            await reaction.message.channel.send(t(dict(
                 ja="リアクションの追加はサーバーの管理者により禁止されています。",
                 en="Adding reaction is forbidden by server administrator."
-            ), reaction.author), delete_after=5.0)
+            ), user), delete_after=5.0)
             self.bot.rtevent.dispatch("on_delete_reaction_stamp_blocker",
                 BlockerDeleteReactionEventContext(
-                    self.bot, reaction.guild, self.detail_or(error),
-                    {"ja": "スタンプブロッカー", "en": "Stamp blocker"},
-                    {"ja": f"ユーザー:{reaction.author}", "en": f"User: {reaction.author}"},
-                    self.blocker, channel=reaction.message.channel, message=reaction.message, 
-                    member=reaction.author, reaction=reaction
+                    self.bot, reaction.message.guild, self.detail_or(error),
+                    {"ja": "リアクションブロッカー", "en": "Reaction blocker"},
+                    {"ja": f"ユーザー:{user}", "en": f"User: {user}"},
+                    self.blocker, channel=reaction.message.channel, message=reaction.message,
+                    member=user, reaction=reaction
             ))
-    
+
     del _HELP, _c_d, _c_d2, _c_d_ja
 
 
