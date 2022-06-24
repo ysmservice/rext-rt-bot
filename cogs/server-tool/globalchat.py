@@ -76,7 +76,7 @@ class DataManager(DatabaseManager):
         )
         return True
 
-    async def is_connected(self, channel_id: int) -> bool:
+    async def is_connected(self, channel_id: int, **_) -> bool:
         "これはすでに接続されているか確認するものです。"
         await cursor.execute(
             "SELECT * FROM GlobalChatChannel WHERE ChannelId = %s;",
@@ -127,7 +127,7 @@ class DataManager(DatabaseManager):
         if row := await cursor.fetchone():
             return row[0]
 
-    async def disconnect(self, channel_id: int, **kwargs) -> None:
+    async def disconnect(self, channel_id: int, **_) -> None:
         "グローバルチャットから接続をやめます"
         await cursor.execute(
             "DELETE FROM GlobalChatChannel WHERE ChannelId = %s;",
