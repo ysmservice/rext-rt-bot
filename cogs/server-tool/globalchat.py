@@ -47,7 +47,7 @@ class DataManager(DatabaseManager):
 
     async def connect(self, name: str, channelid: int) -> None:
         "グローバルチャットに接続します。"
-        if await self.is_connected(channelid):
+        if await self.is_connected(channelid, cursor=cursor):
             raise Cog.BadRequest("You are already connected to this globalchat.")
         await cursor.execute(
             "INSERT INTO GlobalChatChannel VALUES (%s, %s);",
@@ -58,7 +58,7 @@ class DataManager(DatabaseManager):
         self, name: str, author_id: int, channel_id: int, setting: SettingType
     ) -> bool:
         "主にグローバルチャットを作るために使います。"
-        if await self.is_connected(channel_id):
+        if await self.is_connected(channel_id, cursor=cursor):
             raise Cog.BadRequest("You are already connected to globalchat.")
         await cursor.execute(
             "SELECT * FROM GlobalChat WHERE Name = %s;",
