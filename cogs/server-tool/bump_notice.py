@@ -1,14 +1,14 @@
-# RT - bump notice
+# RT - BumpNotice
 
 from __future__ import annotations
 
 from typing import TypeAlias, Literal
 
-from discord.ext import commands
-import discord
-
 from collections import defaultdict
 from time import time
+
+from discord.ext import commands
+import discord
 
 from core import Cog, RT, DatabaseManager, cursor, t
 
@@ -16,7 +16,7 @@ from core import Cog, RT, DatabaseManager, cursor, t
 class DataManager(DatabaseManager):
     "Bump/up通知の設定データを管理します。"
 
-    TABLES = ("Bump", "Up")
+    MODES = ("bump", "up")
     Modes: TypeAlias = Literal["bump", "up"]
 
     def __init__(self, cog: BumpNotice):
@@ -24,42 +24,42 @@ class DataManager(DatabaseManager):
 
     async def prepare_table(self) -> None:
         "テーブルを準備します。"
-        for table in self.TABLES:
-            await cursor.execute(
-                f"""CREATE TABLE IF NOT EXISTS {table}Notice(
-                    GuildId BIGINT NOT NULL PRIMARY KEY
-                );"""
-            )
+        await cursor.execute(
+            """CREATE TABLE IF NOT EXISTS BumpNotice(
+                GuildId BIGINT NOT NULL, Mode Enum('bump', 'up') NOT NULL,
+                PRIMARY KEY (GuildId, Mode)
+            );"""
+        )
 
-    async def should_notice(self, mode: Modes, guild_id: int, **_) -> bool:
+    async def should_notice(self, guild_id: int, mode: Modes, **_) -> bool:
         "通知をセットするべきかどうかを調べます。"
         await cursor.execute(
-            f"SELECT * FROM {mode.capitalize()}Notice WHERE GuildId = %s LIMIT 1;",
-            (guild_id,)
+            "SELECT * FROM BumpNotice WHERE GuildId = %s AND Mode = %s LIMIT 1;",
+            (guild_id, mode)
         )
         return bool(await cursor.fetchone())
 
-    async def toggle(self, mode: Modes, guild_id: int, **_) -> bool:
+    async def toggle(self, guild_id: int, mode: Modes, **_) -> bool:
         "設定のオンオフを切り替えます。結果がboolになって返ります。"
         if await self.should_notice(mode, guild_id, cursor=cursor):
             await cursor.execute(
-                f"DELETE FROM {mode.capitalize()}Notice WHERE GuildId = %s;",
-                (guild_id,)
+                "DELETE FROM BumpNotice WHERE GuildId = %s AND Mode = %s;",
+                (guild_id, mode)
             )
             return False
         await cursor.execute(
-            f"INSERT INTO {mode.capitalize()}Notice VALUES (%s)",
-            (guild_id,)
+            "INSERT INTO BumpNotice VALUES (%s, %s)", (guild_id, mode)
         )
         return True
 
     async def clean(self) -> None:
         "データを掃除します。"
-        for table in self.TABLES:
-            lowered = table.lower()
-            async for row in self.fetchstep(cursor, f"SELECT * FROM {table}Notice;"):
-                if not await self.cog.bot.exists("guild", row[0]):
-                    await self.toggle(lowered, row[0], cursor=cursor)
+        async for row in self.fetchstep(cursor, "SELECT * FROM BumpNotice;"):
+            if not await self.cog.bot.exists("guild", row[0]):
+                await cursor.execute(
+                    "DELETE FROM BumpNotice WHERE GuildId = %s AND Mode = %s;",
+                    (row[0], row[1])
+                )
 
 
 class BumpNotice(Cog):
@@ -103,7 +103,7 @@ class BumpNotice(Cog):
     @commands.command(description="Toggle bump notification")
     async def bump(self, ctx):
         await ctx.reply(
-            self.get_reply("bump", ctx, (await self.data.toggle("bump", ctx.guild.id))
+            self.get_reply("bump", ctx, (await self.data.toggle(ctx.guild.id, "bump"))
         ))
 
     Cog.HelpCommand(bump) \
@@ -112,7 +112,7 @@ class BumpNotice(Cog):
     @commands.command(description="Toggle up notification")
     async def up(self, ctx):
         await ctx.reply(
-            self.get_reply("up", ctx, (await self.data.toggle("up", ctx.guild.id))
+            self.get_reply("up", ctx, (await self.data.toggle(ctx.guild.id, "up"))
         ))
 
     Cog.HelpCommand(up) \
@@ -154,7 +154,7 @@ class BumpNotice(Cog):
 
         data = self.IDS.get(message.author.id)
         if not retry and data and data["mode"] != "bump":
-            # もしDissoku/rocationsなら数秒後に再取得してもう一度この関数on_messageを呼び出す。
+            # もしDissokuなら数秒後に再取得してもう一度この関数on_messageを呼び出す。
             self.bot.loop.create_task(self.delay_on_message(5, message))
             return
         if not message.guild or not data or not message.embeds:
