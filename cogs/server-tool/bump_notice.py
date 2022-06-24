@@ -5,9 +5,10 @@ from __future__ import annotations
 from typing import TypeAlias, Literal
 
 from collections import defaultdict
+from asyncio import sleep
 from time import time
 
-from discord.ext import commands
+from discord.ext import commands, tasks
 import discord
 
 from core import Cog, RT, DatabaseManager, cursor, t
@@ -41,7 +42,7 @@ class DataManager(DatabaseManager):
 
     async def toggle(self, guild_id: int, mode: Modes, **_) -> bool:
         "設定のオンオフを切り替えます。結果がboolになって返ります。"
-        if await self.should_notice(mode, guild_id, cursor=cursor):
+        if await self.should_notice(mode, guild_id, cursor=cursor):  # type: ignore
             await cursor.execute(
                 "DELETE FROM BumpNotice WHERE GuildId = %s AND Mode = %s;",
                 (guild_id, mode)
@@ -98,7 +99,7 @@ class BumpNotice(Cog):
         return t(dict(
             ja=f"{mode}通知を{'オン' if result else 'オフ'}にしました。",
             en=f"{'Enabled' if result else 'Disabled'} {mode} notification."
-        ))
+        ), ctx)
 
     @commands.command(description="Toggle bump notification")
     async def bump(self, ctx):
@@ -173,8 +174,8 @@ class BumpNotice(Cog):
         row = await self.data.should_notice(message.guild.id, data["mode"])
         if row:
             # 既に書き込まれてるデータに次通知する時間とチャンネルを書き込む。
-            self.cache[message.guild.id][data["mode"]] = {
-                "time": time() + data[time],
+            self.cache[message.guild.id][data["mode"]] = new = {
+                "time": time() + data["time"],
                 "channel": message.channel
             }
 
@@ -184,8 +185,7 @@ class BumpNotice(Cog):
                     embed=Cog.Embed(
                         "通知設定",
                         description=f"{data['mode']}の通知を設定しました。\n"
-                                    f"<t:{int(new['notification'])}:R>に通知します。",
-                        color=self.bot.colors["normal"]
+                                    f"<t:{int(new['time'])}:R>に通知します。",
                     )
                 )
             except discord.Forbidden:
