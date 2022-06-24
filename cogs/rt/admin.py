@@ -19,6 +19,7 @@ from rtlib.common.utils import code_block
 from rtutil.views import EmbedPage
 from rtutil.utils import set_page
 
+from data import FORBIDDEN
 
 class Admin(Cog):
     def __init__(self, bot: RT):
@@ -110,8 +111,8 @@ class Admin(Cog):
     async def gban(self, ctx, mode: Literal["add", "remove"], user_id: int):
         message = await ctx.reply("GBAN中...")
         assert self.bot.cogs["GBan"]
-        await message.edit(content="".join(("Ok: ", 'succeeded' 
-            if await getattr(self.bot.cogs["GBan"].data, f"{mode}_user")(user_id) 
+        await message.edit(content="".join(("Ok: ", 'succeeded'
+            if await getattr(self.bot.cogs["GBan"].data, f"{mode}_user")(user_id)
             else 'failed')))
         if mode == "add":
             unavailable_guild_ids = set(await self.bot.cogs["GBan"].data.get_all_guilds())
@@ -128,7 +129,7 @@ class Admin(Cog):
                     ), guild))
                 except discord.Forbidden:
                     error = FORBIDDEN
-                except discord.HttpException:
+                except discord.HTTPException:
                     error = {"ja": "なんらかのエラーが発生しました。", "en": "Something went wrong."}
 
                 self.bot.cogs["GBan"].call_gban_event(

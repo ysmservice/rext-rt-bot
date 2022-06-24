@@ -104,9 +104,9 @@ class DataManager(DatabaseManager):
                     )
 
 class GlobalBanEventContext(Cog.EventContext):
-     "ユーザーをGBANしたときのイベントコンテキストです。"
+    "ユーザーをGBANしたときのイベントコンテキストです。"
 
-     member: discord.Member | None
+    member: discord.Member | None
 
 
 class GBan(Cog):
@@ -124,7 +124,7 @@ class GBan(Cog):
         pass
 
     @gban.command(description="Toggle gban(default ON).")
-    async def toggle(self, ctx)
+    async def toggle(self, ctx):
         await ctx.typing()
         result = await self.data.toggle_gban(ctx.guild.id)
         await ctx.reply(t(dict(
@@ -173,9 +173,9 @@ class GBan(Cog):
             self.call_gban_event(member.guild, error, member)
 
     Cog.HelpCommand(gban) \
-        .merge_description("headline", ja="GBAN機能です。")
+        .merge_description("headline", ja="GBAN機能です。") \
         .add_sub(Cog.HelpCommand(toggle)
-            .merge_description("headline", ja="GBANのオンオフを変えます(デフォルトはオン)。"))
+            .merge_description("headline", ja="GBANのオンオフを変えます(デフォルトはオン)。")) \
         .add_sub(Cog.HelpCommand(check)
             .merge_description("headline", ja="ユーザーがGBANされているか確認します。")
             .add_arg("user", "User", ja="対象のユーザー", en=_c_d))
