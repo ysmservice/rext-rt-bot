@@ -47,6 +47,8 @@ class DataManager(DatabaseManager):
 
     async def connect(self, name: str, channelid: int) -> None:
         "グローバルチャットに接続します。"
+        if await self.is_connected(channelid):
+            raise Cog.BadRequest("You are already connected to this globalchat.")
         await cursor.execute(
             "INSERT INTO GlobalChatChannel VALUES (%s, %s);",
             (name, channelid)
@@ -56,6 +58,8 @@ class DataManager(DatabaseManager):
         self, name: str, author_id: int, channel_id: int, setting: SettingType
     ) -> bool:
         "主にグローバルチャットを作るために使います。"
+        if await self.is_connected(channel_id):
+            raise Cog.BadRequest("You are already connected to globalchat.")
         await cursor.execute(
             "SELECT * FROM GlobalChat WHERE Name = %s;",
             (name,)
@@ -80,7 +84,7 @@ class DataManager(DatabaseManager):
         )
         return bool(await cursor.fetchone())
 
-    async def check_exists(self, name: str) -> bool:
+    async def is_existed(self, name: str) -> bool:
         "すでにグローバルチャットが存在するか確認します。"
         await cursor.execute(
             "SELECT * FROM GlobalChat WHERE Name = %s;",
@@ -97,8 +101,7 @@ class DataManager(DatabaseManager):
             (name,)
         )
         if row := await cursor.fetchone():
-            setting = loads(row[0])
-            return setting["password"] == password
+            return loads(row[0])["password"] == password
 
     async def get_all_channel(
         self, name: str
@@ -154,8 +157,8 @@ class GlobalChat(Cog):
         await self.data.prepare_table()
 
     @commands.group(
-        description="The command of globalchat.", aliases=("gc", "gchat"),
-        fsparent=FSPARENT
+        description="The command of globalchat.",
+        aliases=("gc", "gchat"), fsparent=FSPARENT
     )
     async def globalchat(self, ctx):
         await self.group_index(ctx)
@@ -165,7 +168,7 @@ class GlobalChat(Cog):
         aliases=("make", "add", "作成")
     )
     @discord.app_commands.describe(name="Global chat name")
-    async def create(self, ctx, name: str, password: str | None = None):
+    async def create(self, ctx, name: str, *, password: str | None = None):
         if await self.data.is_connected(ctx.channel.id):
             return await ctx.reply(t(dict(
                 en="You connected another one.", ja="もうすでにあなたは接続をしています。"
@@ -183,15 +186,11 @@ class GlobalChat(Cog):
 
     @globalchat.command(
         description="Connect to global chat",
-        aliases=("join", "参加")
+        aliases=("join", "参加", "c", "さか")
     )
     @discord.app_commands.describe(name="Global chat name")
-    async def connect(self, ctx, name: str, password: str | None = None):
-        if await self.data.is_connected(ctx.channel.id):
-            return await ctx.reply(t(dict(
-                en="You connected another one.", ja="もうすでにあなたは接続をしています。"
-            ), ctx))
-        if not await self.data.check_exists(name):
+    async def connect(self, ctx, name: str, *, password: str | None = None):
+        if not await self.data.is_existed(name):
             return await ctx.reply(t(dict(
                 en="Not found", ja="見つかりませんでした。"
             ), ctx))
@@ -236,7 +235,9 @@ class GlobalChat(Cog):
             return
         if await self.data.get_name(message.channel.id) is None:
             return
-        async for channel in self.data.get_all_channel(name):
+        async for channel in self.data.get_all_channel(
+            await self.data.get_name(message.channel.id)
+        ):
             if message.channel.id == channel.id:
                 continue
             webhook = discord.utils.get(
@@ -249,11 +250,7 @@ class GlobalChat(Cog):
             files = []
             if len(message.attachments) > 0:
                 for attachment in message.attachments:
-                    async with self.bot.session.get(attachment.url) as resp:
-                        files.append(discord.File(
-                            io.BytesIO(await resp.read()),
-                            attachment.filename
-                        ))
+                    files.append(await attachment.to_file())
             await webhook.send(
                 message.clean_content,
                 username=f"{message.author.display_name}({message.author.id})",
