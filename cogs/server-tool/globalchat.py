@@ -113,10 +113,11 @@ class DataManager(DatabaseManager):
         )
         for (channel_id,) in await cursor.fetchall():
             channel = self.bot.get_channel(channel_id)
-            if channel is None:
-                await self.disconnect(channel.id, cursor=cursor)
-            else:
+            if isinstance(channel, discord.TextChannel):
                 yield channel
+            else:
+                await self.disconnect(channel_id, cursor=cursor)
+                self.bot.print(f"[GlobalChat] Delete: {channel_id}")
 
     async def get_name(self, channel_id: int) -> str | None:
         "チャンネルから接続しているグローバルチャット名を取得します。"
