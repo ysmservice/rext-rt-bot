@@ -42,7 +42,7 @@ class DataManager(DatabaseManager):
 
     async def toggle(self, guild_id: int, mode: Modes, **_) -> bool:
         "設定のオンオフを切り替えます。結果がboolになって返ります。"
-        if await self.should_notice(mode, guild_id, cursor=cursor):  # type: ignore
+        if await self.should_notice(guild_id, mode, cursor=cursor):
             await cursor.execute(
                 "DELETE FROM BumpNotice WHERE GuildId = %s AND Mode = %s;",
                 (guild_id, mode)
