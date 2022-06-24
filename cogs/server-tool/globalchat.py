@@ -114,7 +114,7 @@ class DataManager(DatabaseManager):
         for (channel_id,) in await cursor.fetchall():
             channel = self.bot.get_channel(channel_id)
             if channel is None:
-                await self.disconnect(channel, cursor=cursor)
+                await self.disconnect(channel.id, cursor=cursor)
             else:
                 yield channel
 
