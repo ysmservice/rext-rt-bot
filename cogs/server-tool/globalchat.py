@@ -234,14 +234,14 @@ class GlobalChat(Cog):
         if isinstance(message.author, discord.User):
             return
         async with self.bot.pool.acquire() as connection:
-            async with connection.cursor() as cursor:
-                if not await self.data.is_connected(message.channel.id, cursor=cursor):
+            async with connection.cursor() as cur:
+                if not await self.data.is_connected(message.channel.id, cursor=cur):
                     return
-                name = await self.data.get_name(message.channel.id, cursor=cursor)
+                name = await self.data.get_name(message.channel.id, cursor=cur)
                 if name is None:
                     return
                 async for channel in self.data.get_all_channel(
-                    name, cursor=cursor
+                    name, cursor=cur
                 ):
                     if message.channel.id == channel.id:
                         continue
