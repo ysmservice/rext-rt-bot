@@ -237,7 +237,7 @@ class GlobalChat(Cog):
         if await self.data.get_name(message.channel.id) is None:
             return
         async for channel in self.data.get_all_channel(
-            await self.data.get_name(message.channel.id)
+            await self.data.get_name(message.channel.id)  # type: ignore
         ):
             if message.channel.id == channel.id:
                 continue
