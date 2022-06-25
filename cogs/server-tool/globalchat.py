@@ -63,7 +63,7 @@ class DataManager(DatabaseManager):
         if await self.is_connected(channel_id, cursor=cursor):
             raise Cog.BadRequest({
                 "en": "You are already connected to globalchat.",
-                "ja": "すでにグローバルチャットに接続しています。"
+                "ja": "既にグローバルチャットに接続しています。"
             })
         await cursor.execute(
             "SELECT * FROM GlobalChat WHERE Name = %s;",
@@ -72,7 +72,7 @@ class DataManager(DatabaseManager):
         if await cursor.fetchone() is not None:
             raise Cog.BadRequest({
                 "en": "This globalchat already exists.",
-                "ja": "このグローバルチャットはすでに存在しています。"
+                "ja": "このグローバルチャットは既に存在しています。"
             })
         await cursor.execute(
             "INSERT INTO GlobalChat VALUES (%s, %s, %s);",
@@ -86,7 +86,7 @@ class DataManager(DatabaseManager):
     async def is_connected(self, channel_id: int, **_) -> bool:
         "これはすでに接続されているか確認するものです。"
         await cursor.execute(
-            "SELECT * FROM GlobalChatChannel WHERE ChannelId = %s;",
+            "SELECT * FROM GlobalChatChannel WHERE ChannelId = %s LIMIT 1;",
             (channel_id,)
         )
         return bool(await cursor.fetchone())
@@ -99,9 +99,7 @@ class DataManager(DatabaseManager):
         )
         return bool(await cursor.fetchone())
 
-    async def check_password(
-        self, name: str, password: str | None
-    ) -> bool | None:
+    async def check_password(self, name: str, password: str | None) -> bool | None:
         "パスワードを確認します。"
         await cursor.execute(
             "SELECT Setting FROM GlobalChat WHERE Name = %s LIMIT 1;",
@@ -110,7 +108,7 @@ class DataManager(DatabaseManager):
         if row := await cursor.fetchone():
             return loads(row[0])["password"] == password
 
-    async def get_all_channel(self, name: str, **_) -> AsyncIterator[discord.TextChannel]:
+    async def get_channels(self, name: str, **_) -> AsyncIterator[discord.TextChannel]:
         "グローバルチャットに接続しているチャンネルを名前使って全部取得します。"
         await cursor.execute(
             "SELECT ChannelId FROM GlobalChatChannel WHERE Name = %s;",
@@ -169,9 +167,7 @@ class GlobalChat(Cog):
     async def globalchat(self, ctx):
         await self.group_index(ctx)
 
-    @globalchat.command(
-        description="Create globalchat",
-        aliases=("make", "add", "作成")
+    @globalchat.command(description="Create globalchat.", aliases=("make", "add", "作成")
     )
     @discord.app_commands.describe(name="Global chat name")
     async def create(self, ctx, name: str, *, password: str | None = None):
@@ -185,7 +181,7 @@ class GlobalChat(Cog):
         ), ctx))
 
     @globalchat.command(
-        description="Connect to global chat",
+        description="Connect to global chat.",
         aliases=("join", "参加", "c", "さか")
     )
     @discord.app_commands.describe(name="Global chat name")
@@ -204,52 +200,51 @@ class GlobalChat(Cog):
         ), ctx))
 
     @globalchat.command(
-        description="Disconnect from globalchat",
-        aliases=("remove", "rm", "退出")
+        description="Disconnect from globalchat.",
+        aliases=("remove", "rm", "退出", "leave")
     )
-    async def leave(self, ctx):
+    async def disconnect(self, ctx):
         await self.data.disconnect(ctx.channel.id)
         await ctx.reply(t(dict(
             ja="グローバルチャットから退出しました", en="Leave from globalchat"
         ), ctx))
 
-    _help = (Cog.HelpCommand(globalchat)
-             .merge_description("headline", ja="グローバルチャット関連です。"))
+    _help = Cog.HelpCommand(globalchat).merge_description("headline", ja="グローバルチャット関連です。")
     _help.add_sub(Cog.HelpCommand(create)
                   .merge_description("headline", ja="グローバルチャットを作成します。")
                   .add_arg("name", "str", "Optional",
-                           ja="グローバルチャット名", en="Globalchat name"))
+                           ja="グローバルチャット名", en="Globalchat name")
+                  .add_arg("password", "str", "Optional",
+                           ja="パスワード", en="Password"))
     _help.add_sub(Cog.HelpCommand(connect)
                   .merge_description("headline", ja="グローバルチャットに接続します。")
                   .add_arg("name", "str", "Optional",
-                           ja="グローバルチャット名", en="GlobalChat name"))
-    _help.add_sub(Cog.HelpCommand(leave).merge_description(
+                           ja="グローバルチャット名", en="GlobalChat name")
+                  .add_arg("password", "str", "Optional",
+                           ja="パスワード", en="Password"))
+    _help.add_sub(Cog.HelpCommand(disconnect).merge_description(
         "headline", ja="グローバルチャットから退出します。"))
     del _help
 
     @Cog.listener("on_message")
     async def on_message(self, message: discord.Message):
-        if message.author.bot:
+        if message.author.bot or isinstance(message.author, discord.User):
             return
-        if isinstance(message.author, discord.User):
-            return
+
         async with self.bot.pool.acquire() as connection:
-            async with connection.cursor() as cur:
-                if not await self.data.is_connected(message.channel.id, cursor=cur):
+            async with connection.cursor() as cursor:
+                if not await self.data.is_connected(message.channel.id, cursor=cursor) or \
+                     await self.data.get_name(message.channel.id, cursor=cursor) is None:
                     return
-                name = await self.data.get_name(message.channel.id, cursor=cur)
-                if name is None:
-                    return
-                async for channel in self.data.get_all_channel(
-                    name, cursor=cur
+                async for channel in self.data.get_channels(
+                    await self.data.get_name(message.channel.id, cursor=cursor), cursor=cursor
                 ):
-                    if message.channel.id == channel.id:
-                        continue
-                    await webhook_send(
-                        channel, message.author,
-                        message.clean_content,
-                        files=[await attachment.to_file() for attachment in message.attachments]
-                    )
+                    if message.channel.id != channel.id:
+                        await webhook_send(
+                            channel, message.author,
+                            message.clean_content,
+                            files=[await attachment.to_file() for attachment in message.attachments]
+                        )
 
 
 async def setup(bot: RT) -> None:
