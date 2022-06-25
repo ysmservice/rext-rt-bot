@@ -15,6 +15,7 @@ from .__init__ import FSPARENT
 
 
 class Setting(TypedDict, total=False):
+    "グローバルチャットの設定"
     password: str | None
 
 
