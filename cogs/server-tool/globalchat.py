@@ -110,7 +110,7 @@ class DataManager(DatabaseManager):
         if row := await cursor.fetchone():
             return loads(row[0])["password"] == password
 
-    async def get_all_channel(self, name: str) -> AsyncIterator[discord.TextChannel]:
+    async def get_all_channel(self, name: str, **_) -> AsyncIterator[discord.TextChannel]:
         "グローバルチャットに接続しているチャンネルを名前使って全部取得します。"
         await cursor.execute(
             "SELECT ChannelId FROM GlobalChatChannel WHERE Name = %s;",
@@ -124,7 +124,7 @@ class DataManager(DatabaseManager):
                 await self.disconnect(channel_id, cursor=cursor)
                 self.bot.print(f"[GlobalChat] Delete: {channel_id}")
 
-    async def get_name(self, channel_id: int) -> str | None:
+    async def get_name(self, channel_id: int, **_) -> str | None:
         "チャンネルから接続しているグローバルチャット名を取得します。"
         await cursor.execute(
             "SELECT Name FROM GlobalChatChannel WHERE ChannelId = %s LIMIT 1;",
@@ -233,22 +233,23 @@ class GlobalChat(Cog):
             return
         if isinstance(message.author, discord.User):
             return
-        if not await self.data.is_connected(message.channel.id):
-            return
-        if await self.data.get_name(message.channel.id) is None:
-            return
-        async for channel in self.data.get_all_channel(
-            await self.data.get_name(message.channel.id)  # type: ignore
-        ):
-            if message.channel.id == channel.id:
-                continue
-            files = []
-            for attachment in message.attachments:
-                files.append(await attachment.to_file())
-            await webhook_send(
-                channel, message.author,
-                message.clean_content, files=files
-            )
+        async with self.bot.pool.acquire() as connection:
+            async with connection.cursor() as cursor:
+                if not await self.data.is_connected(message.channel.id, cursor=cursor):
+                    return
+                name = await self.data.get_name(message.channel.id, cursor=cursor)
+                if name is None:
+                    return
+                async for channel in self.data.get_all_channel(
+                    name, cursor=cursor
+                ):
+                    if message.channel.id == channel.id:
+                        continue
+                    await webhook_send(
+                        channel, message.author,
+                        message.clean_content,
+                        files=[await attachment.to_file() for attachment in message.attachments]
+                    )
 
 
 async def setup(bot: RT) -> None:
