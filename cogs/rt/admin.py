@@ -21,6 +21,9 @@ from rtutil.utils import set_page
 
 from data import FORBIDDEN
 
+from cogs.rt.gban import GBan
+
+
 class Admin(Cog):
     def __init__(self, bot: RT):
         self.bot = bot
@@ -108,14 +111,14 @@ class Admin(Cog):
 
     @admin.command(aliases=("globalban", "グローバルBAN"), description="Modify gban user.")
     @discord.app_commands.describe(mode="Add or Remove", user="User ID")
-    async def gban(self, ctx, mode: Literal["add", "remove"], user_id: int):
+    async def gban(self, ctx, mode: Literal["add", "remove"], user_id: int, reason: str | None = None):
         message = await ctx.reply("GBAN中...")
-        assert self.bot.cogs["GBan"]
-        await message.edit(content="".join(("Ok: ", 'succeeded'
-            if await getattr(self.bot.cogs["GBan"].data, f"{mode}_user")(user_id)
-            else 'failed')))
-        if mode == "add":
-            unavailable_guild_ids = set(await self.bot.cogs["GBan"].data.get_all_guilds())
+        assert isinstance(self.bot.cogs["GBan"], GBan)
+        result = await getattr(self.bot.cogs["GBan"].data, f"{mode}_user")(user_id, reason)
+
+        if result and mode == "add":
+            unavailable_guild_ids = {a async for a in self.bot.cogs["GBan"].data.get_all_guild_ids()}
+            user = await self.bot.search_user(user_id)
 
             for guild in self.bot.guilds:
                 if guild.id in unavailable_guild_ids:
@@ -124,8 +127,8 @@ class Admin(Cog):
                 error = None
                 try:
                     await guild.ban(discord.Object(user_id), reason=t(dict(
-                            ja="RTグローバルBANのため。",
-                            en="for RT global BAN."
+                            ja="RTグローバルBAN \n理由:{reason}",
+                            en="for RT global BAN.\n理由:{reason}"
                     ), guild))
                 except discord.Forbidden:
                     error = FORBIDDEN
@@ -133,9 +136,11 @@ class Admin(Cog):
                     error = {"ja": "なんらかのエラーが発生しました。", "en": "Something went wrong."}
 
                 self.bot.cogs["GBan"].call_gban_event(
-                    guild, error, await self.bot.search_user(user_id)
+                    guild, error, user, reason
                 )
 
+        await message.edit(content="".join(("Ok: ", 'succeeded'
+            if result else 'failed')))
 
 async def setup(bot):
     await bot.add_cog(Admin(bot))
