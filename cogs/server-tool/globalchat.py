@@ -1,6 +1,6 @@
 # RT - GlobalChat
 
-from typing import TypedDict
+from typing import TypedDict, NamedTuple
 from collections.abc import AsyncIterator
 
 import discord
@@ -17,6 +17,11 @@ from .__init__ import FSPARENT
 class Setting(TypedDict, total=False):
     "グローバルチャットの設定"
     password: str | None
+
+class Data(NamedTuple):
+    name: str
+    author_id: int
+    setting: Setting
 
 
 class DataManager(DatabaseManager):
@@ -49,7 +54,7 @@ class DataManager(DatabaseManager):
         if await self.is_connected(channel_id, cursor=cursor):
             raise Cog.BadRequest({
                 "en": "You are already connected to this globalchat.",
-                "ja": "すでにこのグローバルチャットに接続しています。"
+                "ja": "既にこのグローバルチャットに接続しています。"
             })
         await cursor.execute(
             "INSERT INTO GlobalChatChannel VALUES (%s, %s);",
@@ -147,6 +152,20 @@ class DataManager(DatabaseManager):
             (source, channel_id, message_id)
         )
 
+    async def fetch_global_chat(self, name: str) -> Data:
+        "グローバルチャットを取得します。"
+        await cursor.execute(
+            "SELECT * FROM GlobalChat WHERE Name = %s LIMIT 1;",
+            (name,)
+        )
+        if row := await cursor.fetchone():
+            return Data(*row)
+        else:
+            raise Cog.BadRequest({
+                "en": "That globalchat does not exist.",
+                "ja": "そのグローバルチャットは存在しません。"
+            })
+
 
 class GlobalChat(Cog):
     "グローバルチャットのコグです。"
@@ -169,7 +188,7 @@ class GlobalChat(Cog):
 
     @globalchat.command(description="Create globalchat.", aliases=("make", "add", "作成")
     )
-    @discord.app_commands.describe(name="Global chat name")
+    @discord.app_commands.describe(name="Global chat name", password="Password")
     async def create(self, ctx, name: str, *, password: str | None = None):
         await self.data.create(
             name, ctx.author.id, ctx.channel.id, {
@@ -184,7 +203,7 @@ class GlobalChat(Cog):
         description="Connect to global chat.",
         aliases=("join", "参加", "c", "さか")
     )
-    @discord.app_commands.describe(name="Global chat name")
+    @discord.app_commands.describe(name="Global chat name", password="Password")
     async def connect(self, ctx, name: str, *, password: str | None = None):
         if not await self.data.is_existed(name):
             return await ctx.reply(t(dict(
