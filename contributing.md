@@ -16,6 +16,7 @@ https://gist.github.com/tasuren/bf1fcce48f1e23a5c7e6abd503bdb3c1
 ## SQL
 コラム名はパスカルケースで書いてください。  
 SQLの最後に`;`を置くのを忘れないでください。
+DataManagerで定期的にデータを消す場合は`DataManager.clean`を使ってください。
 ## 新機能について
 まずはIssueを作ってそこで「私が作る」と言ってください。  
 そして、どのように作るかを言っておいた方がPull Requestで破壊的更新を要求される確率が下がります。  
