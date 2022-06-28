@@ -1,6 +1,7 @@
 # RT - gban
 
 from collections.abc import AsyncIterator
+from typing import Literal
 
 from discord.ext import commands
 import discord
@@ -66,12 +67,12 @@ class DataManager(DatabaseManager):
         )
         return bool(await cursor.fetchone())
 
-    async def check(self, user_id: int, guild_id: int) -> bool:
-        "ユーザーがそのサーバーでBANされるべきかを調べます。"
+    async def check(self, user_id: int, guild_id: int) -> Literal[False] | str:
+        "ユーザーが指定されたサーバーでBANされるべきかを調べます。もしそうなら理由をw返します。"
         if (await self.is_guild_exists(guild_id, cursor=cursor)
-                or not await self.is_user_exists(user_id, cursor=cursor)):
+                or not (k := await self.is_user_exists(user_id, cursor=cursor))):
             return False
-        return True
+        return k[1]
 
     async def get_reason(self, user_id: int) -> str:
         "ユーザーのGBAN理由を取得します。"
@@ -177,9 +178,8 @@ class GBan(Cog):
 
     @Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        if await self.data.check(member.id, member.guild.id):
+        if (reason := await self.data.check(member.id, member.guild.id)):
             error = None
-            reason = await self.data.get_reason(member.id)
             try:
                 await member.ban(reason=t(dict(
                     ja="RTグローバルBANのため。\n理由: {reason}",

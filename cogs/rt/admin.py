@@ -139,8 +139,7 @@ class Admin(Cog):
                     guild, error, user, reason
                 )
 
-        await message.edit(content="".join(("Ok: ", 'succeeded'
-            if result else 'failed')))
+        await message.edit(content="".join(("Ok: ", 'succeeded' if result else 'failed')))
 
 async def setup(bot):
     await bot.add_cog(Admin(bot))
