@@ -31,7 +31,9 @@ class DataManager(DatabaseManager):
         # 設定のonoffだけキャッシュに入れておく。
         self.cog = cog
         self.onoff_caches = defaultdict(dict)
-        self.anti_spam_caches: Cacher = self.cog.bot.cachers.acquire(30.0)  # 荒らし防止用
+        self.anti_spam_caches: Cacher[
+            int, dict[str, list[int]]
+        ] = self.cog.bot.cachers.acquire(30.0)  # 荒らし防止用
 
     async def prepare_table(self) -> None:
         "テーブルを準備します。"
@@ -52,7 +54,7 @@ class DataManager(DatabaseManager):
 
         if guild_id not in self.onoff_caches:
             await cursor.execute(
-                "INSERT INTO Blocker VALUES (%s, %s, 1, %s, %s)",
+                "INSERT INTO Blocker VALUES (%s, %s, 1, %s, %s);",
                 (guild_id, mode, "[]", "{}")
             )
             self.onoff_caches[guild_id][mode] = True
@@ -60,7 +62,7 @@ class DataManager(DatabaseManager):
 
         onoff = not self.onoff_caches[guild_id][mode]
         await cursor.execute(
-            "UPDATE Blocker Blocking = %s WHERE GuildId = %s",
+            "UPDATE Blocker SET Blocking = %s WHERE GuildId = %s;",
             (onoff, guild_id)
         )
         self.onoff_caches[guild_id][mode] = onoff
@@ -120,12 +122,12 @@ class DataManager(DatabaseManager):
 
     async def get_now_roles(self, guild_id: int, mode: Modes, **_) -> list[int]:
         "現在のロール設定を取得します。設定されていない場合は[]です。"
-        if (g := guild_id in self.anti_spam_caches.data) and mode in self.anti_spam_caches[guild_id].data:
-            return self.anti_spam_caches[guild_id].data[mode]
+        if guild_id in self.anti_spam_caches.data and mode in self.anti_spam_caches[guild_id]:
+            return self.anti_spam_caches[guild_id][mode]
         now_roles = await self.get_settings(guild_id, mode, "Roles", cursor=cursor)
         roles = loads(now_roles[0][0]) if now_roles else []
         self.anti_spam_caches.set(
-            guild_id, self.anti_spam_caches[guild_id].data + {mode: roles} if g else {mode: roles}
+            guild_id, self.anti_spam_caches.get(guild_id, {}) | {mode: roles}
         )
         return roles
 
@@ -166,6 +168,8 @@ class BlockerDeleteUrlEventContext(BlockerDeleteEventContext):
 
 
 class Blocker(Cog):
+    "ブロッカー機能のコグです。"
+
     def __init__(self, bot: RT):
         self.bot = bot
         self.data = DataManager(self)
@@ -241,7 +245,7 @@ class Blocker(Cog):
 
     @blocker.group(description="Set blocking roles.")
     async def role(self, ctx):
-        pass
+        await self.group_index(ctx)
 
     _HELP.add_sub(Cog.HelpCommand(role)
         .merge_description("headline", ja="ブロックするロールを指定できます。"))
@@ -286,20 +290,39 @@ class Blocker(Cog):
         .add_arg("mode", "str", ja=_c_d_ja, en=_c_d)
         .add_arg("role", "Role", ja="削除するロール", en=_c_d2.replace("Add", "Remov")))
 
-    async def try_delete(self, message: discord.Message, mode: str):
+    async def try_delete(
+        self, message_: discord.Message, mode: str, event_name: str,
+        event: type, user_: discord.Member | discord.User | None = None, *,
+        reaction_: discord.Reaction | None = None, **kwargs
+    ) -> None:
+        "メッセージ(リアクション)の削除をしたあと、イベントを呼び出します。"
         error = None
         try:
-            await message.delete()
-            await message.channel.send(t(dict(
-                ja=f"{self.MODES_JA[mode]}の送信はサーバーの管理者により禁止されています。",
-                en=f"Sending {mode} is forbidden by server administrator."
-            ), message), delete_after=5.0)
+            if mode == "reaction":
+                await message_.remove_reaction(reaction_.emoji, user_)  # type: ignore
+            else:
+                await message_.delete()
+            await message_.channel.send(
+                t(dict(
+                    ja=f"{'{m}'}, {self.MODES_JA[mode]}の{'追加' if mode == 'reaction' else '送信'}は"
+                        "サーバーの管理者により禁止されています。",
+                    en=f"{'{m}'}, {'Adding' if mode == 'reaction' else 'Sending'} {mode} is"
+                        "forbidden by server administrator."
+                ), message_,
+                m=getattr(user_, "mention", "ユーザー不明")
+                    if mode == "reacrion" else message_.author.mention),
+                delete_after=5.0
+            )
         except discord.Forbidden:
             error =  FORBIDDEN
         except discord.HTTPException:
             error = {"ja": "なんらかのエラーが発生しました。", "en": "Something went wrong."}
-        return error
-
+        self.bot.rtevent.dispatch(event_name, event(
+            self.bot, message_.guild, self.detail_or(error),
+            {"ja": f"{self.MODES_JA[mode]}ブロッカー", "en": f"{mode.capitalize()} blocker"},
+            {"ja": f"ユーザー:{user_ or message_.author}", "en": f"User: {user_ or message_.author}"},
+            self.blocker, **kwargs
+        ))
 
     @Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -308,57 +331,43 @@ class Blocker(Cog):
                 or all(not m for m in self.data.onoff_caches[message.guild.id].values())):
             return
 
-        error = None
-        if c := findall(r"<a?:\w+:\d*>", message.content):
+        if found := findall(r"<a?:\w+:\d*>", message.content):
             # 絵文字ブロッカー
             if self.data.onoff_caches[message.guild.id].get("emoji", False) and any(
                 c in message.author.roles
                 for c in await self.data.get_now_roles(message.guild.id, "emoji")
             ):
-                error = await self.try_delete(message, "emoji")
-                self.bot.rtevent.dispatch("on_delete_message_emoji_blocker",
-                    BlockerDeleteEmojiEventContext(
-                        self.bot, message.guild, self.detail_or(error),
-                        {"ja": "絵文字ブロッカー", "en": "Emoji blocker"},
-                        {"ja": f"ユーザー:{message.author}", "en": f"User: {message.author}"},
-                        self.blocker, channel=message.channel, message=message, member=message.author,
-                        emoji=discord.utils.get(message.guild.roles, name=c[0].split(":")[1]) or c[0]
-                    )
+                await self.try_delete(
+                    message, "emoji", "on_delete_message_emoji_blocker",
+                    BlockerDeleteEmojiEventContext, channel=message.channel,
+                    message=message, member=message.author, emoji=discord.utils.get(
+                        message.guild.roles, name=found[0].split(":")[1]
+                    ) or found[0]
                 )
 
-        if c := message.stickers:
+        if found := message.stickers:
             # スタンプブロッカー
             if self.data.onoff_caches[message.guild.id].get("stamp", False) and any(
                 c in message.author.roles
                 for c in await self.data.get_now_roles(message.guild.id, "stamp")
             ):
-                error = await self.try_delete(message, "stamp")
-                self.bot.rtevent.dispatch("on_delete_message_stamp_blocker",
-                    BlockerDeleteStampEventContext(
-                        self.bot, message.guild, self.detail_or(error),
-                        {"ja": "スタンプブロッカー", "en": "Stamp blocker"},
-                        {"ja": f"ユーザー:{message.author}", "en": f"User: {message.author}"},
-                        self.blocker, channel=message.channel, message=message, member=message.author,
-                        stamp=c
-                    )
+                await self.try_delete(
+                    message, "stamp", "on_delete_message_stamp_blocker",
+                    BlockerDeleteStampEventContext, channel=message.channel,
+                    message=message, member=message.author, stamp=found
                 )
                 return
 
-        if c := findall(r"https?://.*", message.content):
+        if found := findall(r"https?://.*", message.content):
             # URLブロッカー
             if self.data.onoff_caches[message.guild.id].get("url", False) and any(
                 c in message.author.roles
                 for c in await self.data.get_now_roles(message.guild.id, "url")
             ):
-                error = await self.try_delete(message, "url")
-                self.bot.rtevent.dispatch("on_delete_message_url_blocker",
-                    BlockerDeleteUrlEventContext(
-                        self.bot, message.guild, self.detail_or(error),
-                        {"ja": "URLブロッカー", "en": "Url blocker"},
-                        {"ja": f"ユーザー:{message.author}", "en": f"User: {message.author}"},
-                        self.blocker, channel=message.channel, message=message, member=message.author,
-                        url=c[0]
-                    )
+                await self.try_delete(
+                    message, "url", "on_delete_message_url_blocker",
+                    BlockerDeleteUrlEventContext, channel=message.channel, message=message,
+                    member=message.author, url=found[0]
                 )
 
     @Cog.listener()
@@ -369,28 +378,15 @@ class Blocker(Cog):
                 or reaction.message.guild.id not in self.data.onoff_caches
                 or not self.data.onoff_caches[reaction.message.guild.id].get("reaction", False)):
             return
-        if any(c in user.roles
-            for c in await self.data.get_now_roles(reaction.message.guild.id, "reaction")
-        ):
-            error = None
-            try:
-                await reaction.remove(user)
-                await reaction.message.channel.send(t(dict(
-                    ja="リアクションの追加はサーバーの管理者により禁止されています。",
-                    en="Adding reaction is forbidden by server administrator."
-                ), user), delete_after=5.0)
-            except discord.Forbidden:
-                error = FORBIDDEN
-            except discord.HTTPException:
-                error = {"ja": "何らかのエラーが発生しました。", "en": "Something went wrong."}
-            self.bot.rtevent.dispatch("on_delete_reaction_stamp_blocker",
-                BlockerDeleteReactionEventContext(
-                    self.bot, reaction.message.guild, self.detail_or(error),
-                    {"ja": "リアクションブロッカー", "en": "Reaction blocker"},
-                    {"ja": f"ユーザー:{user}", "en": f"User: {user}"},
-                    self.blocker, channel=reaction.message.channel, message=reaction.message,
-                    member=user, reaction=reaction
-            ))
+        if any(c in user.roles for c in await self.data.get_now_roles(
+            reaction.message.guild.id, "reaction"
+        )):
+            await self.try_delete(
+                reaction.message, "reaction", "on_delete_reaction_stamp_blocker",
+                BlockerDeleteReactionEventContext, user, reaction_=reaction,
+                channel=reaction.message.channel, message=reaction.message,
+                member=user, reaction=reaction
+            )
 
     del _HELP, _c_d, _c_d2, _c_d_ja
 
