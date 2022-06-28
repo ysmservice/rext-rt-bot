@@ -115,11 +115,9 @@ class DataManager(DatabaseManager):
 
     async def get_channels(self, name: str, **_) -> AsyncIterator[discord.TextChannel]:
         "グローバルチャットに接続しているチャンネルを名前使って全部取得します。"
-        await cursor.execute(
-            "SELECT ChannelId FROM GlobalChatChannel WHERE Name = %s;",
-            (name,)
-        )
-        for (channel_id,) in await cursor.fetchall():
+        async for (channel_id,) in self.fetchstep(
+            cursor, "SELECT ChannelId FROM GlobalChatChannel WHERE Name = %s;", (name,)
+        ):
             channel = self.bot.get_channel(channel_id)
             if isinstance(channel, discord.TextChannel):
                 yield channel
