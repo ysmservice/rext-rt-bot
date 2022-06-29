@@ -1,7 +1,6 @@
 # RT - gban
 
 from collections.abc import AsyncIterator
-from typing import Literal
 
 from discord.ext import commands
 import discord
@@ -33,7 +32,7 @@ class DataManager(DatabaseManager):
 
     async def add_user(self, user_id: int, reason: str | None) -> bool:
         "ユーザーを追加します。"
-        if not await self.is_user_exists(user_id, cursor=cursor):
+        if not await self.get_reason(user_id, cursor=cursor):
             await cursor.execute(
                 "INSERT INTO GlobalBan VALUES (%s, %s);",
                 (user_id, reason or "RT Global BAN")
@@ -43,7 +42,7 @@ class DataManager(DatabaseManager):
 
     async def remove_user(self, user_id: int, _) -> bool:
         "ユーザーを削除します。"
-        if await self.is_user_exists(user_id, cursor=cursor):
+        if await self.get_reason(user_id, cursor=cursor):
             await cursor.execute(
                 "DELETE FROM GlobalBan WHERE UserId = %s;",
                 (user_id,)
@@ -51,13 +50,6 @@ class DataManager(DatabaseManager):
             return True
         return False
 
-    async def is_user_exists(self, user_id: int, **_) -> tuple[int, str]:
-        "ユーザーがデータ内に存在するか調べます。"
-        await cursor.execute(
-            "SELECT * FROM GlobalBan WHERE UserId = %s LIMIT 1;",
-            (user_id,)
-        )
-        return await cursor.fetchone()
 
     async def is_guild_exists(self, guild_id: int, **_) -> bool:
         "サーバーがデータ内に存在するか調べます。"
@@ -67,20 +59,20 @@ class DataManager(DatabaseManager):
         )
         return bool(await cursor.fetchone())
 
-    async def check(self, user_id: int, guild_id: int) -> Literal[False] | str:
-        "ユーザーが指定されたサーバーでBANされるべきかを調べます。もしそうなら理由をw返します。"
-        if (await self.is_guild_exists(guild_id, cursor=cursor)
-                or not (k := await self.is_user_exists(user_id, cursor=cursor))):
-            return False
-        return k[1]
+    async def check(self, user_id: int, guild_id: int) -> str | None:
+        "ユーザーが指定されたサーバーでBANされるべきかを調べます。もしそうなら理由を返します。"
+        if await self.is_guild_exists(guild_id, cursor=cursor):
+            return None
+        return await self.get_reason(user_id, cursor=cursor)
 
-    async def get_reason(self, user_id: int) -> str:
+    async def get_reason(self, user_id: int, **_) -> str | None:
         "ユーザーのGBAN理由を取得します。"
         await cursor.execute(
             "SELECT Reason FROM GlobalBan WHERE UserId = %s LIMIT 1;",
             (user_id,)
         )
-        return await cursor.fetchone()[0]
+        row = await cursor.fetchone()
+        return row[0] if row else None
 
     async def get_all_user_ids(self) -> AsyncIterator[int]:
         "データベース内に存在する全ユーザーを検索します。"
@@ -156,11 +148,11 @@ class GBan(Cog):
     @discord.app_commands.describe(user=(_c_d := "Target user"))
     async def check(self, ctx, *, user: discord.User | discord.Object):
         async with ctx.typing():
-            result = await self.data.is_user_exists(user.id)
+            result = await self.data.get_reason(user.id)
             await ctx.reply(t(dict(
-                ja=f"その人はGBANリストに入っていま{'す。理由:' + result[1] if result else 'せん。'}",
+                ja=f"その人はGBANリストに入っていま{'す。理由:' + result if result else 'せん。'}",
                 en=f"The user is {'' if result else 'not '}found in Gban users."
-                    f"\nReason: {result[1]}" if result else ''
+                    f"\nReason: {result}" if result else ''
             ), ctx))
 
     def call_gban_event(
