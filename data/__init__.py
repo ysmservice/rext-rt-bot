@@ -36,11 +36,8 @@ class BackendData(TypedDict):
     port: int
 class NormalData(TypedDict):
     backend: BackendData
-<<<<<<< HEAD
     shard_ids: List[int] | Literal["auto"]
     shard_count: int | None
-=======
->>>>>>> 9a0de802606df2f292333f3b8f336925034206e7
 with open("data.json", "r") as f:
     DATA: NormalData = loads(f.read())
 
