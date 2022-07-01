@@ -12,11 +12,6 @@ except ModuleNotFoundError: ...
 else: install()
 
     
-kwargs = {}
-if SHARD:
-    if NormalData["shard"] != "auto":
-        kwargs["shard_ids"] = NormalData["shard"]
-
 intents = Intents.default()
 intents.message_content = True
 intents.members = True
