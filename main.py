@@ -5,7 +5,7 @@ from asyncio import run
 from discord import Intents, Status, Game, AllowedMentions
 
 from core.bot import RT
-from data import SECRET, SHARD, NormalData
+from data import SECRET
 
 try: from uvloop import install
 except ModuleNotFoundError: ...
