@@ -1,14 +1,6 @@
 # RT - Data
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 from typing import TypedDict, Literal, List
-=======
-from typing import TypedDict
->>>>>>> 9a0de802606df2f292333f3b8f336925034206e7
-=======
-from typing import TypedDict
->>>>>>> 9a0de802606df2f292333f3b8f336925034206e7
 
 from sys import argv
 
