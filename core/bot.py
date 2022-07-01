@@ -68,10 +68,13 @@ class RT(commands.Bot):
     def __init__(self, *args, **kwargs):
         kwargs["command_prefix"] = self._get_command_prefix
         kwargs["help_command"] = None
+<<<<<<< HEAD
         if SHARD:
             if DATA["shard_ids"] != "auto":
                 kwargs["shard_ids"] = DATA["shard_ids"]
                 kwargs["shard_count"] = DATA["shard_count"]
+=======
+>>>>>>> 9a0de802606df2f292333f3b8f336925034206e7
         super().__init__(*args, **kwargs)
 
         self.prefixes: Prefixes = {"User": {}, "Guild": {}}
