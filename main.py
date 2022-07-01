@@ -11,13 +11,13 @@ try: from uvloop import install
 except ModuleNotFoundError: ...
 else: install()
 
-    
+
 intents = Intents.default()
 intents.message_content = True
 intents.members = True
 bot = RT(
     allowed_mentions=AllowedMentions(everyone=False), intents=intents,
-    status=Status.dnd, activity=Game("起動"), **kwargs
+    status=Status.dnd, activity=Game("起動")
 )
 bot.print("Now loading...")
 

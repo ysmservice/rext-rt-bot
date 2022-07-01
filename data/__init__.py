@@ -1,6 +1,6 @@
 # RT - Data
 
-from typing import TypedDict, Literal
+from typing import TypedDict
 
 from sys import argv
 
@@ -32,7 +32,6 @@ class BackendData(TypedDict):
     port: int
 class NormalData(TypedDict):
     backend: BackendData
-    shard: int | Literal["auto"]
 with open("data.json", "r") as f:
     DATA: NormalData = loads(f.read())
 
