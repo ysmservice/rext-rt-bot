@@ -2,5 +2,6 @@
     "backend": {
         "host": "rt-bot-test.com", // バックエンドのhost名です。
         "port": 8080 // バックエンドのポートです。
-    }
+    },
+    "shard": "auto" // シャードを自動で割り当てるか
 }
