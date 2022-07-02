@@ -78,7 +78,6 @@ class AutoSpoiler(Cog):
             return
 
         for cmd in message.channel.topic.splitlines():
-            print("asp")
             if not cmd.startswith(("rt>asp", "rt>AutoSpoiler")):
                 continue
 
