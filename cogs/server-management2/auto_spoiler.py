@@ -78,6 +78,7 @@ class AutoSpoiler(Cog):
             return
 
         for cmd in message.channel.topic.splitlines():
+            print("asp")
             if not cmd.startswith(("rt>asp", "rt>AutoSpoiler")):
                 continue
 
@@ -86,8 +87,10 @@ class AutoSpoiler(Cog):
             # 添付ファイルをスポイラーにする。
             new = []
             for attachment in message.attachments:
-                attachment.filename = f"SPOILER_{attachment.filename}"
-                new.append(await attachment.to_file())
+                new.append(await attachment.to_file(
+                    filename=f"SPOILER_{attachment.filename}", spoiler=True
+                ))
+                is_replaced = True
 
             # urlをスポイラーにする。
             for url in findall(self.URL_PATTERN, message.content):
