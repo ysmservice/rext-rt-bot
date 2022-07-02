@@ -16,14 +16,17 @@ from core import Cog, RT, DatabaseManager, cursor, t
 from data import HTTP_EXCEPTION, FORBIDDEN
 
 
+Modes: TypeAlias = Literal["bump", "up"]
+
+
 class DataManager(DatabaseManager):
     "Bump/up通知の設定データを管理します。"
 
     MODES = ("bump", "up")
-    Modes: TypeAlias = Literal["bump", "up"]
 
     def __init__(self, cog: BumpNotice):
         self.cog = cog
+        self.pool = self.cog.bot.pool
 
     async def prepare_table(self) -> None:
         "テーブルを準備します。"
@@ -106,7 +109,7 @@ class BumpNotice(Cog):
     async def cog_unload(self) -> None:
         self.notification.cancel()
 
-    async def toggle(self, mode: DataManager.Modes, ctx: commands.Context):
+    async def toggle(self, mode: Modes, ctx: commands.Context):
         "設定します。"
         result = await self.data.toggle(ctx.guild.id, mode)  # type: ignore
         await ctx.reply(t(dict(
