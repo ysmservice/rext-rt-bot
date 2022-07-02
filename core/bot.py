@@ -89,9 +89,6 @@ class RT(commands.Bot):
         })
 
         self.check(self._guild_check)
-        for func in dir(self):
-            if func.startswith("get"):
-                setattr(self, func, self.decolator_for_get(getattr(self, func)))
                 
     def _guild_check(self, ctx: commands.Context) -> bool:
         return ctx.guild is not None
@@ -168,6 +165,9 @@ class RT(commands.Bot):
         self.print("Connected to backend")
         setup(self)
         self.print("Started")
+        for func in dir(self):
+            if func.startswith("get"):
+                setattr(self, func, self.decolator_for_get(getattr(self, func)))
 
     async def is_owner(self, user: discord.User) -> bool:
         "オーナーかチェックします。"
@@ -279,9 +279,9 @@ class RT(commands.Bot):
         return f"{self.round_latency}ms"
 
     def decolator_for_get(func):
-        
         def wrapper(*args, **kwargs):
             warnings.warn("This function is not available. Use a function that starts with search_ instead")
+            func(*args, **kwargs)
             raise NotImplementedError("This function is not available. Use a function that starts with search_ instead")
         return wrapper
 
