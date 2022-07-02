@@ -90,8 +90,8 @@ class RT(commands.Bot):
 
         self.check(self._guild_check)
         for func in dir(self):
-            if "get" in func:
-                exec("self." + func + " = self.decolator_for_get(self." + func + ")")
+            if func.startswith("get"):
+                setattr(self, func, self.decolator_for_get(getattr(self, func)))
                 
     def _guild_check(self, ctx: commands.Context) -> bool:
         return ctx.guild is not None
@@ -282,7 +282,7 @@ class RT(commands.Bot):
         
         def wrapper(*args, **kwargs):
             warnings.warn("This function is not available. Use a function that starts with search_ instead")
-            raise SyntaxError("This function is not available. Use a function that starts with search_ instead")
+            raise NotImplementedError("This function is not available. Use a function that starts with search_ instead")
         return wrapper
 
 # もし本番用での実行またはシャードモードの場合はシャードBotに交換する。
