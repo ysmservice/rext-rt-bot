@@ -89,7 +89,10 @@ class RT(commands.Bot):
         })
 
         self.check(self._guild_check)
-
+        for func in dir(self):
+            if "get" in func:
+                exec("self." + func + " = self.decolator_for_get(self." + func + ")")
+                
     def _guild_check(self, ctx: commands.Context) -> bool:
         return ctx.guild is not None
 
@@ -275,32 +278,12 @@ class RT(commands.Bot):
         "`round_latency`で取得した文字列の後ろに`ms`を最後に付けた文字列を取得します。"
         return f"{self.round_latency}ms"
 
-    def get_user(self, userid):
-        raise SyntaxError("This function is not available. Use a function that starts with search_ instead")
+    def decolator_for_get(func):
         
-    def get_guild(self, guildid):
-        raise SyntaxError("This function is not available. Use a function that starts with search_ instead")
-        
-    def get_channel(self, userid):
-        raise SyntaxError("This function is not available. Use a function that starts with search_ instead")
-        
-    def get_emoji(self, emojiid):
-        raise SyntaxError("This function is not available. Use a function that starts with search_ instead")
-        
-    def get_sticker(self, stickerid):
-        raise SyntaxError("This function is not available. Use a function that starts with search_ instead")
-        
-    def get_stage_instance(self, channelid):
-        raise SyntaxError("This function is not available. Use a function that starts with search_ instead")
-        
-    def get_partial_messageable(id, *, guild_id=None, type=None):
-        raise SyntaxError("This function is not available. Use a function that starts with search_ instead")
-        
-    def get_all_channels():
-        raise SyntaxError("This function is not available. Use a function that starts with search_ instead")
-        
-    def get_all_members():
-        raise SyntaxError("This function is not available. Use a function that starts with search_ instead")
+        def wrapper(*args, **kwargs):
+            warnings.warn("This function is not available. Use a function that starts with search_ instead")
+            raise SyntaxError("This function is not available. Use a function that starts with search_ instead")
+        return wrapper
 
 # もし本番用での実行またはシャードモードの場合はシャードBotに交換する。
 if not TEST or SHARD:
