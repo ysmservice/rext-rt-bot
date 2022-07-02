@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal, Optional, Any, TypedDict
 
+import warnings
 from functools import wraps
 from dataclasses import dataclass
 from os.path import isdir
@@ -274,6 +275,32 @@ class RT(commands.Bot):
         "`round_latency`で取得した文字列の後ろに`ms`を最後に付けた文字列を取得します。"
         return f"{self.round_latency}ms"
 
+    def get_user(self, userid):
+        raise SyntaxError("This function is not available. Use a function that starts with search_ instead")
+        
+    def get_guild(self, guildid):
+        raise SyntaxError("This function is not available. Use a function that starts with search_ instead")
+        
+    def get_channel(self, userid):
+        raise SyntaxError("This function is not available. Use a function that starts with search_ instead")
+        
+    def get_emoji(self, emojiid):
+        raise SyntaxError("This function is not available. Use a function that starts with search_ instead")
+        
+    def get_sticker(self, stickerid):
+        raise SyntaxError("This function is not available. Use a function that starts with search_ instead")
+        
+    def get_stage_instance(self, channelid):
+        raise SyntaxError("This function is not available. Use a function that starts with search_ instead")
+        
+    def get_partial_messageable(id, *, guild_id=None, type=None):
+        raise SyntaxError("This function is not available. Use a function that starts with search_ instead")
+        
+    def get_all_channels():
+        raise SyntaxError("This function is not available. Use a function that starts with search_ instead")
+        
+    def get_all_members():
+        raise SyntaxError("This function is not available. Use a function that starts with search_ instead")
 
 # もし本番用での実行またはシャードモードの場合はシャードBotに交換する。
 if not TEST or SHARD:
