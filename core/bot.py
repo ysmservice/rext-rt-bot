@@ -276,7 +276,7 @@ class RT(commands.Bot):
         return f"{self.round_latency}ms"
 
 
-def mark_get_as_deprecated(func):
+def _mark_get_as_deprecated(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not kwargs.pop("force", False):
@@ -285,7 +285,7 @@ def mark_get_as_deprecated(func):
     return wrapper
 for name in dir(RT):
     if name.startswith("get"):
-        setattr(RT, name, mark_get_as_deprecated(getattr(RT, name)))
+        setattr(RT, name, _mark_get_as_deprecated(getattr(RT, name)))
 
 
 # もし本番用での実行またはシャードモードの場合はシャードBotに交換する。
