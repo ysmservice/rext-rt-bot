@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal, Optional, Any, TypedDict
 
-import warnings
 from functools import wraps
 from dataclasses import dataclass
 from os.path import isdir
 from os import listdir
+from warnings import warn
 
 from discord.ext import commands
 import discord
@@ -280,8 +280,8 @@ def mark_get_as_deprecated(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not kwargs.pop("force", False):
-            warnings.warn("This function is deprecated. Use a function that starts with search_... instead.")
-            return func(*args, **kwargs)
+            warn("This function is deprecated. Use a function that starts with search_... instead.")
+        return func(*args, **kwargs)
     return wrapper
 for name in RT.__dict__.keys():
     if name.startswith("get"):
