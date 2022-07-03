@@ -89,7 +89,7 @@ class RT(commands.Bot):
         })
 
         self.check(self._guild_check)
-                
+
     def _guild_check(self, ctx: commands.Context) -> bool:
         return ctx.guild is not None
 
