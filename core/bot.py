@@ -279,10 +279,10 @@ class RT(commands.Bot):
 def mark_get_as_deprecated(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        warnings.warn("This function is not available. Use a function that starts with search_... instead.")
-        return func(*args, **kwargs)
+        if not kwargs.pop("force", False):
+            warnings.warn("This function is deprecated. Use a function that starts with search_... instead.")
+            return func(*args, **kwargs)
     return wrapper
-
 for name in RT.__dict__.keys():
     if name.startswith("get"):
         setattr(RT, name, mark_get_as_deprecated(RT.__dict__[name]))
