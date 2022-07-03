@@ -275,17 +275,17 @@ class RT(commands.Bot):
         "`round_latency`で取得した文字列の後ろに`ms`を最後に付けた文字列を取得します。"
         return f"{self.round_latency}ms"
 
-    def decolator_for_get(func):
-        def wrapper(*args, **kwargs):
-            warnings.warn("This function is not available. Use a function that starts with search_ instead")
-            func(*args, **kwargs) # 元のメゾットを実行
-            raise NotImplementedError("This function is not available. Use a function that starts with search_ instead")
-        return wrapper
+def mark_get_as_deprecated(func):
+    def wrapper(*args, **kwargs):
+        warnings.warn("This function is not available. Use a function that starts with search_ instead")
+        getattr(super, func.__name__)(*args, **kwargs) # 元のメゾットを実行
+        raise NotImplementedError("This function is not available. Use a function that starts with search_ instead")
+    return wrapper
 
 
 for func in RT.__dict__.keys():
     if func.startswith("get"):
-        setattr(RT, func, RT.decolator_for_get(RT.__dict__[func]))
+        setattr(RT, func, mark_get_as_deprecated(RT.__dict__[func]))
 
 # もし本番用での実行またはシャードモードの場合はシャードBotに交換する。
 if not TEST or SHARD:
