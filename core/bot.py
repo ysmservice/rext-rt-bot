@@ -168,7 +168,7 @@ class RT(commands.Bot):
 
     async def is_owner(self, user: discord.User) -> bool:
         "オーナーかチェックします。"
-        return user.id in ADMINS
+        return user.id in ADMINS or await super().is_owner(user)
 
     def get_language(self, mode: Literal["guild", "user"], id_: int) -> str:
         "指定されたユーザーまたはサーバーの言語設定を取得します。"
