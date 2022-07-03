@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from os.path import isdir
 from os import listdir
 from warnings import warn
+from inspect import getmembers, ismethod
 
 from discord.ext import commands
 import discord
@@ -283,9 +284,9 @@ def mark_get_as_deprecated(func):
             warn("This function is deprecated. Use a function that starts with search_... instead.")
         return func(*args, **kwargs)
     return wrapper
-for name in RT.__bases__[0].__dict__.keys():
-    if name.startswith("get"):
-        setattr(RT, name, mark_get_as_deprecated(RT.__bases__[0].__dict__[name]))
+for func_tuple in getmembers(RT, ismethod):
+    if func_tuple[0].startswith("get"):
+        setattr(RT, name, mark_get_as_deprecated(func_tuple[1]))
 
 
 # もし本番用での実行またはシャードモードの場合はシャードBotに交換する。
