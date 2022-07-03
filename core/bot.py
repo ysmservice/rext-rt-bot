@@ -285,7 +285,7 @@ def mark_get_as_deprecated(func):
     return wrapper
 for name in RT.__bases__[0].__dict__.keys():
     if name.startswith("get"):
-        setattr(RT, name, mark_get_as_deprecated(RT.__bases__[0]__dict__[name]))
+        setattr(RT, name, mark_get_as_deprecated(RT.__bases__[0].__dict__[name]))
 
 
 # もし本番用での実行またはシャードモードの場合はシャードBotに交換する。
