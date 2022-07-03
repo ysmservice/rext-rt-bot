@@ -280,13 +280,13 @@ def mark_get_as_deprecated(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         warnings.warn("This function is not available. Use a function that starts with search_... instead.")
-        func(*args, **kwargs) # 元のメゾットを実行
+        return func(*args, **kwargs)
     return wrapper
-
 
 for name in RT.__dict__.keys():
     if name.startswith("get"):
         setattr(RT, name, mark_get_as_deprecated(RT.__dict__[name]))
+
 
 # もし本番用での実行またはシャードモードの場合はシャードBotに交換する。
 if not TEST or SHARD:
