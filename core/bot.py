@@ -285,7 +285,7 @@ class RT(commands.Bot):
 
 for func in RT.__dict__.keys():
     if func.startswith("get"):
-        setattr(self, func, self.decolator_for_get(RT.__dict__[func]))
+        setattr(RT, func, RT.decolator_for_get(RT.__dict__[func]))
 
 # もし本番用での実行またはシャードモードの場合はシャードBotに交換する。
 if not TEST or SHARD:
