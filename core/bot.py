@@ -165,9 +165,6 @@ class RT(commands.Bot):
         self.print("Connected to backend")
         setup(self)
         self.print("Started")
-        for func in dir(self):
-            if func.startswith("get"):
-                setattr(self, func, self.decolator_for_get(getattr(self, func)))
 
     async def is_owner(self, user: discord.User) -> bool:
         "オーナーかチェックします。"
@@ -281,9 +278,14 @@ class RT(commands.Bot):
     def decolator_for_get(func):
         def wrapper(*args, **kwargs):
             warnings.warn("This function is not available. Use a function that starts with search_ instead")
-            func(*args, **kwargs)
+            func(*args, **kwargs) # 元のメゾットを実行
             raise NotImplementedError("This function is not available. Use a function that starts with search_ instead")
         return wrapper
+
+
+for func in RT.__dict__.keys():
+    if func.startswith("get"):
+        setattr(self, func, self.decolator_for_get(RT.__dict__[func]))
 
 # もし本番用での実行またはシャードモードの場合はシャードBotに交換する。
 if not TEST or SHARD:
