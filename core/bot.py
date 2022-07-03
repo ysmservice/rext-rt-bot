@@ -8,6 +8,7 @@ from functools import wraps
 from dataclasses import dataclass
 from os.path import isdir
 from os import listdir
+from warnings import warn
 
 from discord.ext import commands
 import discord
@@ -273,6 +274,18 @@ class RT(commands.Bot):
     def parsed_latency(self) -> str:
         "`round_latency`で取得した文字列の後ろに`ms`を最後に付けた文字列を取得します。"
         return f"{self.round_latency}ms"
+
+
+def _mark_get_as_deprecated(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if not kwargs.pop("force", False):
+            warn("This function is deprecated. Use a function that starts with search_... instead.")
+        return func(*args, **kwargs)
+    return wrapper
+for name in dir(RT):
+    if name.startswith("get"):
+        setattr(RT, name, _mark_get_as_deprecated(getattr(RT, name)))
 
 
 # もし本番用での実行またはシャードモードの場合はシャードBotに交換する。
