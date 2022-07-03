@@ -283,9 +283,9 @@ def mark_get_as_deprecated(func):
             warn("This function is deprecated. Use a function that starts with search_... instead.")
         return func(*args, **kwargs)
     return wrapper
-for name in RT.__dict__.keys():
+for name in RT.__bases__[0].__dict__.keys():
     if name.startswith("get"):
-        setattr(RT, name, mark_get_as_deprecated(RT.__dict__[name]))
+        setattr(RT, name, mark_get_as_deprecated(RT.__bases__[0]__dict__[name]))
 
 
 # もし本番用での実行またはシャードモードの場合はシャードBotに交換する。
