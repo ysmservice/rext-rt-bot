@@ -1,6 +1,5 @@
 name: Report bug(バグの報告)
 description: File a bug report
-title: ""
 labels: ["bug"]
 
 body:
