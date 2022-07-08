@@ -1,15 +1,12 @@
-name: others(その他)
-description: これらにない場合はこちらを使ってください。
-title: "[Others]: "
+name: Others
+description: >
+  割り振りがしずらいものです。
+  It is something that is hard to assign.
+title: ""
 body:
-  - type: markdown
-    attributes:
-      value: |
-        主にバグや機能提案ではない場合のみ使います。
   - type: textarea
     id: describe
     attributes:
-      label: describe
-      description: ここに内容を書き込んでください。
+      label: Describe
     validations:
       required: true

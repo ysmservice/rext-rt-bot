@@ -1,18 +1,22 @@
-name: New feature or request(主に機能提案)
-description: 機能提案を行う場所です。追加するかどうかは分かりません。
-title: "[Enhancement]: "
+name: Enhancement
+description: >
+  機能提案や強化の提案ができます。
+  You can propose features and enhancements.
+title: ""
 labels: ["enhancement"]
 
 body:
   - type: markdown
     attributes:
       value: |
-        機能提案をここで指示されているとおりにやってください。
+        機能提案をここで指示されている通りに行ってください。
+        Please follow the feature suggestions as directed here.
   - type: textarea
     id: description
     attributes:
       label: Please asked me.
-      description: 機能の詳細をここで話してください。
-      placeholder: Tell us what you see!
+      description: >
+        機能の詳細をここで話してください。
+        Talk about the features in detail here.
     validations:
       required: true
