@@ -56,8 +56,8 @@ class Caches:
     user: dict[int, str]
 
 
-GetT = TypeVar("GetT", bound=discord.Object)
-SearchT = TypeVar("SearchT", bound=discord.Object)
+GetT = TypeVar("GetT", bound=discord.abc.Snowflake)
+SearchT = TypeVar("SearchT", bound=discord.abc.Snowflake)
 class RT(commands.Bot):
 
     Colors = Colors

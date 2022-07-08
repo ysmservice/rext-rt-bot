@@ -96,7 +96,7 @@ class ChannelStatus(Cog):
         guild = None
         async for row in self.data.read_all():
             if guild is None or guild.id != row[0]:
-                guild = self.bot.get_guild(row[0])
+                guild = self.bot.get_obj("guild", row[0], discord.Guild)
             if guild is None:
                 continue
             error = None

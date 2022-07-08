@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Literal, TypeAlias, overload
 from collections.abc import Iterator
 
-from collections import defaultdict
 from re import findall
 
 from asyncio import gather
@@ -48,6 +47,8 @@ class DataManager(DatabaseManager):
         )
         # キャッシュを作る。
         async for row in self.fetchstep(cursor, "SELECT GuildId, Mode, Roles FROM Blocker;"):
+            if row[0] not in self.caches:
+                self.caches[row[0]] = {}
             self.caches[row[0]][row[1]] = loads(row[2])
 
     @overload
@@ -58,7 +59,7 @@ class DataManager(DatabaseManager):
         "設定のオンオフを切り替えます。"
         if mode == "all":
             return tuple(await gather(*(
-                self.toggle(guild_id, mode_, cursor=cursor)
+                self.toggle(guild_id, mode_)
                 for mode_ in self.MODES
             )))
 
@@ -126,7 +127,7 @@ class DataManager(DatabaseManager):
         "ロールを削除します。"
         if mode == "all":
             return filter(lambda r: isinstance(r, Exception), await gather(*(
-                self.remove_role(guild_id, mode_, role_id, cursor=cursor)
+                self.remove_role(guild_id, mode_, role_id)
                 for mode_ in self.MODES
             ), return_exceptions=True))
 
@@ -171,10 +172,8 @@ class Blocker(Cog):
         self.data = DataManager(self)
 
     MODES_JA = {
-        "stamp": "スタンプ",
-        "emoji": "絵文字",
-        "reaction": "リアクション",
-        "url": "URL",
+        "stamp": "スタンプ", "emoji": "絵文字",
+        "reaction": "リアクション", "url": "URL",
         "all": "すべての"
     }
 
@@ -219,7 +218,7 @@ class Blocker(Cog):
 
     @blocker.command(description="Toggle blocker.")
     @discord.app_commands.describe(mode="Blocking type")
-    async def toggle(self, ctx, mode: Mode):
+    async def toggle(self, ctx, mode: ModeContainAll):
         result = await self.data.toggle(ctx.guild.id, mode)
         if isinstance(result, tuple):
             return await ctx.reply(t(dict(
@@ -227,7 +226,7 @@ class Blocker(Cog):
                 en="Inverted settings of all blocker."
             ), ctx))
         await ctx.reply(t(dict(
-            ja=f"{self.MODES_JA[mode]}を{'有効化' if result else '無効化'}しました。",
+            ja=f"{self.MODES_JA[mode]}ブロッカーを{'有効化' if result else '無効化'}しました。",
             en=f"{'Enabled' if result else 'Disabled'} {mode} blocker."
         ), ctx))
 
@@ -251,7 +250,7 @@ class Blocker(Cog):
 
     @role.command(aliases=ADD_ALIASES, description="Add Blocking Roles.")
     @discord.app_commands.describe(mode="Blocking type", role="Adding role")
-    async def add(self, ctx, mode: Mode, *, role: discord.Role):
+    async def add(self, ctx, mode: ModeContainAll, *, role: discord.Role):
         async with ctx.typing():
             await self.data.add_role(ctx.guild.id, mode, role.id)
         await ctx.reply("Ok")
@@ -263,13 +262,13 @@ class Blocker(Cog):
 
     @role.command(aliases=REMOVE_ALIASES, description="Remove Blocking Roles.")
     @discord.app_commands.describe(mode="Blocking type", role="Removing role")
-    async def remove(self, ctx, mode: Mode, *, role: discord.Role):
+    async def remove(self, ctx, mode: ModeContainAll, *, role: discord.Role):
         async with ctx.typing():
             result = await self.data.remove_role(ctx.guild.id, mode, role.id)
         await ctx.reply(t(dict(
             ja="設定を試みて、{length}回設定に失敗しました。",
             en="Attempted to set and failed to set {length} times."
-        ), ctx, length=len(result)) if result else "Ok")
+        ), ctx, length=len(set(result))) if result else "Ok")
 
     _HELP.add_sub(Cog.HelpCommand(remove)
         .merge_description("headline", ja="ブロックするロールを削除します。")
@@ -277,11 +276,19 @@ class Blocker(Cog):
         .add_arg("role", "Role", ja="削除するロール", en=_c_d2.replace("Add", "Remov")))
 
     async def call_after(
-        self, guild: discord.Guild, author: discord.Member, mode: str,
+        self, guild: discord.Guild, author: discord.Member, mode: Mode,
         additional: discord.Message | discord.Reaction,
         error_: Exception | None = None
     ) -> None:
-        "ブロッカー用のRTイベントを発行します。"
+        "ブロッカー用のRTイベントを発行します。それと、送信者にブロックしたことを伝えます。"
+        try:
+            await author.send(t(dict(
+                ja=f"{self.MODES_JA[mode]}は{{guild_name}}で禁止されています。",
+                en=f"{mode} is blocked content on {{guild_name}}."
+            ), author, guild_name=guild.name))
+        except Exception:
+            ...
+
         error = None
         if isinstance(error_, discord.Forbidden):
             error = FORBIDDEN
