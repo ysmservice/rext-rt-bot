@@ -63,12 +63,20 @@ class DataManager(DatabaseManager):
         async for row in self.fetchstep(cursor, "SELECT * FROM GlobalChatChannel;"):
             self.caches[row[0]].append(row[1])
 
-    async def is_exists_with_error(self, name: str, **_) -> None:
+    async def is_not_exists_with_error(self, name: str, **_) -> None:
         "`.is_exists`を実行して、既に存在する場合のみエラーを発生させます。"
         if await self.is_exists(name, cursor=cursor):
             raise Cog.BadRequest({
                 "en": "This globalchat already exists.",
                 "ja": "このグローバルチャットは既に存在しています。"
+            })
+
+    async def is_exists_with_error(self, name: str, **_) -> None:
+        "`.is_exists`を実行して、既に存在しない場合のみエラーを発生させます。"
+        if not await self.is_exists(name, cursor=cursor):
+            raise Cog.BadRequest({
+                "en": "This globalchat is not exists.",
+                "ja": "このグローバルチャットは存在しません。"
             })
 
     async def is_connected_with_error(self, channel_id: int, **_) -> None:
@@ -79,14 +87,10 @@ class DataManager(DatabaseManager):
                 "ja": "既にこのグローバルチャットに接続しています。"
             })
 
-    async def before_common_check(self, name: str, channel_id: int, **_) -> None:
-        "`.is_exists_with_error`と`.is_connected_with_error`を実行します。"
-        await self.is_exists_with_error(name, cursor=cursor)
-        await self.is_connected_with_error(channel_id, cursor=cursor)
-
     async def connect(self, name: str, channel_id: int) -> None:
         "グローバルチャットに接続します。"
-        await self.before_common_check(name, channel_id)
+        await self.is_exists_with_error(name, cursor=cursor)
+        await self.is_connected_with_error(channel_id, cursor=cursor)
         await cursor.execute(
             "INSERT INTO GlobalChatChannel VALUES (%s, %s);",
             (name, channel_id)
@@ -98,7 +102,7 @@ class DataManager(DatabaseManager):
         channel_id: int, setting: Setting
     ) -> None:
         "主にグローバルチャットを作るために使います。"
-        await self.before_common_check(name, channel_id)
+        await self.is_not_exists_with_error(name, cursor=cursor)
         # グローバルチャットを作成した人が、最大作成可能個数分既にグローバルチャットを作っているのなら、エラーを起こす。
         await cursor.execute(
             "SELECT COUNT(AuthorId) FROM GlobalChat WHERE AuthorId = %s;",
