@@ -2,7 +2,6 @@ name: Enhancement
 description: >
   機能提案や強化の提案ができます。
   You can propose features and enhancements.
-title: ""
 labels: ["enhancement"]
 
 body:
