@@ -4,6 +4,11 @@ title: ""
 labels: ["bug"]
 
 body:
+  - type: markdown
+    attributes:
+      value: |
+        バグ報告をしてください。
+        Please file a bug report.
   - type: textarea
     id: what-happened
     attributes:

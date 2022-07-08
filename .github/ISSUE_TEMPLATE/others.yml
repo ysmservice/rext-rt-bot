@@ -4,6 +4,10 @@ description: >
   It is something that is hard to assign.
 title: ""
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Issueをどうぞ。
   - type: textarea
     id: describe
     attributes:
