@@ -5,12 +5,16 @@ from collections.abc import AsyncIterator
 
 from collections import defaultdict
 
+from asyncio import gather
+
 import discord
 from discord.ext import commands
 
 from core import Cog, RT, t, DatabaseManager, cursor
 
 from rtutil.utils import webhook_send
+
+from rtlib.common.cacher import Cacher
 from rtlib.common.json import dumps, loads
 
 from data import FORBIDDEN
@@ -207,6 +211,7 @@ class GlobalChat(Cog):
         self.bot = bot
         self.pool = self.bot.pool
         self.data = DataManager(bot)
+        self.cooldowns: Cacher[tuple[int, int], int] = self.bot.cachers.acquire(10.0)
 
     async def cog_load(self):
         await self.data.prepare_table()
@@ -284,45 +289,64 @@ class GlobalChat(Cog):
         if message.author.bot or isinstance(message.author, discord.User):
             return
 
-        async with self.bot.pool.acquire() as connection:
-            async with connection.cursor() as cursor:
-                # 接続しているかの確認と名前の取得を行う。
-                if not await self.data.is_connected(message.channel.id, cursor=cursor) or (
-                    name := await self.data.get_name(message.channel.id, cursor=cursor)
-                ) is None:
-                    return
-                # メッセージの送信を行う。
-                async for channel_id in self.data.get_channel_ids(name, cursor=cursor):
-                    if message.channel.id == channel_id:
-                        continue
-                    # チャンネルの取得を行う。
-                    channel = await self.bot.search_channel(channel_id)
-                    assert isinstance(channel, discord.TextChannel)
-                    if channel is None:
-                        await self.data.disconnect(channel_id, cursor=cursor)
-                        continue
-                    # 送信を行う。
-                    error = None
-                    try:
-                        await webhook_send(
-                            channel, message.author, message.clean_content, files=[
-                                await attachment.to_file()
-                                for attachment in message.attachments
-                            ]
-                        )
-                    except discord.Forbidden:
-                        error = FORBIDDEN
-                    except Exception:
-                        ...
-                    self.bot.rtevent.dispatch("on_global_chat_message", GlobalChatEventContext(
-                        self.bot, channel.guild, error, {
-                            "ja": "グローバルチャットからのメッセージの襲来",
-                            "en": "An assault of messages from global chat"
-                        }, self.text_format({
-                            "ja": "送信対象：{name}", "en": "Target: {name}"
-                        }, name=self.name_and_id(channel)), self.globalchat, error,
-                        channel=channel, message=message
-                    ))
+        # グローバルチャットに接続しているチャンネルかどうかをチェックする。
+        for name, channel_ids in self.data.caches.items():
+            if message.channel.id in channel_ids:
+                break
+        else:
+            return
+        # クールダウンでメッセージを拒否すべきかを確認する。
+        if (message.channel.id, message.author.id) in self.cooldowns:
+            if self.cooldowns[(message.channel.id, message.author.id)] < 4:
+                await gather(
+                    message.delete(), message.author.send(t(dict(
+                        ja="クールダウン中なので送れません。グローバルチャットは10秒のクールダウンが適用されています。"
+                            "なお、このメッセージは三回連続でクールダウンを無視した後は表示されませんので、しっかり十秒数えてから送るようにしてください。"
+                            "あなたが送ろうとしたメッセージ：\n{content}",
+                        en="It is on cooldown and cannot be sent. Global Chat is on a 10 second cooldown."
+                            "Note that this message will not appear after ignoring the cooldown three times in a row, so be sure to count ten seconds before sending it."
+                            "The message you tried to send:\n{content}"
+                    ), message.author, content=message.content))
+                )
+        else:
+            self.cooldowns[(message.channel.id, message.author.id)] = 0
+        self.cooldowns[(message.channel.id, message.author.id)] += 1
+
+        # メッセージの送信を行う。
+        for channel_id in self.data.caches[name]:
+            if message.channel.id == channel_id:
+                continue
+
+            # チャンネルの取得を行う。
+            channel = await self.bot.search_channel(channel_id)
+            assert isinstance(channel, discord.TextChannel)
+            if channel is None:
+                await self.data.disconnect(channel_id, cursor=cursor)
+                continue
+
+            # 送信を行う。
+            error = None
+            try:
+                await webhook_send(
+                    channel, message.author, message.clean_content, files=[
+                        await attachment.to_file()
+                        for attachment in message.attachments
+                    ]
+                )
+            except discord.Forbidden:
+                error = FORBIDDEN
+            except Exception:
+                ...
+
+            self.bot.rtevent.dispatch("on_global_chat_message", GlobalChatEventContext(
+                self.bot, channel.guild, error, {
+                    "ja": "グローバルチャットからのメッセージの襲来",
+                    "en": "An assault of messages from global chat"
+                }, self.text_format({
+                    "ja": "送信対象：{name}", "en": "Target: {name}"
+                }, name=self.name_and_id(channel)), self.globalchat, error,
+                channel=channel, message=message
+            ))
 
 
 async def setup(bot: RT) -> None:
