@@ -27,7 +27,8 @@ class EventContext:
     event: str
 
     def __init__(
-        self, bot: RT, target: Optional[Target | int] = None, status: str = "SUCCESS",
+        self, bot: RT, target: Optional[Target | int] = None,
+        status: str | Text | None = "SUCCESS",
         subject: str | Text = "", detail: str | Text = "",
         feature: Feature = ("Unknown", "..."),
         extend_text: Iterable[str | Text | None] | Text | None = None,
@@ -37,6 +38,8 @@ class EventContext:
         for key, value in kwargs.items():
             setattr(self, key, value)
             self.keys.append(key)
+        if not isinstance(status, str):
+            status = "ERROR"
         self.log, self.status, self.target = log, status, target
 
         # 文字列はもし辞書の場合は`t`を通す。

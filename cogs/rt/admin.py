@@ -110,11 +110,8 @@ class Admin(Cog):
         await ctx.reply(embed=embed)
 
     @admin.command(aliases=("globalban", "グローバルBAN"), description="Modify gban user.")
-    @discord.app_commands.describe(mode="Add or Remove", user="User ID")
-    async def gban(
-        self, ctx, mode: Literal["add", "remove"],
-        user_id: int, reason: str | None = None
-    ):
+    @discord.app_commands.describe(mode="Add or Remove", user_id="User ID")
+    async def gban(self, ctx, mode: Literal["add", "remove"], user_id: int, reason: str):
         message = await ctx.reply("GBAN中...")
         assert isinstance(self.bot.cogs["GBan"], GBan)
         result = await getattr(self.bot.cogs["GBan"].data, f"{mode}_user")(user_id, reason)
@@ -123,26 +120,14 @@ class Admin(Cog):
             unavailable_guild_ids = {
                 a async for a in self.bot.cogs["GBan"].data.get_all_guild_ids()
             }
-            user = await self.bot.search_user(user_id)
 
             for guild in self.bot.guilds:
                 if guild.id in unavailable_guild_ids:
                     continue
 
-                error = None
-                try:
-                    await guild.ban(discord.Object(user_id), reason=t(dict(
-                        ja="RTグローバルBAN \n理由:{reason}",
-                        en="for RT global BAN.\n理由:{reason}"
-                    ), guild))
-                except discord.Forbidden:
-                    error = FORBIDDEN
-                except discord.HTTPException:
-                    error = {"ja": "なんらかのエラーが発生しました。", "en": "Something went wrong."}
+                await self.bot.cogs["GBan"].ban(guild, discord.Object(user_id), reason)
 
-                self.bot.cogs["GBan"].call_gban_event(guild, error, user, reason)
-
-        await message.edit(content="".join(("Ok: ", 'succeeded' if result else 'failed')))
+        await message.edit(content="{}{}".format("Ok: ", 'succeeded' if result else 'failed'))
 
 async def setup(bot):
     await bot.add_cog(Admin(bot))

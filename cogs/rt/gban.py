@@ -1,4 +1,6 @@
-# RT - gban
+# RT - GBAN
+
+from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
@@ -13,29 +15,30 @@ from data import FORBIDDEN
 class DataManager(DatabaseManager):
     "GBAN関連のデータを管理するマネージャーです。"
 
-    def __init__(self, cog):
+    def __init__(self, cog: GBan):
         self.cog = cog
+        self.pool = self.cog.bot.pool
 
     async def prepare_table(self) -> None:
         "テーブルの準備をします。"
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS GlobalBan (
-                UserId BIGINT PRYMARY KEY NOT NULL,
+                UserId BIGINT PRIMARY KEY NOT NULL,
                 Reason VARCHAR(2000) NOT NULL
             );"""
         )
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS GlobalBanSetting (
-                GuildId BIGINT PRYMARY KEY NOT NULL
+                GuildId BIGINT PRIMARY KEY NOT NULL
             );"""
         )
 
-    async def add_user(self, user_id: int, reason: str | None) -> bool:
+    async def add_user(self, user_id: int, reason: str) -> bool:
         "ユーザーを追加します。"
         if not await self.get_reason(user_id, cursor=cursor):
             await cursor.execute(
                 "INSERT INTO GlobalBan VALUES (%s, %s);",
-                (user_id, reason or "RT Global BAN")
+                (user_id, reason)
             )
             return True
         return False
@@ -49,7 +52,6 @@ class DataManager(DatabaseManager):
             )
             return True
         return False
-
 
     async def is_guild_exists(self, guild_id: int, **_) -> bool:
         "サーバーがデータ内に存在するか調べます。"
@@ -114,11 +116,12 @@ class DataManager(DatabaseManager):
                         (id_,)
                     )
 
+
 class GlobalBanEventContext(Cog.EventContext):
     "ユーザーをGBANしたときのイベントコンテキストです。"
 
-    member: discord.Member | discord.User | None
-    reason: str | None
+    user: discord.Member | discord.User | None
+    reason: str
 
 
 class GBan(Cog):
@@ -139,49 +142,48 @@ class GBan(Cog):
     async def toggle(self, ctx):
         async with ctx.typing():
             result = await self.data.toggle_gban(ctx.guild.id)
-            await ctx.reply(t(dict(
-                ja=f"GBANの設定を{'オン' if result else 'オフ'}にしました。",
-                en=f"{'Enabled' if result else 'Disabled'} GBAN setting."
-            ), ctx))
+        await ctx.reply(t(dict(
+            ja=f"GBANの設定を{'オン' if result else 'オフ'}にしました。",
+            en=f"{'Enabled' if result else 'Disabled'} GBAN setting."
+        ), ctx))
 
     @gban.command(description="Check if user is Gbanned")
     @discord.app_commands.describe(user=(_c_d := "Target user"))
     async def check(self, ctx, *, user: discord.User | discord.Object):
         async with ctx.typing():
             result = await self.data.get_reason(user.id)
-            await ctx.reply(t(dict(
-                ja=f"その人はGBANリストに入っていま{'す。理由:' + result if result else 'せん。'}",
-                en=f"The user is {'' if result else 'not '}found in Gban users."
-                    f"\nReason: {result}" if result else ''
-            ), ctx))
+        await ctx.reply(t(dict(
+            ja=f"その人はGBANリストに入っていま{'す。理由:' + result if result else 'せん。'}",
+            en=f"The user is {'' if result else 'not '}found in Gban users."
+                f"\nReason: {result}" if result else ''
+        ), ctx))
 
-    def call_gban_event(
-        self, guild: discord.Guild, error: dict[str, str] | None,
-        member: discord.Member | discord.User | None, reason: str | None
+    async def ban(
+        self, guild: discord.Guild,
+        user: discord.Member | discord.User | discord.Object,
+        reason: str
     ) -> None:
-        "ユーザーをBANしたイベントを呼び出します。"
+        "メンバーをBANして、イベントを呼び出します。"
+        reason = t(dict(
+            ja="RTグローバルBANのため。\n理由: {reason}",
+            en="for RT global BAN.\nReason: {reason}"
+        ), guild, reason=reason)
+        error = None
+        try:
+            await guild.ban(user)
+        except discord.Forbidden:
+            error = FORBIDDEN
         self.bot.rtevent.dispatch("on_global_ban_member", GlobalBanEventContext(
-            self.bot, guild, self.detail_or(error),
-            {"ja": "グローバルBAN", "en": "Global BAN"}, {
-                "ja": f"ユーザー:{Cog.name_and_id(member) if member else '不明'}",
-                "en": f"User: {Cog.name_and_id(member) if member else 'unknown'}"
-            }, self.gban, member=member, reason=reason
+            self.bot, guild, error, {"ja": "グローバルBAN", "en": "Global BAN"},
+            self.text_format({"ja": "ユーザー：{name}", "en": "User: {name}"},
+            name=Cog.name_and_id(user) if hasattr(user, "name") else "???"), # type: ignore
+            self.gban, user=user, reason=reason
         ))
 
     @Cog.listener()
     async def on_member_join(self, member: discord.Member):
         if (reason := await self.data.check(member.id, member.guild.id)):
-            error = None
-            try:
-                await member.ban(reason=t(dict(
-                    ja="RTグローバルBANのため。\n理由: {reason}",
-                    en="for RT global BAN.\nReason: {reason}"
-                ), member.guild, reason=reason))
-            except discord.Forbidden:
-                error = FORBIDDEN
-            except discord.HTTPException:
-                error = {"ja": "なんらかのエラーが発生しました。", "en": "Something went wrong."}
-            self.call_gban_event(member.guild, error, member, reason)
+            await self.ban(member.guild, member, reason)
 
     Cog.HelpCommand(gban) \
         .merge_description("headline", ja="GBAN機能です。") \

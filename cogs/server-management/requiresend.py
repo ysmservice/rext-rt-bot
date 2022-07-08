@@ -177,7 +177,7 @@ class DataManager(DatabaseManager):
             for channel_id, deadline in filter(lambda x: x[0] not in row[2], data.items()): # type: ignore
                 i = True
                 if now - member.joined_at.timestamp() > deadline:
-                    channel = await self.cog.bot.search_channel(guild, channel_id)
+                    channel = await self.cog.bot.search_channel_from_guild(guild, channel_id)
                     reason = t(dict(
                         ja="RequireSentが設定されているチャンネルにメッセージを送信しなかった。\nチャンネル：{channel}" \
                             "\nメンバー：{member}",

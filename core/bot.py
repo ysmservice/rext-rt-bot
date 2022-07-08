@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Optional, Any, TypedDict
+from typing import TYPE_CHECKING, TypeVar, Literal, TypedDict, Any
 
 from functools import wraps
 from dataclasses import dataclass
@@ -56,6 +56,8 @@ class Caches:
     user: dict[int, str]
 
 
+GetT = TypeVar("GetT", bound=discord.Object)
+SearchT = TypeVar("SearchT", bound=discord.Object)
 class RT(commands.Bot):
 
     Colors = Colors
@@ -201,7 +203,23 @@ class RT(commands.Bot):
             )
         return value
 
-    async def search_user(self, user_id: int) -> Optional[discord.User]:
+    def get_obj(self, attribute: str, id_: int, _: type[GetT]) -> GetT | None:
+        """何かを`.get_...`を使用して取得します。
+        `.get_...`はBotのシャードが見ている範囲でしか取得することができません。
+        そのため、間違えてそれを使用しないように非推奨となっています。
+        その非推奨を回避するためのものがこれです。
+        詳細は以下をご覧ください。
+        (TODO: ここに詳細を書いたウェブページのURLを入れる。)"""
+        return getattr(self, f"get_{attribute}")(id_, force=True)
+
+    def get_obj_from_guild(
+        self, guild: discord.Guild, attribute: str,
+        id_: int, _: type[GetT]
+    ) -> GetT | None:
+        "`.get_obj`の`discord.Guild`版です。詳細は`.get_obj`のドキュメントをご覧ください。"
+        return getattr(guild, attribute)(id_, force=True)
+
+    async def search_user(self, user_id: int) -> discord.User | None:
         "`get_user`または`fetch_user`のどちらかを使用してユーザーデータの取得を試みます。"
         user = self.get_user(user_id)
         if user is None:
@@ -212,7 +230,7 @@ class RT(commands.Bot):
         "シャードが使われているBotかどうかを返します。"
         return hasattr(self, "shard_ids")
 
-    async def search_guild(self, guild_id: int, consider_shard: bool = True) -> Optional[discord.Guild]:
+    async def search_guild(self, guild_id: int, consider_shard: bool = True) -> discord.Guild | None:
         """`get_guild`または`fetch_guild`のどちらかを使用してギルドデータの取得を試みます。
         これで返されるギルドの`get_member`や`members`そして`channels`などの属性は使えないことがあります。"""
         guild = self.get_guild(guild_id)
@@ -224,10 +242,10 @@ class RT(commands.Bot):
             guild = await self.fetch_guild(guild_id)
         return guild
 
-    async def search_obj_from_guild(
+    async def _search_obj_from_guild(
         self, guild: discord.Guild, id_: int, type_: str,
-        type_for_fetch: Optional[str] = None
-    ) -> Optional[discord.Object]:
+        type_for_fetch: str | None = None
+    ) -> discord.Object | None:
         obj = getattr(guild, f"get_{type_}")(id_)
         if obj is None:
             type_for_fetch = type_for_fetch or type_
@@ -237,17 +255,23 @@ class RT(commands.Bot):
                 obj = None
         return obj
 
-    async def search_member(self, guild: discord.Guild, member_id: int) -> Optional[discord.Member]:
+    async def search_member(self, guild: discord.Guild, member_id: int) -> discord.Member | None:
         "Guildの`get_member`または`fetch_member`でメンバーオブジェクトの取得を試みます。"
         return await self._search_obj_from_guild(guild, member_id, "member") # type: ignore
 
-    async def search_channel(
+    async def search_channel_from_guild(
         self, guild: discord.Guild, channel_id: int
-    ) -> Optional[discord.abc.GuildChannel | discord.Thread]:
+    ) -> discord.abc.GuildChannel | discord.Thread | None:
         "Guildの`get_channel`または`fetch_channel`でチャンネルオブジェクトの取得を試みます。"
-        return await self.search_obj_from_guild(
+        return await self._search_obj_from_guild(
             guild, channel_id, "channel_or_thread", "channel"
         ) # type: ignore
+
+    async def search_channel(self, channel_id: int) \
+            -> discord.abc.GuildChannel | discord.Thread | discord.abc.PrivateChannel | None:
+        if (channel := self.get_channel(channel_id)) is None:
+            channel = await self.fetch_channel(channel_id)
+        return channel
 
     async def close(self):
         self.print("Closing...")
@@ -276,6 +300,7 @@ class RT(commands.Bot):
         return f"{self.round_latency}ms"
 
 
+# `get_...`を非推奨とする。
 def _mark_get_as_deprecated(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
