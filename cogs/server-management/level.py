@@ -374,7 +374,7 @@ class LevelCog(Cog, name="Level"):
 
     @commands.Cog.listener()
     async def on_message_noprefix(self, message: discord.Message):
-        if message.guild is None or isinstance(message.author, discord.Member):
+        if message.guild is None or not isinstance(message.author, discord.Member):
             return
 
         level, _ = await self.data.read(message.guild.id, message.author.id)

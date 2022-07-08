@@ -224,7 +224,7 @@ class RT(commands.Bot):
             guild = await self.fetch_guild(guild_id)
         return guild
 
-    async def _search_obj_from_guild(
+    async def search_obj_from_guild(
         self, guild: discord.Guild, id_: int, type_: str,
         type_for_fetch: Optional[str] = None
     ) -> Optional[discord.Object]:
@@ -245,7 +245,7 @@ class RT(commands.Bot):
         self, guild: discord.Guild, channel_id: int
     ) -> Optional[discord.abc.GuildChannel | discord.Thread]:
         "Guildの`get_channel`または`fetch_channel`でチャンネルオブジェクトの取得を試みます。"
-        return await self._search_obj_from_guild(
+        return await self.search_obj_from_guild(
             guild, channel_id, "channel_or_thread", "channel"
         ) # type: ignore
 

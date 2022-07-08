@@ -106,7 +106,7 @@ async def quick_invoke_command(
     if isinstance(ctx, discord.Message | discord.Interaction):
         ctx = await bot.get_context(ctx)
 
-    ctx.command = cmd
+    ctx.command = cmd # type: ignore
     for key, value in kwargs.items():
         setattr(ctx, key, value)
 

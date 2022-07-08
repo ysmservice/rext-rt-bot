@@ -396,7 +396,7 @@ class Individual(Cog):
                 value="..." if user.joined_at is None
                     else discord.utils.format_dt(user.joined_at)
             )
-            if user.voice:
+            if user.voice and user.voice.channel:
                 embed.add_field(
                     name={"ja": "接続中のボイスチャンネル",
                           "en": "Connecting voice channel"},
