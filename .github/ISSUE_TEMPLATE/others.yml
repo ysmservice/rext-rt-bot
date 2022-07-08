@@ -2,7 +2,7 @@ name: Others
 description: >
   割り振りがしずらいものです。
   It is something that is hard to assign.
-title: ""
+
 body:
   - type: markdown
     attributes:
