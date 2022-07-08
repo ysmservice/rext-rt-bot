@@ -312,9 +312,11 @@ class GlobalChat(Cog):
                             "The message you tried to send:\n{content}"
                     ), message.author, content=message.content))
                 )
+            return
         else:
             self.cooldowns[(message.channel.id, message.author.id)] = 0
-        self.cooldowns[(message.channel.id, message.author.id)] += 1
+        if self.cooldowns[(message.channel.id, message.author.id)] < 6:
+            self.cooldowns[(message.channel.id, message.author.id)] += 1
 
         # メッセージの送信を行う。
         for channel_id in self.data.caches[name]:
