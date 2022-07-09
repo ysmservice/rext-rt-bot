@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, TypeVar, Literal, TypedDict, Any
 
 from functools import wraps
 from dataclasses import dataclass
+from logging import getLogger
 from os.path import isdir
 from os import listdir
 from warnings import warn
@@ -166,6 +167,7 @@ class RT(commands.Bot):
         ), name="rt.ipcs")
         self.print("Connected to backend")
         setup(self)
+        set_handler(getLogger("discord"))
         self.print("Started")
 
     async def is_owner(self, user: discord.User) -> bool:

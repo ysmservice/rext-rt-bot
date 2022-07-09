@@ -2,7 +2,7 @@
 
 from typing import NoReturn
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from discord.ext import commands
 
@@ -30,8 +30,12 @@ class BaseDateTimeConverter(commands.Converter[datetime]):
         raise DateTimeFormatNotSatisfiable(arg)
 
     async def convert(self, _: commands.Context, arg: str) -> datetime:
+        dt = datetime.now().strptime(arg, self.FORMAT)
+        # もし昔の月の場合は来年の年を書き込む。それ以外は今年を書き込む。
+        now = datetime.now()
+        dt = dt.replace(year=(now.year + 1) if dt < now else now.year)
         try:
-            return datetime.strptime(arg, self.FORMAT)
+            return dt
         except ValueError:
             self.raise_(arg)
 class TimeConverter(BaseDateTimeConverter):
