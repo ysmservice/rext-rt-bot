@@ -1,24 +1,40 @@
 # RT Util - Utils
 
-from typing import TypeVar, Optional, Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, TypeVar, Optional, Any
 from collections.abc import Callable, Iterable, Iterator, Sequence
 
 from datetime import datetime, timedelta, timezone
 
+from random import randint, choice
+from string import ascii_letters, digits
+
 import discord
 
 from core.utils import gettext
-from core import t, RT
 
 from data import TEST, CANARY, PERMISSION_TEXTS, Colors
 
+if TYPE_CHECKING:
+    from core import RT, t
 
+
+_set_t = lambda t: globals().update(t=t)
 __all__ = (
-    "is_json", "unwrap_or", "set_page", "fetch_webhook", "webhook_send",
-    "artificially_send", "permissions_to_text", "make_nopermissions_text",
-    "JST", "make_datetime_text", "adjust_min_max", "replace_nl",
-    "edit_reference"
+    "make_random_string", "make_random_numbers", "is_json", "unwrap_or",
+    "set_page", "fetch_webhook", "webhook_send", "artificially_send",
+    "permissions_to_text", "make_nopermissions_text", "JST",
+    "make_datetime_text", "adjust_min_max", "replace_nl", "edit_reference"
 )
+
+
+def make_random_numbers(length: int) -> str:
+    "ランダムな数字の文字列を指定された長さだけ作ります。"
+    return "".join(str(randint(0, 9)) for _ in range(length))
+def make_random_string(length: int) -> str:
+    "ランダムな文字列を指定された長さだけ作ります。"
+    return "".join(choice(ascii_letters + digits) for _ in range(length))
 
 
 def is_json(data: str) -> bool:
@@ -85,7 +101,7 @@ async def edit_reference(
         ), original)
     # メッセージを編集して更新をする。
     assert bot.user is not None and isinstance(original.channel, discord.TextChannel)
-    if message.author.id ==bot.user.id:
+    if message.author.id == bot.user.id:
         await message.edit(**kwargs)
     elif (webhook := await fetch_webhook(original.channel)) is not None:
         await webhook.edit_message(message.id, **kwargs)

@@ -11,16 +11,12 @@ from captcha.image import ImageCaptcha
 from core import t
 
 from rtutil.views import TimeoutView
+from rtutil.utils import make_random_string
 
 from .part import CaptchaPart, CaptchaContext, FAILED_CODE
 
 
 LENGTH = 5
-
-
-def make_random_string(length: int) -> str:
-    "ランダムな数字の文字列を指定された長さだけ作ります。"
-    return "".join(str(randint(0, 9)) for _ in range(length))
 
 
 class SelectNumber(TimeoutView):

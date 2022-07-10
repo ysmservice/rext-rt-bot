@@ -6,10 +6,13 @@ from typing import TYPE_CHECKING, TypeVar, Literal, TypedDict, Any
 
 from functools import wraps
 from dataclasses import dataclass
+
 from logging import getLogger
+from warnings import warn
+
 from os.path import isdir
 from os import listdir
-from warnings import warn
+from time import time
 
 from discord.ext import commands
 import discord
@@ -26,13 +29,15 @@ from aiomysql import create_pool
 from aiohttp import ClientSession
 from orjson import dumps
 
+from rtutil.utils import make_random_string
+
 from rtlib.common import set_handler
-
-from data import DATA, CATEGORIES, PREFIXES, SECRET, TEST, SHARD, ADMINS, URL, API_URL, Colors
-
 from rtlib.common.cacher import CacherPool, Cacher
 from rtlib.common.chiper import ChiperManager
 from rtlib.common.utils import make_simple_error_text
+
+from data import DATA, CATEGORIES, PREFIXES, SECRET, TEST, SHARD, ADMINS, URL, API_URL, Colors
+
 from .rtws import setup
 from . import tdpocket
 
@@ -40,7 +45,7 @@ if TYPE_CHECKING:
     from .log import LogCore
     from .rtevent import RTEvent
     from .help import HelpCore
-    from .general import Cog
+    from .general import Cog, t
 
 
 __all__ = ("RT",)
@@ -92,6 +97,10 @@ class RT(commands.Bot):
         })
 
         self.check(self._guild_check)
+
+    @property
+    def signature(self) -> str:
+        return self.chiper.encrypt(f"RT.Discord.Bot_{make_random_string(10)}_{time()}")
 
     def _guild_check(self, ctx: commands.Context) -> bool:
         return ctx.guild is not None
@@ -161,8 +170,10 @@ class RT(commands.Bot):
         await self.tree.sync()
         self.print("Command tree was synced")
         self.print("Starting ipcs client...")
-        self.loop.create_task(self.ipcs.start(
-            uri=f"{API_URL.replace('http', 'ws')}/rtws",
+        self.ipcs_task = self.loop.create_task(self.ipcs.start(
+            uri="{}/rtws?signature={}".format(
+                API_URL.replace('http', 'ws'), self.signature
+            ),
             port=DATA["backend"]["port"]
         ), name="rt.ipcs")
         self.print("Connected to backend")

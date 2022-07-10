@@ -8,11 +8,14 @@ from discord.ext import commands
 from discord.ext.fslash import is_fslash
 import discord
 
+from rtutil.utils import _set_t
+
 from rtlib.common.utils import make_error_message, code_block, text_format
 
 from .utils import get_fsparent, gettext
 from .types_ import NameIdObj, MentionIdObj
 from .bot import RT
+from . import tdpocket
 
 from data import Colors
 
@@ -84,6 +87,8 @@ def t(text: Text, ctx: Any, ignore_key_error: bool = False, **kwargs) -> str:
             return text # type: ignore
         else:
             raise
+tdpocket.t = t
+_set_t(t)
 
 
 class BadRequest(Exception):
