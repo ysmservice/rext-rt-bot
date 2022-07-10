@@ -4,7 +4,7 @@ from typing import TypedDict, Literal, List
 
 from sys import argv
 
-from orjson import loads
+from toml import load
 
 
 __all__ = (
@@ -23,8 +23,8 @@ __all__ = (
 class Secret(TypedDict):
     token: str
     mysql: dict
-with open("secret.json", "r") as f:
-    SECRET: Secret = loads(f.read())
+with open("secret.toml", "r") as f:
+    SECRET: Secret = load(f) # type: ignore
 
 
 class BackendData(TypedDict):
@@ -34,8 +34,8 @@ class NormalData(TypedDict):
     backend: BackendData
     shard_ids: List[int] | Literal["auto"]
     shard_count: int | None
-with open("data.json", "r") as f:
-    DATA: NormalData = loads(f.read())
+with open("data.toml", "r") as f:
+    DATA: NormalData = load(f) # type: ignore
 
 
 HOST_PORT = "{}{}".format(

@@ -9,14 +9,14 @@ RTのBotで、メインプログラムです。
 現在プログラムを書き直し中で、現行のRTは[この旧リポジトリ](https://github.com/RT-Team/rt-bot)にあるプログラムで動いています。
 
 ### 要件
-* Python 3.10以上
+* Python 3.10 以上
 * MySQL/MariaDB
 * `requirements.txt`にあるPython用ライブラリ全て
 
 ### 用意
 1. 要件にあるものをまずインストールします。
-2. `data.json.template`と`secret.json.template`のコピーを作って、名前をそれぞれ`.template`を消した名前にします。
-3. `data.json`と`secret.json`の中身をそこに書かれてる通りに適切なものを書き込みます。
+2. `data.template.toml`と`secret.template.toml`のコピーを作って、名前をそれぞれ`.template`を消した名前にします。
+3. `data.toml`と`secret.toml`の中身をそこに書かれてる通りに適切なものを書き込みます。
 4. リポジトリ`rt-lib`を`clone`してフォルダの名前を`rtlib`にする。
 5. バックエンドを用意する(必須ではない)。詳細は[バックエンド](https://github.com/RextTeam/rt-backend)のリポジトリを見てください。
 6. ルートに`secret.key`を`rtlib/rtlib/common/make_key.py`で作る。もしバックエンドも起動するのならそれをバックエンド側にもコピーする。
@@ -37,7 +37,7 @@ Most features were provided by this program.
 The program is currently being rewritten and the current RT is working with the program in [this old repository](https://github.com/RT-Team/rt-bot).
 
 ### Requirements
-* Python 3.10
+* Python 3.10 and more higher
 * MySQL / MariaDB
 * All libraries for Python in `requirements.txt`.
 * Others (optional)
@@ -45,8 +45,8 @@ The program is currently being rewritten and the current RT is working with the 
 
 ### Preparation
 1. Setup above Requirements.
-2. Make copies of `data.json.template` and `secret.json.template` and name them with `.template` removed respectively.
-3. Write the appropriate contents of `data.json` and `secret.json` as written there.
+2. Make copies of `data.template.toml` and `secret.template.toml` and name them with `.template` removed respectively.
+3. Write the appropriate contents of `data.toml` and `secret.toml` as written there.
 4. Clone the repository `rt-lib` and name the folder `rtlib`.
 5. Provide a backend (not required). See the [backend of RT](https://github.com/RextTeam/rt-backend) repository for details.
 6. Create `secret.key` in the root with `rtlib/rtlib/common/make_key.py`. Copy it to the backend side if the backend is also started.

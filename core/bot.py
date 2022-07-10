@@ -38,6 +38,7 @@ from rtlib.common.utils import make_simple_error_text
 
 from data import DATA, CATEGORIES, PREFIXES, SECRET, TEST, SHARD, ADMINS, URL, API_URL, Colors
 
+from .customer_pool import CustomerPool
 from .rtws import setup
 from . import tdpocket
 
@@ -138,17 +139,20 @@ class RT(commands.Bot):
     async def setup_hook(self):
         self.cachers = CacherPool()
         self.cachers.start()
+        self.print("Prepared cacher")
         self.exists_caches = self.cachers.acquire(60.0)
-        self.print("Prepared cachers")
         self.pool = await create_pool(**SECRET["mysql"])
-        self.print("Prepared mysql pool")
+        self.print("Prepared customer pool")
+        self.customers = CustomerPool(self)
 
         self.session = ClientSession(json_serialize=dumps) # type: ignore
+        self.print("Prepared client session")
 
         await self.load_extension("core.rtevent")
         await self.load_extension("core.log")
         await self.load_extension("core.help")
         await self.load_extension("jishaku")
+        self.print("Loaded core extensions")
         tdpocket.bot = self
         for path in listdir("cogs"):
             path = f"cogs/{path}"
@@ -157,7 +161,7 @@ class RT(commands.Bot):
                     await self._load(f"{path}/{deep}")
             else:
                 await self._load(path)
-        self.print("Prepared extensions")
+        self.print("Loaded extensions")
         self.dispatch("load")
         self.dispatch("setup")
 

@@ -2,6 +2,7 @@
 aiohttp[speedups]
 aiomysql
 aiofiles
+toml
 orjson
 git+https://github.com/Rapptz/discord.py
 MySQLer

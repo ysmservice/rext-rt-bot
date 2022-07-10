@@ -1,0 +1,11 @@
+# RT - Data
+
+# シャードIDのリストです。`auto`の場合は全自動となります。
+shard_ids = "auto"
+# シャードの数です。`shard_ids`を`auto`にした場合は未入力で良いです。
+shard_count = ""
+
+[backend]
+# バックエンドの情報です。バックエンドにアクセスするのに使います。
+host = "rt-bot-test.com"
+port = 8080

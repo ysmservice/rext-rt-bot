@@ -1,11 +1,11 @@
 __pycache__
 .DS_Store
-secret.json
-data.json
 .*
 !.gitignore
 rtlib
-secret.key
+*.key
+*.toml
+!*.template.toml
 
 cogs/tts/lib/OpenJTalk/dic
 cogs/tts/lib/OpenJTalk/*.htsvoice
