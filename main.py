@@ -21,6 +21,6 @@ bot = RT(
 )
 bot.print("Now loading...")
 
-
-try: run(bot.start(SECRET["token"]))
-except KeyboardInterrupt: bot.print("Bye")
+if __name__ == "__main__":
+    try: run(bot.start(SECRET["token"]))
+    except KeyboardInterrupt: bot.print("Bye")
