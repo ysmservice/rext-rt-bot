@@ -6,6 +6,7 @@ rtlib
 *.key
 *.toml
 !*.template.toml
+*.*-workspace
 
 cogs/tts/lib/OpenJTalk/dic
 cogs/tts/lib/OpenJTalk/*.htsvoice
