@@ -90,6 +90,33 @@ class ChannelStatus(Cog):
     async def cog_unload(self):
         self._update_channels.cancel()
 
+    def _update_text(self, text: str, guild: discord.Guild) -> str:
+        # 新しい名前を作る。
+        if "!tch!" in text:
+            # テキストチャンネル数
+            text = text.replace("!tch!", str(len(guild.text_channels)))
+        if "!vch!" in text:
+            # ボイスチャンネル数
+            text = text.replace("!vch!", str(len(guild.voice_channels)))
+        # ユーザー数
+        mb, us, bt = 0, 0, 0
+        for member in guild.members:
+            us += 1
+            if member.bot:
+                bt += 1
+            else:
+                mb += 1
+        if "!mb!" in text:
+            # メンバー数
+            text = text.replace("!mb!", str(mb))
+        if "!us!" in text:
+            # ユーザー数
+            text = text.replace("!us!", str(us))
+        if "!bt!" in text:
+            # Bot数
+            text = text.replace("!bt!", str(bt))
+        return text
+
     @tasks.loop(minutes=5)
     async def _update_channels(self):
         # チャンネルステータスの更新をします。
@@ -104,32 +131,8 @@ class ChannelStatus(Cog):
             if channel is None:
                 error = CHANNEL_NOTFOUND
             else:
-                # 新しい名前を作る。
-                text = row[2]
-                if "!tch!" in text:
-                    # テキストチャンネル数
-                    text = text.replace("!tch!", str(len(guild.text_channels)))
-                if "!vch!" in text:
-                    # ボイスチャンネル数
-                    text = text.replace("!vch!", str(len(guild.voice_channels)))
-                # ユーザー数
-                mb, us, bt = 0, 0, 0
-                for member in guild.members:
-                    us += 1
-                    if member.bot:
-                        bt += 1
-                    else:
-                        mb += 1
-                if "!mb!" in text:
-                    # メンバー数
-                    text = text.replace("!mb!", str(mb))
-                if "!us!" in text:
-                    # ユーザー数
-                    text = text.replace("!us!", str(us))
-                if "!bt!" in text:
-                    # Bot数
-                    text = text.replace("!bt!", str(bt))
                 # チャンネルの名前を新しいのに更新する。
+                text = self._update_text(row[2], guild)
                 if text == channel.name:
                     continue
                 try:

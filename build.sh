@@ -1,6 +1,6 @@
 #!/bin/bash
 echo "Now setuping..."
-cp secret.json.template secret.json && cp data.json.template data.json
+cp secret.template.toml secret.toml && cp data.template.toml data.toml
 python3 -m pip install -r requirements.txt
 git clone https://github.com/RextTeam/rt-lib
 mv rt-lib rtlib
@@ -10,8 +10,8 @@ cd ../../ && mv rtlib/common/secret.key ./
 echo "Do you want setup with nano?(y/n)"
 read input
 if [ $input = "y" ] ; then
-    nano secret.json
-    nano data.json
+    nano secret.toml
+    nano data.toml
 else
     echo "ok"
 fi

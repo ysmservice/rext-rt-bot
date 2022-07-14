@@ -7,7 +7,7 @@ from typing import NamedTuple, Literal
 from discord.ext import commands
 import discord
 
-from core import Cog, RT, t, DatabaseManager, cursor
+from core import Cog, RT, DatabaseManager, cursor
 
 from rtutil.content_data import ContentData, disable_content_json, convert_content_json
 
@@ -118,10 +118,27 @@ class WelcomeMessage(Cog):
         .add_arg("text", "str",
             ja="""送信するメッセージです。
                 `Get content`で取得したコードを使用することも可能です。
-                未指定は設定解除とみなします。""",
+                未指定は設定解除とみなします。
+                また、以下の文字を含めると右側にある文字列に交換されます。
+                ```python
+                !mb! Botを含まないサーバーの人数
+                !us! Botを含むサーバーの人数
+                !name! 新しいメンバーの名前
+                !ment! 新しいメンバーのメンション
+                ```""",
             en="""The message to be sent.
                 You can also use the code obtained with `Get content`.
-                Undesignated is considered to be a de-setting."""))
+                Undesignated is considered to be a de-setting.
+                Also, if you include the following characters, they will be replaced by the string on the right side
+                ```python
+                !mb! Number of people on the server not including the Bot.
+                !us! Number of people on the server including the Bot.
+                !name! New member's name.
+                !ment! New member's mention
+                ```"""))
+
+    def _update_text(self, text: str, member: discord.Member) -> str:
+        return text.replace("!ment!", member.mention).replace("!name!", member.display_name)
 
     async def on_member(self, mode: Mode, member: discord.Member):
         data = await self.data.read(member.guild.id, mode)
@@ -129,8 +146,16 @@ class WelcomeMessage(Cog):
             detail = ""
             if (channel := self.bot.get_channel(data.channel_id)) is not None:
                 assert isinstance(channel, discord.TextChannel)
+                kwargs = disable_content_json(data.text)["content"]
+                # もしメッセージ内容に`!bt!`などがあるなら、それに対応する数に交換する。
+                if "content" in kwargs:
+                    kwargs["content"] = self._update_text(
+                        self.bot.cogs["ChannelStatus"]._update_text( # type: ignore
+                            kwargs["content"], channel.guild
+                        ), member
+                    )
                 try:
-                    await channel.send(**disable_content_json(data.text)["content"])
+                    await channel.send(**kwargs)
                 except discord.Forbidden:
                     detail = FORBIDDEN
             else:
