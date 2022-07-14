@@ -10,11 +10,14 @@ if TYPE_CHECKING:
 
 disconnected = False
 def setup(bot: RT):
-    bot.ipcs.set_route(bot.exists)
+    async def exists(_, *args, **kwargs):
+        await bot.exists(*args, **kwargs)
+
+    bot.rtws.set_route(exists)
 
     # バックエンドのイベントを呼び出す。
-    @bot.ipcs.listen()
-    async def on_connect():
+    @bot.rtws.listen()
+    async def on_ready():
         bot.dispatch("backend_connect")
         bot.dispatch("setup")
         global disconnected
@@ -22,8 +25,8 @@ def setup(bot: RT):
             bot.dispatch("backend_reconnect")
             disconnected = False
 
-    @bot.ipcs.listen()
-    async def on_disconnect():
+    @bot.rtws.listen()
+    async def on_close():
         global disconnected
         disconnected = True
         bot.dispatch("backend_disconnect")

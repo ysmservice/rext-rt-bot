@@ -14,6 +14,8 @@ from os.path import isdir
 from os import listdir
 from time import time
 
+from asyncio import sleep
+
 from discord.ext import commands
 import discord
 
@@ -22,8 +24,7 @@ from discord.ext.fslash.types_ import InteractionResponseMode
 
 from jishaku.features.baseclass import Feature
 
-from ipcs.client import logger
-from ipcs import IpcsClient
+from ipcs import Client, logger as ipcs_logger
 
 from aiomysql import create_pool
 from aiohttp import ClientSession
@@ -50,7 +51,7 @@ if TYPE_CHECKING:
 
 
 __all__ = ("RT",)
-set_handler(logger)
+set_handler(ipcs_logger)
 
 
 class Prefixes(TypedDict):
@@ -86,8 +87,8 @@ class RT(commands.Bot):
 
         self.prefixes: Prefixes = {"User": {}, "Guild": {}}
         self.language = Caches({}, {})
-        self.ipcs = IpcsClient(str(self.shard_id))
-        self.ipcs.set_route(self.exists_object, "exists")
+        self.rtws = Client(str(self.shard_id))
+        self.rtws.set_route(self.exists_object, "exists")
         self.chiper = ChiperManager.from_key_file("secret.key")
 
         extend_force_slash(self, replace_invalid_annotation_to_str=True,
@@ -169,19 +170,29 @@ class RT(commands.Bot):
         self.print("Connecting...")
         await super().connect(reconnect=reconnect)
 
-    async def on_connect(self):
-        self.print("Connected")
-        await self.tree.sync()
-        self.print("Command tree was synced")
-        self.print("Starting ipcs client...")
-        self.ipcs_task = self.loop.create_task(self.ipcs.start(
+    def _start_rtws(self) -> None:
+        self.rtws_task = self.loop.create_task(self.rtws.start(
             uri="{}/rtws?signature={}".format(
                 API_URL.replace('http', 'ws'), self.signature
-            ),
-            port=DATA["backend"]["port"]
+            ), reconnect=False, port=DATA["backend"]["port"]
         ), name="rt.ipcs")
+
+    async def on_connect(self):
+        self.print("Connected")
+        # スラッシュコマンドを同期させる。
+        await self.tree.sync()
+        self.print("Command tree was synced")
+        # rtws (ipcs) を繋げる。
+        self.print("Starting ipcs client...")
+        self._start_rtws()
+        @self.rtws.listen()
+        async def on_disconnect_from_server():
+            ipcs_logger.info(self.rtws._CONNECTING)
+            await sleep(5)
+            self._start_rtws()
         self.print("Connected to backend")
         setup(self)
+        # その他
         set_handler(getLogger("discord"))
         self.print("Started")
 
@@ -209,15 +220,14 @@ class RT(commands.Bot):
 
     async def request(self, route: str, *args, **kwargs) -> Any:
         "バックエンドにリクエストをします。"
-        return await self.ipcs.request("__IPCS_SERVER__", route, *args, **kwargs)
+        return await self.rtws.connections["__IPCS_SERVER__"].request(route, *args, **kwargs)
 
     async def exists(self, mode: str, id_: int) -> bool:
         "指定されたオブジェクトがRTが見える範囲に存在しているかを確認します。"
         value = self.exists_caches.get(id_, False)
         if value is None:
-            self.exists_caches[id_] = value = await self.ipcs.request(
-                "__IPCS_SERVER__", "exists", mode, id_
-            )
+            self.exists_caches[id_] = value = await self.rtws.connections \
+                ["__IPCS_SERVER__"].request("exists", mode, id_)
         return value
 
     def get_obj(self, attribute: str, id_: int, _: type[GetT]) -> GetT | None:
@@ -298,11 +308,11 @@ class RT(commands.Bot):
         self.print("Closed cacher")
         self.pool.close()
         self.print("Closed pool")
-        await self.ipcs.close(reason="Closing bot")
+        await self.rtws.close(reason="Closing bot")
         self.print("Closed ipcs")
         return await super().close()
 
-    def exists_object(self, mode: str, id_: int) -> bool:
+    def exists_object(self, _, mode: str, id_: int) -> bool:
         "指定されたIDの存在確認をします。"
         return getattr(self, f"get_{mode}")(id_) is not None
 

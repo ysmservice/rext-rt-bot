@@ -157,7 +157,7 @@ class General(Cog):
 
     async def clean(self):
         "セーブデータの掃除を行います。"
-        if not self.bot.ipcs.ready.is_set():
+        if not self.bot.rtws.ready.is_set():
             return
 
         for key in list(self.bot.cogs.keys()):

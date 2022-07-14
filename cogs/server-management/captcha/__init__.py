@@ -113,7 +113,7 @@ class Captcha(Cog):
 
     @commands.Cog.listener()
     async def on_setup(self):
-        self.bot.ipcs.set_route(self.parts.web.on_success)
+        self.bot.rtws.set_route(self.parts.web.on_success)
 
     def on_dead_queue(self, _, ctx: CaptchaContext) -> None:
         "キューが削除された際に呼ばれる関数です。"
