@@ -10,8 +10,8 @@ cd ../../ && mv rtlib/common/secret.key ./
 echo "Do you want setup with nano?(y/n)"
 read input
 if [ $input = "y" ] ; then
-    nano secret.json
-    nano data.json
+    nano secret.toml
+    nano data.toml
 else
     echo "ok"
 fi
