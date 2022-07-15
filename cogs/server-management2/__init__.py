@@ -23,7 +23,7 @@ class ServerManagement2(Cog):
     @commands.command(description="Ban a user", fsparent=FSPARENT)
     @discord.app_commands.describe(target_ids="Target user ids", reason="Reason")
     @commands.has_permissions(ban_members=True)
-    @commands.cooldown(1, 30, commands.BucketType.guild)
+    @commands.cooldown(1, 60, commands.BucketType.guild)
     async def ban(self, ctx, target_ids: commands.Greedy[int], *, reason: str | None = None):
         if len(target_ids) > 10:
             raise Cog.BadRequest({"ja": "10人以下までしかできません。", "en": "You can only specify up to 10 people."})
