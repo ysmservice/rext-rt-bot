@@ -23,9 +23,10 @@ class ServerManagement2(Cog):
     @commands.command(description="Ban a user", fsparent=FSPARENT)
     @discord.app_commands.describe(target_id="Target user id", reason="Reason")
     @commands.has_permissions(ban_members=True)
-    async def ban(self, ctx, target_id: int, *, reason: str | None = None):
-        await ctx.guild.ban(discord.Object(target_id), reason=reason)
-        await ctx.reply(f"👋 Baned `{target_id}`")
+    async def ban(self, ctx, target_ids: commands.Greedy[int], *, reason: str | None = None):
+        for target_id in target_ids:
+            await ctx.guild.ban(discord.Object(target_id), reason=reason)
+        await ctx.reply("\n".join(f"👋 Baned `{target_id}`" for target_id in target_ids))
 
     @commands.command(
         aliases=("sm", "channel_cooldown", "スローモード", "チャンネルクールダウン"),
