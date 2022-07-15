@@ -21,10 +21,12 @@ class ServerManagement2(Cog):
         await ctx.reply(f"👋 Kicked {self.name_and_id(target)}")
         
     @commands.command(description="Ban a user", fsparent=FSPARENT)
-    @discord.app_commands.describe(target_id="Target user id", reason="Reason")
+    @discord.app_commands.describe(target_ids="Target user ids", reason="Reason")
     @commands.has_permissions(ban_members=True)
     @commands.cooldown(1, 30, commands.BucketType.guild)
     async def ban(self, ctx, target_ids: commands.Greedy[int], *, reason: str | None = None):
+        if len(target_ids) <= 10:
+            raise Cog.BadRequest({"ja": "10人以下までしかできません。", "en": "You can only specify up to 10 people."})
         for target_id in target_ids:
             await ctx.guild.ban(discord.Object(target_id), reason=reason)
         await ctx.reply("\n".join(f"👋 Baned `{target_id}`" for target_id in target_ids))
@@ -46,7 +48,7 @@ class ServerManagement2(Cog):
 
     Cog.HelpCommand(ban) \
         .merge_description("headline", ja="対象のユーザーをbanします。") \
-        .add_arg("target_id", "int", ja="対象とするユーザーID", en="Target user id") \
+        .add_arg("target_ids", "int", ja="対象とするユーザーID", en="Target user id") \
         .add_arg("reason", "str", ja="理由", en="reason")
 
     Cog.HelpCommand(slowmode) \
