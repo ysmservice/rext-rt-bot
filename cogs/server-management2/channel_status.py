@@ -7,7 +7,7 @@ from collections.abc import AsyncIterator
 from discord.ext import commands, tasks
 import discord
 
-from core import Cog, RT, t, DatabaseManager, cursor
+from core import Cog, RT, DatabaseManager, cursor
 
 from data import NO_MORE_SETTING, SET_ALIASES, DELETE_ALIASES, LIST_ALIASES, FORBIDDEN, CHANNEL_NOTFOUND, NOTFOUND
 
@@ -123,7 +123,7 @@ class ChannelStatus(Cog):
         guild = None
         async for row in self.data.read_all():
             if guild is None or guild.id != row[0]:
-                guild = self.bot.get_obj("guild", row[0], discord.Guild)
+                guild = await self.bot.search_guild(row[0])
             if guild is None:
                 continue
             error = None

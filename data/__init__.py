@@ -56,7 +56,7 @@ def get_category(category: str, language: str) -> str:
 
 TEST = argv[-1] != "production"
 CANARY = "canary" in argv
-SHARD = "shard" in argv
+SHARD = DATA["shard_ids"] != "off"
 PREFIXES: tuple[str, ...]
 if TEST:
     if CANARY:

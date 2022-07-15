@@ -37,7 +37,7 @@ from rtlib.common.cacher import CacherPool, Cacher
 from rtlib.common.chiper import ChiperManager
 from rtlib.common.utils import make_simple_error_text
 
-from data import DATA, CATEGORIES, PREFIXES, SECRET, TEST, SHARD, ADMINS, URL, API_URL, Colors
+from data import DATA, CATEGORIES, PREFIXES, SECRET, SHARD, ADMINS, URL, API_URL, Colors
 
 from .customer_pool import CustomerPool
 from .rtws import setup
@@ -190,7 +190,9 @@ class RT(commands.Bot):
             ipcs_logger.info(self.rtws._CONNECTING)
             await sleep(5)
             self._start_rtws()
-        self.print("Connected to backend")
+        @self.rtws.listen()
+        def on_ready():
+            self.print("Connected to backend")
         setup(self)
         # その他
         set_handler(getLogger("discord"))
@@ -340,8 +342,8 @@ for name in dir(RT):
         setattr(RT, name, _mark_get_as_deprecated(getattr(RT, name)))
 
 
-# もし本番用での実行またはシャードモードの場合はシャードBotに交換する。
-if not TEST or SHARD:
+# シャードが指定されいる場合はシャードBotに交換する。
+if SHARD:
     RT.__bases__ = (commands.AutoShardedBot,)
 
 
