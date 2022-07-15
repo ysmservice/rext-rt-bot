@@ -105,7 +105,7 @@ class DataManager(DatabaseManager):
 
     async def clean(self) -> None:
         "データのお掃除をします。"
-        await self.clean_data(cursor, "OriginalCommand", "GuildId")
+        await self.cog.bot.clean(cursor, "OriginalCommand", "GuildId")
 
 
 class OriginalCommandReplyEventContext(Cog.EventContext):

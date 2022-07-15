@@ -70,7 +70,7 @@ class DataManager(DatabaseManager):
 
     async def clean(self) -> None:
         "データのお掃除をします。"
-        await self.clean_data(cursor, "WelcomeMessage", "ChannelId")
+        await self.cog.bot.clean(cursor, "WelcomeMessage", "ChannelId")
 
 
 class WelcomeSendEventContext(Cog.EventContext):

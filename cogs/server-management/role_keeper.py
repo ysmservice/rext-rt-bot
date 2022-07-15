@@ -91,7 +91,7 @@ class DataManager(DatabaseManager):
     CACHE_DEADLINE = 31536000
 
     async def clean(self) -> None:
-        await self.clean_data(cursor, "RoleKeeper", "GuildId")
+        await self.cog.bot.clean(cursor, "RoleKeeper", "GuildId")
         now = time()
         async for row in self.fetchstep(cursor, "SELECT * FROM RoleKeeperCache;"):
             if now - row[-1] > self.CACHE_DEADLINE:

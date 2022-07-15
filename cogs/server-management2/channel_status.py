@@ -68,7 +68,7 @@ class DataManager(DatabaseManager):
 
     async def clean(self) -> None:
         "データをお掃除します。"
-        await self.clean_data(cursor, "ChannelStatus", "ChannelId")
+        await self.cog.bot.clean(cursor, "ChannelStatus", "ChannelId")
 
 
 class UpdateChannelStatusEventContext(Cog.EventContext):

@@ -159,7 +159,7 @@ class DataManager(DatabaseManager):
             if not await self.cog.bot.exists("user", row[1]):
                 await cursor.execute("DELETE FROM Level WHERE UserId = %s;", (row[1],))
             did.append(row[1])
-        await self.clean_data(cursor, "LevelReward", "GuildId")
+        await self.cog.bot.clean(cursor, "LevelReward", "GuildId")
 
 
 class LevelRewardEventContext(Cog.EventContext):

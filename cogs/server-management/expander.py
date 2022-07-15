@@ -64,7 +64,7 @@ class DataManager(DatabaseManager):
 
     async def clean(self) -> None:
         "お掃除をします。"
-        await self.clean_data(cursor, "Expander", "GuildId")
+        await self.cog.bot.clean(cursor, "Expander", "GuildId")
 
 
 PATTERN =  (

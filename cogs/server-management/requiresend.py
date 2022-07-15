@@ -220,7 +220,7 @@ class DataManager(DatabaseManager):
                     "DELETE FROM RequireSent WHERE ChannelId = %s;",
                     (row[1],)
                 )
-        await self.clean_data(cursor, "RequireSentQueue", "GuildId")
+        await self.cog.bot.clean(cursor, "RequireSentQueue", "GuildId")
 
 
 class RequireSent(Cog):

@@ -73,7 +73,7 @@ class DataManager(DatabaseManager):
 
     async def clean(self) -> None:
         "データの掃除をします。"
-        await self.clean_data(cursor, "UnLockQueues", "ChannelId")
+        await self.cog.bot.clean(cursor, "UnLockQueues", "ChannelId")
 
 
 class LockEventContext(Cog.EventContext):

@@ -60,7 +60,7 @@ class DataManager(DatabaseManager):
 
     async def clean(self) -> None:
         "お掃除をします。"
-        await self.clean_data(cursor, "NgWord", "GuildId")
+        await self.cog.bot.clean(cursor, "NgWord", "GuildId")
 
 
 class NgWordEventContext(Cog.EventContext):

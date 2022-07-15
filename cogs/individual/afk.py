@@ -163,8 +163,8 @@ class DataManager(DatabaseManager):
 
     async def clean(self) -> None:
         "掃除をします。"
-        await self.clean_data(cursor, "AutoAfk", "UserId")
-        await self.clean_data(cursor, "afk", "UserId")
+        await self.cog.bot.clean(cursor, "AutoAfk", "UserId")
+        await self.cog.bot.clean(cursor, "afk", "UserId")
 
 
 @dataclass

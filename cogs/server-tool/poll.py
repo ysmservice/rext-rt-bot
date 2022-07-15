@@ -130,7 +130,7 @@ class DataManager(DatabaseManager):
 
     async def clean(self) -> None:
         "データを掃除をします。"
-        await self.clean_data(cursor, "Poll", "ChannelId")
+        await self.cog.bot.clean(cursor, "Poll", "ChannelId")
 
 
 Metadata = NamedTuple("Metadata", (

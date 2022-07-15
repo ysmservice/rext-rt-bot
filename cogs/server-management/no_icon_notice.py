@@ -59,7 +59,7 @@ class DataManager(DatabaseManager):
 
     async def clean(self) -> None:
         "お掃除をします。"
-        await self.clean_data(cursor, "NoIconNotice", "GuildId")
+        await self.cog.bot.clean(cursor, "NoIconNotice", "GuildId")
 
 
 class NoIconNoticeEventContext(Cog.EventContext):

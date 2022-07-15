@@ -26,13 +26,14 @@ from jishaku.features.baseclass import Feature
 
 from ipcs import Client, logger as ipcs_logger
 
-from aiomysql import create_pool
+from aiomysql import create_pool, Cursor
 from aiohttp import ClientSession
 from orjson import dumps
 
 from rtutil.utils import make_random_string
 
 from rtlib.common import set_handler
+from rtlib.common.database import DatabaseManager
 from rtlib.common.cacher import CacherPool, Cacher
 from rtlib.common.chiper import ChiperManager
 from rtlib.common.utils import make_simple_error_text
@@ -330,6 +331,26 @@ class RT(commands.Bot):
     def parsed_latency(self) -> str:
         "`round_latency`で取得した文字列の後ろに`ms`を最後に付けた文字列を取得します。"
         return f"{self.round_latency}ms"
+
+    async def not_exists_check_for_clean(self, type_: str, data: Any) -> bool:
+        "データベースのテーブルのDiscordのIDの名前などから存在確認をして、存在しない場合は`True`を返します。"
+        if type_ == "CategoryId":
+            type_ = "ChannelId"
+        return (getattr(self, f"get_{type_.lower()[:-2]}")(data, force=True) is None) # type: ignore
+
+    async def clean(self, cursor: Cursor, table: str, type_: str, **kwargs) -> None:
+        "データのお掃除をします。"
+        targets = []
+        async for row in DatabaseManager.fetchstep(
+            cursor, "SELECT {} FROM {};".format(type_, table), **kwargs
+        ):
+            if await self.not_exists_check_for_clean(type_, row[0]):
+                targets.append(row[0])
+        for target in targets:
+            await cursor.execute(
+                "DELETE FROM {} WHERE {} = %s;".format(table, type_),
+                (target,)
+            )
 
 
 # `get_...`を非推奨とする。

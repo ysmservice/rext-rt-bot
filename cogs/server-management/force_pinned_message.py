@@ -106,7 +106,7 @@ class DataManager(DatabaseManager):
             del self.caches[channel_id]
 
     async def clean(self) -> None:
-        await self.clean_data(cursor, "ForcePinnedMessage", "ChannelId")
+        await self.cog.bot.clean(cursor, "ForcePinnedMessage", "ChannelId")
 
 
 class ForcePinnedMessageEventContext(Cog.EventContext):

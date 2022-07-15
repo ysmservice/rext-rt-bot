@@ -79,7 +79,7 @@ class DataManager(DatabaseManager):
 
     async def clean(self) -> None:
         "セーブデータのお掃除をします。"
-        await self.clean_data(cursor, "ThreadingToggleFeatures", "ChannelId")
+        await self.cog.bot.clean(cursor, "ThreadingToggleFeatures", "ChannelId")
 
 
 class ThreadingAutoUnArchiveEventContext(Cog.EventContext):
