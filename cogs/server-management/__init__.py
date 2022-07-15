@@ -236,7 +236,7 @@ class ServerManagement(Cog):
         )
 
     (Cog.HelpCommand(change_author)
-        .merge_description("headline", en="コンテンツコードの送信者を変更します。")
+        .merge_description("headline", ja="コンテンツコードの送信者を変更します。")
         .for_customer()
         .add_arg("member", "Member", ja="変更先の送信者です。", en=_d_m)
         .add_arg("code", "str", ja="コンテンツコードです。", en=_d_c))
