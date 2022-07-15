@@ -224,6 +224,10 @@ class RT(commands.Bot):
         "バックエンドにリクエストをします。"
         return await self.rtws.connections["__IPCS_SERVER__"].request(route, *args, **kwargs)
 
+    def exists_object(self, _, mode: str, id_: int) -> bool:
+        "指定されたIDの存在確認をします。"
+        return not self.is_ready() or getattr(self, f"get_{mode}")(id_, force=True) is not None
+
     async def exists(self, mode: str, id_: int) -> bool:
         "指定されたオブジェクトがRTが見える範囲に存在しているかを確認します。"
         value = self.exists_caches.get(id_, False)
@@ -237,8 +241,11 @@ class RT(commands.Bot):
         `.get_...`はBotのシャードが見ている範囲でしか取得することができません。
         そのため、間違えてそれを使用しないように非推奨となっています。
         その非推奨を回避するためのものがこれです。
+        また、この関数はBotが起動完了している状態でなければ実行することができません。
         詳細は以下をご覧ください。
         (TODO: ここに詳細を書いたウェブページのURLを入れる。)"""
+        if not self.is_ready():
+            raise ValueError("`get_obj`はBotが起動完了してからでなければ実行できません。")
         return getattr(self, f"get_{attribute}")(id_, force=True)
 
     def get_obj_from_guild(
@@ -250,7 +257,7 @@ class RT(commands.Bot):
 
     async def search_user(self, user_id: int) -> discord.User | None:
         "`get_user`または`fetch_user`のどちらかを使用してユーザーデータの取得を試みます。"
-        user = self.get_user(user_id)
+        user = self.get_user(user_id, force=True) # type: ignore
         if user is None:
             user = await self.fetch_user(user_id)
         return user
@@ -262,10 +269,10 @@ class RT(commands.Bot):
     async def search_guild(self, guild_id: int, consider_shard: bool = True) -> discord.Guild | None:
         """`get_guild`または`fetch_guild`のどちらかを使用してギルドデータの取得を試みます。
         これで返されるギルドの`get_member`や`members`そして`channels`などの属性は使えないことがあります。"""
-        guild = self.get_guild(guild_id)
+        guild = self.get_guild(guild_id, force=True) # type: ignore
         if consider_shard and self.is_sharded() \
-                and (guild_id >> 22) % len(getattr(self, "shard_ids")) \
-                    in getattr(self, "shard_ids") \
+                and (guild_id >> 22) % getattr(self, "shard_count") \
+                    in getattr(self, "shard_ids", ()) \
                 and guild is None:
             # もし`get_guild`で取得できなかったかつ、ギルドIDから算出したシャードが自分が監視するシャードなら、`fetch_guild`で取得を試みる。
             guild = await self.fetch_guild(guild_id)
@@ -275,7 +282,7 @@ class RT(commands.Bot):
         self, guild: discord.Guild, id_: int, type_: str,
         type_for_fetch: str | None = None
     ) -> discord.Object | None:
-        obj = getattr(guild, f"get_{type_}")(id_)
+        obj = getattr(guild, f"get_{type_}")(id_, force=True)
         if obj is None:
             type_for_fetch = type_for_fetch or type_
             try:
@@ -298,7 +305,7 @@ class RT(commands.Bot):
 
     async def search_channel(self, channel_id: int) \
             -> discord.abc.GuildChannel | discord.Thread | discord.abc.PrivateChannel | None:
-        if (channel := self.get_channel(channel_id)) is None:
+        if (channel := self.get_channel(channel_id, force=True)) is None: # type: ignore
             channel = await self.fetch_channel(channel_id)
         return channel
 
@@ -313,10 +320,6 @@ class RT(commands.Bot):
         await self.rtws.close(reason="Closing bot")
         logger.info("Closed ipcs")
         return await super().close()
-
-    def exists_object(self, _, mode: str, id_: int) -> bool:
-        "指定されたIDの存在確認をします。"
-        return getattr(self, f"get_{mode}")(id_) is not None
 
     @property
     def round_latency(self) -> str:
