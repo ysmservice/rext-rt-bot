@@ -85,7 +85,7 @@ class DataManager(DatabaseManager):
 
     def _is_enabled(self, guild_id: int, mode: Mode) -> None:
         if guild_id not in self.caches or mode not in self.caches[guild_id]:
-            raise Cog.BadRequest({
+            raise Cog.reply_error.BadRequest({
                 "ja": "先にブロッカーの機能を有効にしてください。",
                 "en": "Please enable the blocker function first."
             })
@@ -103,7 +103,7 @@ class DataManager(DatabaseManager):
         if mode in self.caches[guild_id] and (
             role_id in self.caches[guild_id] or len(self.caches[guild_id][mode]) > 15
         ):
-            raise Cog.BadRequest({
+            raise Cog.reply_error.BadRequest({
                 "ja": "既に登録しているまたはこれ以上設定できません。",
                 "en": "Already registered or cannot be set any further."
             })
@@ -133,7 +133,7 @@ class DataManager(DatabaseManager):
 
         self._is_enabled(guild_id, mode)
         if role_id not in self.caches[guild_id][mode]:
-            raise Cog.BadRequest({
+            raise Cog.reply_error.BadRequest({
                 "ja": "そのロールは設定されていません。",
                 "en": "That role is not set."
             })

@@ -66,7 +66,7 @@ class DataManager(DatabaseManager):
     async def is_not_exists_with_error(self, name: str, **_) -> None:
         "`.is_exists`を実行して、既に存在する場合のみエラーを発生させます。"
         if await self.is_exists(name, cursor=cursor):
-            raise Cog.BadRequest({
+            raise Cog.reply_error.BadRequest({
                 "en": "This globalchat already exists.",
                 "ja": "このグローバルチャットは既に存在しています。"
             })
@@ -74,7 +74,7 @@ class DataManager(DatabaseManager):
     async def is_exists_with_error(self, name: str, **_) -> None:
         "`.is_exists`を実行して、既に存在しない場合のみエラーを発生させます。"
         if not await self.is_exists(name, cursor=cursor):
-            raise Cog.BadRequest({
+            raise Cog.reply_error.BadRequest({
                 "en": "This globalchat is not exists.",
                 "ja": "このグローバルチャットは存在しません。"
             })
@@ -82,7 +82,7 @@ class DataManager(DatabaseManager):
     async def is_connected_with_error(self, channel_id: int, **_) -> None:
         "`.is_connected`を実行して、既に接続している場合はエラーを発生させます。"
         if await self.is_connected(channel_id, cursor=cursor):
-            raise Cog.BadRequest({
+            raise Cog.reply_error.BadRequest({
                 "en": "You are already connected to this globalchat.",
                 "ja": "既にこのグローバルチャットに接続しています。"
             })
@@ -109,13 +109,13 @@ class DataManager(DatabaseManager):
             (author_id,)
         )
         if (await cursor.fetchone())[0] > self.MAX_GLOBAL_CHAT_COUNT:
-            raise Cog.BadRequest({
+            raise Cog.reply_error.BadRequest({
                 "ja": "あなたはグローバルチャットを作りすぎです。\nそのためグローバルチャットを作ることができません。",
                 "en": "You are creating too much global chat.\nYou cannot create a global chat because of that."
             })
         # 接続数が最大接続数になっている場合は拒否する。
         if len(self.caches[name]) >= 30:
-            raise Cog.BadRequest({
+            raise Cog.reply_error.BadRequest({
                 "ja": "これ以上このグローバルチャットにチャンネルを接続することができません。",
                 "en": "No more channels can be connected for this global chat."
             })
@@ -170,7 +170,7 @@ class DataManager(DatabaseManager):
     async def disconnect(self, channel_id: int, **_) -> None:
         "グローバルチャットから接続をやめます。"
         if (name := await self.get_name(channel_id, cursor=cursor)) is None:
-            raise Cog.BadRequest({
+            raise Cog.reply_error.BadRequest({
                 "ja": "そのチャンネルは接続されていません。",
                 "en": "That channel is not connected."
             })
@@ -195,7 +195,7 @@ class DataManager(DatabaseManager):
         )
         if row := await cursor.fetchone():
             return Data(*row)
-        raise Cog.BadRequest({
+        raise Cog.reply_error.BadRequest({
             "en": "That globalchat does not exist.",
             "ja": "そのグローバルチャットは存在しません。"
         })
@@ -230,7 +230,7 @@ class GlobalChat(Cog):
     async def check_text_channel(self, ctx: commands.Context) -> None:
         "テキストチャンネル以外のコンテキストの場合はエラーが発生します。"
         if not isinstance(ctx.channel, discord.TextChannel):
-            raise Cog.BadRequest({
+            raise Cog.reply_error.BadRequest({
                 "ja": "グローバルチャットに接続させるチャンネルはテキストチャンネルでなければいけません。",
                 "en": "The channel to be connected to global chat must be a text channel."
             })

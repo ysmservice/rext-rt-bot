@@ -119,7 +119,7 @@ class DataManager(DatabaseManager):
     async def update(self, id_: int, data: TotalData, **_) -> None:
         "集計を更新します。"
         if (await self._read(id_, cursor=cursor)) is None:
-            raise Cog.BadRequest({
+            raise Cog.reply_error.BadRequest({
                 "ja": "既にその投票パネルは集計を終了しています。",
                 "en": "That polling panel has already completed its tally."
             })

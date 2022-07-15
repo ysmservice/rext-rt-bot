@@ -138,7 +138,7 @@ class RolePanel(Cog):
     ):
         # テキストチャンネル以外は除外する。
         if not isinstance(ctx.channel, discord.TextChannel):
-            raise Cog.BadRequest({
+            raise Cog.reply_error.BadRequest({
                 "ja": "テキストチャンネルである必要があります。",
                 "en": "Must be a text channel."
             })

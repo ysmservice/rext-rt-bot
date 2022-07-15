@@ -15,10 +15,12 @@ from core.types_ import CmdGrp
 from core.help import CONV, ANNOTATIONS
 from core import RT, Cog, Embed, t
 
-from rtlib.common.utils import code_block, make_error_message
-from rtlib.common.cacher import Cacher
 from rtutil.converters import DateTimeFormatNotSatisfiable
 from rtutil.views import TimeoutView
+
+from rtlib.common.utils import code_block, make_error_message
+from rtlib.common.reply_error import ReplyError
+from rtlib.common.cacher import Cacher
 
 from data import TEST, SUPPORT_SERVER, PERMISSION_TEXTS
 
@@ -243,17 +245,10 @@ class General(Cog):
         # エラーハンドリングを行う。
         if isinstance(error, commands.CommandInvokeError) and not retry:
             return await self.on_command_error(ctx, error.original, True)
-        elif isinstance(error, (AssertionError, Cog.BadRequest)):
-            reply = False
-            if isinstance(error.args[0], tuple):
-                status, content = error.args[0]
-            else:
-                reply = True
-                content = error.args[0]
+        elif isinstance(error, ReplyError):
+            status, content = error.status, error.text
             if isinstance(content, dict):
                 content = t(content, ctx)
-            if reply:
-                return await ctx.reply(content)
         elif isinstance(error, commands.UserInputError):
             content = self.BAD_ARGUMENT(ctx, error)
             if isinstance(error, commands.MissingRequiredArgument):

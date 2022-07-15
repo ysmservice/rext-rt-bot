@@ -32,7 +32,7 @@ class DataManager(DatabaseManager):
     async def set_(self, guild_id: int, channel_id: int, text: str) -> None:
         "チャンネルステータスを設定します。"
         if len(await self.read(guild_id, cursor=cursor)) >= await self.plan.calculate(guild_id):
-            raise Cog.BadRequest(NO_MORE_SETTING)
+            raise Cog.reply_error.BadRequest(NO_MORE_SETTING)
         await cursor.execute(
             """INSERT INTO ChannelStatus VALUES (%s, %s, %s)
                 ON DUPLICATE KEY UPDATE Text = %s;""",
@@ -64,7 +64,7 @@ class DataManager(DatabaseManager):
                 (channel_id,)
             )
         else:
-            raise Cog.BadRequest(NOTFOUND)
+            raise Cog.reply_error.BadRequest(NOTFOUND)
 
     async def clean(self) -> None:
         "データをお掃除します。"

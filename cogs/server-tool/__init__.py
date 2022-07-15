@@ -57,7 +57,7 @@ class DataManager(DatabaseManager):
         "アンロックキューを追加する。"
         data = await self.read_unlock_queues(guild_id, cursor=cursor)
         if len(data) > 10:
-            raise Cog.BadRequest(NO_MORE_SETTING)
+            raise Cog.reply_error.BadRequest(NO_MORE_SETTING)
         await cursor.execute(
             """INSERT INTO UnLockQueues VALUES (%s, %s, %s)
                 ON DUPLICATE KEY UPDATE Time = %s;""",
@@ -314,7 +314,7 @@ class ServerTool(Cog):
     async def serverinfo(self, ctx, *, target: int | None = None):
         guild = ctx.guild if target is None else await self.bot.search_guild(target)
         if guild is None:
-            raise Cog.BadRequest(NOTFOUND)
+            raise Cog.reply_error.BadRequest(NOTFOUND)
         embed = Cog.Embed(title=t({"ja": "{name}の情報","en": "{name}'s information"}, ctx, name=guild.name))
         embed.add_field(
             name=t({"ja": "サーバー名", "en": "Server name"}, ctx),

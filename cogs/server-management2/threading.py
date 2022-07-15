@@ -65,7 +65,7 @@ class DataManager(DatabaseManager):
         "スレッドのアーカイブ防止の監視のON/OFFの切り替えをします。"
         if len(rows := set(await self.read_all(guild_id, mode, cursor=cursor))) \
                 >= self.MAX_MONITORS:
-            raise Cog.BadRequest(NO_MORE_SETTING)
+            raise Cog.reply_error.BadRequest(NO_MORE_SETTING)
         if any(row.channel_id == channel_id for row in rows):
             await cursor.execute(
                 "DELETE FROM ThreadingToggleFeatures WHERE ChannelId = %s AND Mode = %s;",

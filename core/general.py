@@ -11,6 +11,7 @@ import discord
 from rtutil.utils import _set_t
 
 from rtlib.common.utils import make_error_message, code_block, text_format
+from rtlib.common import reply_error
 
 from .utils import get_fsparent, gettext
 from .types_ import NameIdObj, MentionIdObj
@@ -101,7 +102,7 @@ class Cog(commands.Cog):
 
     text_format = staticmethod(text_format)
     detail_or = staticmethod(lambda detail: "ERROR" if detail else "SUCCESS")
-    BadRequest = BadRequest
+    reply_error = reply_error
     get_fsparent = staticmethod(get_fsparent)
     Help: type[Help]
     HelpCommand: type[HelpCommand]

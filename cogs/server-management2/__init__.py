@@ -27,7 +27,7 @@ class ServerManagement2(Cog):
     @commands.cooldown(1, 60, commands.BucketType.guild)
     async def ban(self, ctx, target_ids: commands.Greedy[int], *, reason: str | None = None):
         if len(target_ids) > 10:
-            raise Cog.BadRequest({"ja": "10人以下までしかできません。", "en": "You can only specify up to 10 people."})
+            raise Cog.reply_error.BadRequest({"ja": "10人以下までしかできません。", "en": "You can only specify up to 10 people."})
         assert ctx.guild is not None
         await asyncio.gather(*(ctx.guild.ban(
             discord.Object(target_id), reason=reason

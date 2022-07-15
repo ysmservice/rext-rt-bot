@@ -7,6 +7,8 @@ import discord
 
 from core import Cog, t, RT, DatabaseManager, cursor
 
+from rtlib.common.reply_error import BadRequest
+
 from data import (
     FORBIDDEN, NO_MORE_SETTING, ALREADY_NO_SETTING,
     ADD_ALIASES, REMOVE_ALIASES, LIST_ALIASES
@@ -42,12 +44,12 @@ class DataManager(DatabaseManager):
         "設定を追加します。"
         data = await self.get(guild_id, cursor=cursor)
         if word in data:
-            raise Cog.BadRequest({
+            raise Cog.reply_error.BadRequest({
                 "ja": "既にその言葉はNGニックネームとして追加されています。",
                 "en": "The word has already been added as an NG nickname."
             })
         if len(data) >= 30:
-            raise Cog.BadRequest(NO_MORE_SETTING)
+            raise Cog.reply_error.BadRequest(NO_MORE_SETTING)
         await cursor.execute(
             "INSERT INTO NgNickName VALUES (%s, %s);",
             (guild_id, word)
@@ -58,7 +60,7 @@ class DataManager(DatabaseManager):
         if word in await self.get(guild_id, cursor=cursor):
             await cursor.execute("DELETE FROM NgNickName WHERE GuildId = %s;", (guild_id,))
         else:
-            raise Cog.BadRequest(ALREADY_NO_SETTING)
+            raise Cog.reply_error.BadRequest(ALREADY_NO_SETTING)
 
     async def clean(self) -> None:
         "データを掃除します。"
