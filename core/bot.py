@@ -107,6 +107,7 @@ class RT(commands.Bot):
 
     @property
     def signature(self) -> str:
+        "認証が必要なバックエンドのエンドポイントへアクセスするのに使う署名です。"
         return self.chiper.encrypt(f"RT.Discord.Bot_{make_random_string(10)}_{time()}")
 
     def _guild_check(self, ctx: commands.Context) -> bool:

@@ -79,36 +79,34 @@ class General(Cog):
 
         self._dayly.start()
 
-        if not getattr(self.bot, "_patched_on_error", False):
-            @self.bot.tree.error
-            async def on_error(
-                interaction: discord.Interaction,
-                error: discord.app_commands.AppCommandError
-            ):
-                # AppCommandのエラーをコマンドフレームワークのエラーとして流す。
-                if hasattr(commands.errors, error.__class__.__name__):
-                    ctx = Context(interaction, {}, None, self.bot)
-                    ctx.command = interaction.command # type: ignore
-                    if isinstance(error, discord.app_commands.CommandInvokeError):
-                        return self.bot.dispatch(
-                            "command_error", ctx, commands.CommandInvokeError(error.original)
-                        )
-                    try:
-                        self.bot.dispatch(
-                            "command_error", ctx,
-                            getattr(commands.errors, error.__class__.__name__)(*(
-                                getattr(error, name)
-                                for name in error.__init__.__code__.co_varnames
-                                if name != "self" and hasattr(error, name)
-                                    and name in getattr(commands.errors, error.__class__.__name__)
-                                        .__init__.__code__.co_varnames
-                                    and not print(name)
-                            ))
-                        )
-                    except TypeError:
-                        self.bot.logger.debug("Ignore error: %s: %s"
-                            % (error.__class__.__name__, error))
-            setattr(self.bot, "_patched_on_error", True)
+        @self.bot.tree.error
+        async def on_error(
+            interaction: discord.Interaction,
+            error: discord.app_commands.AppCommandError
+        ):
+            # AppCommandのエラーをコマンドフレームワークのエラーとして流す。
+            if hasattr(commands.errors, error.__class__.__name__):
+                ctx = Context(interaction, {}, None, self.bot)
+                ctx.command = interaction.command # type: ignore
+                if isinstance(error, discord.app_commands.CommandInvokeError):
+                    return self.bot.dispatch(
+                        "command_error", ctx, commands.CommandInvokeError(error.original)
+                    )
+                try:
+                    self.bot.dispatch(
+                        "command_error", ctx,
+                        getattr(commands.errors, error.__class__.__name__)(*(
+                            getattr(error, name)
+                            for name in error.__init__.__code__.co_varnames
+                            if name != "self" and hasattr(error, name)
+                                and name in getattr(commands.errors, error.__class__.__name__)
+                                    .__init__.__code__.co_varnames
+                                and not print(name)
+                        ))
+                    )
+                except TypeError:
+                    self.bot.logger.debug("Ignore error: %s: %s"
+                        % (error.__class__.__name__, error))
 
     @Cog.listener()
     async def on_ready(self):
@@ -323,6 +321,11 @@ class General(Cog):
                 content = t(dict(
                     ja="このコマンドはNSFWチャンネルでなければ実行することができません。",
                     en="This command can only be executed on NSFW channels."
+                ), ctx)
+            else:
+                content = t(dict(
+                    ja="DMからコマンドを実行することはできません。",
+                    en="Commands cannot be executed from the DM."
                 ), ctx)
         elif isinstance(error, commands.CommandOnCooldown):
             status = 429
