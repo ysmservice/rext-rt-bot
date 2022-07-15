@@ -362,9 +362,12 @@ def _mark_get_as_deprecated(func):
             warn("This function is deprecated. Use a function that starts with search_... instead.")
         return func(*args, **kwargs)
     return wrapper
-for name in dir(RT):
-    if name.startswith("get"):
-        setattr(RT, name, _mark_get_as_deprecated(getattr(RT, name)))
+def _mark_all_get_method_as_deprecated(obj, ignore=()):
+    for name in dir(obj):
+        if name.startswith("get") and (not ignore or all(word not in name for word in ignore)):
+            setattr(obj, name, _mark_get_as_deprecated(getattr(obj, name)))
+_mark_all_get_method_as_deprecated(RT)
+_mark_all_get_method_as_deprecated(discord.Guild, ignore=("role", "scheduled"))
 
 
 # シャードが指定されいる場合はシャードBotに交換する。

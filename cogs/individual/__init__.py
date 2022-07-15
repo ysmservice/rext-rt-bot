@@ -329,6 +329,7 @@ class Individual(Cog):
     @discord.app_commands.describe(tentative="User's name, mention or id")
     @discord.app_commands.rename(tentative="user")
     async def userinfo(self, ctx, *, tentative: str | None = None):
+        await ctx.typing()
         tentative = tentative or ctx.author
         if isinstance(tentative, str):
             try:
@@ -344,13 +345,13 @@ class Individual(Cog):
                             .convert(ctx, tentative) # type: ignore
                     except commands.BadArgument:
                         ...
-                    if isinstance(tentative, str):
-                        raise Cog.reply_error.BadRequest({
-                            "ja": "ユーザーが見つかりませんでした。",
-                            "en": "The user is not found."
-                        })
-            if isinstance(tentative, discord.User | discord.Member):
+            if isinstance(tentative, discord.Object):
                 tentative = await self.bot.search_user(tentative.id) # type: ignore
+        if not isinstance(tentative, discord.User | discord.Member):
+            raise Cog.reply_error.BadRequest({
+                "ja": "ユーザーが見つかりませんでした。",
+                "en": "The user is not found."
+            })
         user = cast(discord.User | discord.Member, tentative)
 
         hypesquad = ""
@@ -365,7 +366,7 @@ class Individual(Cog):
         embed = Cog.Embed(
             title="{}{}".format(user, " **`{}BOT`**".format(
                 "✅" if user.public_flags.verified_bot else ""
-            ) if user.bot else ""), description=hypesquad, color=user.color
+            ) if user.bot else ""), description=hypesquad
         )
         embed.add_field(name="ID", value=f"`{user.id}`")
         embed.add_field(
@@ -386,7 +387,10 @@ class Individual(Cog):
         if isinstance(user, discord.Member):
             embed = Cog.Embed(
                 title=t({"en": "At this server information", "ja": "このサーバーの情報"}, ctx),
-                description=", ".join(role.mention if role.name != "@everyone" else "@everyone" for role in user.roles)
+                description=", ".join(
+                    role.mention if role.name != "@everyone" else "@everyone"
+                    for role in user.roles
+                ), color=user.color
             )
             embed.add_field(
                 name=t({"en": "Show name", "ja": "表示名"}, ctx),
