@@ -92,7 +92,6 @@ class RT(commands.Bot):
         self.rtws.set_route(self.exists_object, "exists")
         self.chiper = ChiperManager.from_key_file("secret.key")
         self.logger = logger
-        set_handler(logger)
         if TEST:
             logger.setLevel(DEBUG)
 
@@ -125,8 +124,8 @@ class RT(commands.Bot):
         if isinstance(error, Exception):
             error = make_simple_error_text(error)
         logger.warn(
-            "%s [warning] Ignored %s" % (f"[{cog.__cog_name__}]", subject),
-            error, *args, **kwargs
+            "%s [warning] Ignored %s %s" % (f"[{cog.__cog_name__}]", subject, error),
+            *args, **kwargs
         )
 
     async def _load(self, path: str):
@@ -136,7 +135,7 @@ class RT(commands.Bot):
             except commands.NoEntryPointError as e:
                 if "'setup'" not in str(e): raise
             else:
-                logger.info("Load extension:", path)
+                logger.info("Load extension: %s", path)
 
     async def setup_hook(self):
         self.cachers = CacherPool()

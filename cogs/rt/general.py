@@ -169,7 +169,7 @@ class General(Cog):
                         .__code__.co_varnames:
                 function = getattr(self.bot.cogs[key], "clean")
             if function is not None:
-                self.bot.logger.info("[Cleaner]", "Clean data: %s" % key)
+                self.bot.logger.info("[Cleaner] %s", "Clean data: %s" % key)
                 self.bot.loop.create_task(function(), name="Clean data")
 
     @tasks.loop(hours=1 if TEST else 24)
