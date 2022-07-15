@@ -29,7 +29,7 @@ class ServerManagement2(Cog):
         if len(target_ids) > 10:
             raise Cog.BadRequest({"ja": "10人以下までしかできません。", "en": "You can only specify up to 10 people."})
         await asyncio.gather(*(ctx.guild.ban(
-            discord.Object(target_id), reason=reason)
+            discord.Object(target_id, reason=reason)
             for target_id in target_ids)
         )
         await ctx.reply("\n".join(f"👋 Baned `{target_id}`" for target_id in target_ids))
