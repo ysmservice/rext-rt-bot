@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, TypeVar, Literal, TypedDict, Any
 from functools import wraps
 from dataclasses import dataclass
 
-from logging import getLogger
+from logging import getLogger, DEBUG
 from warnings import warn
 
 from os.path import isdir
@@ -37,9 +37,10 @@ from rtlib.common.cacher import CacherPool, Cacher
 from rtlib.common.chiper import ChiperManager
 from rtlib.common.utils import make_simple_error_text
 
-from data import DATA, CATEGORIES, PREFIXES, SECRET, SHARD, ADMINS, URL, API_URL, Colors
+from data import DATA, CATEGORIES, PREFIXES, SECRET, TEST, SHARD, ADMINS, URL, API_URL, Colors
 
 from .customer_pool import CustomerPool
+from .utils import logger
 from .rtws import setup
 from . import tdpocket
 
@@ -47,7 +48,7 @@ if TYPE_CHECKING:
     from .log import LogCore
     from .rtevent import RTEvent
     from .help import HelpCore
-    from .general import Cog, t
+    from .general import Cog
 
 
 __all__ = ("RT",)
@@ -90,6 +91,10 @@ class RT(commands.Bot):
         self.rtws = Client(str(self.shard_id))
         self.rtws.set_route(self.exists_object, "exists")
         self.chiper = ChiperManager.from_key_file("secret.key")
+        self.logger = logger
+        set_handler(logger)
+        if TEST:
+            logger.setLevel(DEBUG)
 
         extend_force_slash(self, replace_invalid_annotation_to_str=True,
         first_groups=[discord.app_commands.Group(
@@ -115,15 +120,11 @@ class RT(commands.Bot):
             pr.append(p)
         return pr
 
-    def print(self, *args, **kwargs) -> None:
-        "ログ出力をします。"
-        print("[RT.Bot]", *args, **kwargs)
-
     def ignore(self, cog: Cog, error: Any, *args, subject: str = "error:", **kwargs) -> None:
         "出来事が無視されたという旨のログ出力をします。"
         if isinstance(error, Exception):
             error = make_simple_error_text(error)
-        self.print(
+        logger.warn(
             "%s [warning] Ignored %s" % (f"[{cog.__cog_name__}]", subject),
             error, *args, **kwargs
         )
@@ -135,25 +136,25 @@ class RT(commands.Bot):
             except commands.NoEntryPointError as e:
                 if "'setup'" not in str(e): raise
             else:
-                self.print("Load extension:", path)
+                logger.info("Load extension:", path)
 
     async def setup_hook(self):
         self.cachers = CacherPool()
         self.cachers.start()
-        self.print("Prepared cacher")
+        logger.info("Prepared cacher")
         self.exists_caches = self.cachers.acquire(60.0)
         self.pool = await create_pool(**SECRET["mysql"])
-        self.print("Prepared customer pool")
+        logger.info("Prepared customer pool")
         self.customers = CustomerPool(self)
 
         self.session = ClientSession(json_serialize=dumps) # type: ignore
-        self.print("Prepared client session")
+        logger.info("Prepared client session")
 
         await self.load_extension("core.rtevent")
         await self.load_extension("core.log")
         await self.load_extension("core.help")
         await self.load_extension("jishaku")
-        self.print("Loaded core extensions")
+        logger.info("Loaded core extensions")
         tdpocket.bot = self
         for path in listdir("cogs"):
             path = f"cogs/{path}"
@@ -162,12 +163,12 @@ class RT(commands.Bot):
                     await self._load(f"{path}/{deep}")
             else:
                 await self._load(path)
-        self.print("Loaded extensions")
+        logger.info("Loaded extensions")
         self.dispatch("load")
         self.dispatch("setup")
 
     async def connect(self, reconnect: bool = True) -> None:
-        self.print("Connecting...")
+        logger.info("Connecting...")
         await super().connect(reconnect=reconnect)
 
     def _start_rtws(self) -> None:
@@ -178,12 +179,12 @@ class RT(commands.Bot):
         ), name="rt.ipcs")
 
     async def on_connect(self):
-        self.print("Connected")
+        logger.info("Connected")
         # スラッシュコマンドを同期させる。
         await self.tree.sync()
-        self.print("Command tree was synced")
+        logger.info("Command tree was synced")
         # rtws (ipcs) を繋げる。
-        self.print("Starting ipcs client...")
+        logger.info("Starting ipcs client...")
         self._start_rtws()
         @self.rtws.listen()
         async def on_disconnect_from_server():
@@ -192,11 +193,11 @@ class RT(commands.Bot):
             self._start_rtws()
         @self.rtws.listen()
         def on_ready():
-            self.print("Connected to backend")
+            logger.info("Connected to backend")
         setup(self)
         # その他
         set_handler(getLogger("discord"))
-        self.print("Started")
+        logger.info("Started")
 
     async def is_owner(self, user: discord.User) -> bool:
         "オーナーかチェックします。"
@@ -257,7 +258,7 @@ class RT(commands.Bot):
 
     def is_sharded(self) -> bool:
         "シャードが使われているBotかどうかを返します。"
-        return hasattr(self, "shard_ids")
+        return bool(getattr(self, "shard_ids"))
 
     async def search_guild(self, guild_id: int, consider_shard: bool = True) -> discord.Guild | None:
         """`get_guild`または`fetch_guild`のどちらかを使用してギルドデータの取得を試みます。
@@ -303,15 +304,15 @@ class RT(commands.Bot):
         return channel
 
     async def close(self):
-        self.print("Closing...")
+        logger.info("Closing...")
         self.dispatch("close")
         # お片付けをする。
         self.cachers.close()
-        self.print("Closed cacher")
+        logger.info("Closed cacher")
         self.pool.close()
-        self.print("Closed pool")
+        logger.info("Closed pool")
         await self.rtws.close(reason="Closing bot")
-        self.print("Closed ipcs")
+        logger.info("Closed ipcs")
         return await super().close()
 
     def exists_object(self, _, mode: str, id_: int) -> bool:

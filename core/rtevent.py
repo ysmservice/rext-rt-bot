@@ -96,7 +96,7 @@ class RTEvent(Cog):
         self.set(self.on_error)
 
     async def on_error(self, ctx: OnErrorContext) -> None:
-        self.bot.print("Ignoring error when run event:\n", ctx.make_full_traceback())
+        self.bot.logger.warning("Ignoring error when run event:\n", ctx.make_full_traceback())
 
     def set(self, function: EventFunction, event_name: Optional[str] = None) -> None:
         "イベントを設定します。"

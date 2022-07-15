@@ -18,6 +18,7 @@ class DataManager(DatabaseManager):
     def __init__(self, cog: ChannelStatus):
         self.cog = cog
         self.pool = self.cog.bot.pool
+        self.plan = self.cog.bot.customers.acquire(3, 10)
 
     async def prepare_table(self) -> None:
         "テーブルを作ります。"
@@ -28,11 +29,9 @@ class DataManager(DatabaseManager):
             );"""
         )
 
-    MAX = 10
-
     async def set_(self, guild_id: int, channel_id: int, text: str) -> None:
         "チャンネルステータスを設定します。"
-        if len(await self.read(guild_id, cursor=cursor)) >= self.MAX:
+        if len(await self.read(guild_id, cursor=cursor)) >= await self.plan.calculate(guild_id):
             raise Cog.BadRequest(NO_MORE_SETTING)
         await cursor.execute(
             """INSERT INTO ChannelStatus VALUES (%s, %s, %s)

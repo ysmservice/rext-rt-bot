@@ -17,10 +17,10 @@ intents.message_content = True
 intents.members = True
 bot = RT(
     allowed_mentions=AllowedMentions(everyone=False), intents=intents,
-    status=Status.dnd, activity=Game("起動")
+    status=Status.dnd, activity=Game("booting")
 )
-bot.print("Now loading...")
+bot.logger.info("Now loading...")
 
 if __name__ == "__main__":
     try: run(bot.start(SECRET["token"]))
-    except KeyboardInterrupt: bot.print("Bye")
+    except KeyboardInterrupt: ...

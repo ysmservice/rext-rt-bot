@@ -104,9 +104,8 @@ class General(Cog):
                             ))
                         )
                     except TypeError:
-                        if TEST:
-                            self.bot.print("Ignore error: %s: %s"
-                                % (error.__class__.__name__, error))
+                        self.bot.logger.debug("Ignore error: %s: %s"
+                            % (error.__class__.__name__, error))
             setattr(self.bot, "_patched_on_error", True)
 
     @Cog.listener()
@@ -170,7 +169,7 @@ class General(Cog):
                         .__code__.co_varnames:
                 function = getattr(self.bot.cogs[key], "clean")
             if function is not None:
-                self.bot.print("[Cleaner]", "Clean data: %s" % key)
+                self.bot.logger.info("[Cleaner]", "Clean data: %s" % key)
                 self.bot.loop.create_task(function(), name="Clean data")
 
     @tasks.loop(hours=1 if TEST else 24)
@@ -376,14 +375,16 @@ class General(Cog):
             setattr(ctx, "__rt_error__", error_message)
             # ログを出力しておく。
             if TEST:
-                self.bot.print(error_message)
+                self.bot.logger.debug(error_message)
             else:
-                self.bot.print("Warning: An error has occurred: {} - {}\n\tCommand: {}".format(
-                    error.__class__.__name__, error,
-                    ctx.message.content
-                    if ctx.command is None and isinstance(ctx, commands.Context)
-                    else ctx.command.qualified_name # type: ignore
-                ))
+                self.bot.logger.warning(
+                    "Warning: An error has occurred: {} - {}\n\tCommand: {}".format(
+                        error.__class__.__name__, error,
+                        ctx.message.content
+                        if ctx.command is None and isinstance(ctx, commands.Context)
+                        else ctx.command.qualified_name # type: ignore
+                    )
+                )
             status = 500
             content = code_block(error_message, "python")
 

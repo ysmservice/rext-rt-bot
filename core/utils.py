@@ -8,11 +8,14 @@ from collections.abc import Callable, Iterator
 from inspect import cleandoc, getfile
 import os
 
+from logging import getLogger
+
 from discord.ext import commands
 import discord
 
 from discord.ext.fslash import _get as get_kwarg, Context
 
+from rtlib.common import set_handler
 
 if TYPE_CHECKING:
     from .types_ import Text, CmdGrp
@@ -22,8 +25,10 @@ if TYPE_CHECKING:
 __all__ = (
     "get_inner_text", "separate", "gettext", "cleantext", "make_default",
     "get_kwarg", "truncate", "concat_text", "quick_invoke_command",
-    "get_fsparent"
+    "get_fsparent", "logger"
 )
+logger = getLogger("rt")
+set_handler(logger)
 
 
 def get_fsparent(obj: Any) -> str:
