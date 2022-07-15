@@ -76,10 +76,13 @@ class DataManager(DatabaseManager):
 
     async def add(self, guild_id: int, channel_id: int, deadline: float) -> None:
         "設定を追加します。"
-        assert channel_id not in (channel_ids := await self.get(guild_id, cursor=cursor)), {
-            "ja": "そのチャンネルは既に設定されています。", "en": "That channel is already set up."
-        }
-        assert len(channel_ids) < self.MAX_CHANNELS, ALREADY_NO_SETTING
+        if channel_id in (channel_ids := await self.get(guild_id, cursor=cursor)):
+            raise Cog.reply_error.BadRequest({
+                "ja": "そのチャンネルは既に設定されています。",
+                "en": "That channel is already set up."
+            })
+        if len(channel_ids) >= self.MAX_CHANNELS:
+            raise Cog.reply_error.BadRequest(ALREADY_NO_SETTING)
         await cursor.execute(
             "INSERT INTO RequireSent VALUES (%s, %s, %s);",
             (guild_id, channel_id, deadline)
@@ -89,7 +92,8 @@ class DataManager(DatabaseManager):
 
     async def remove(self, guild_id: int, channel_id: int) -> None:
         "設定を削除します。"
-        assert channel_id in await self.get(guild_id, cursor=cursor), SETTING_NOTFOUND
+        if channel_id not in await self.get(guild_id, cursor=cursor):
+            raise Cog.reply_error.BadRequest(SETTING_NOTFOUND)
         await cursor.execute(
             "DELETE FROM RequireSent WHERE GuildId = %s;",
             (guild_id,)
@@ -291,7 +295,8 @@ class RequireSent(Cog):
     )
     async def add(self, ctx: commands.Context, deadline: float, *, channel: discord.TextChannel):
         await ctx.typing()
-        assert deadline <= 259200, TOO_LARGE_NUMBER
+        if deadline > 259200:
+            raise Cog.reply_error.BadRequest(TOO_LARGE_NUMBER)
         assert ctx.guild is not None
         await self.data.add(ctx.guild.id, channel.id, deadline)
         await ctx.reply("Ok")

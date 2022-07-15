@@ -124,10 +124,11 @@ class DataManager(DatabaseManager):
         "既に存在しているかチェックをしてから設定の数を返します。"
         i = 0
         for automation in await self.get_automations(user_id, cursor=cursor):
-            assert automation.id_ != id_, {
-                "ja": "既に同じ設定名のオートメーションが存在しています。",
-                "en": "Automation with the same configuration name already exists."
-            }
+            if automation.id_ == id_:
+                raise Cog.reply_error.BadRequest({
+                    "ja": "既に同じ設定名のオートメーションが存在しています。",
+                    "en": "Automation with the same configuration name already exists."
+                })
             i += 1
         return i
 
@@ -147,7 +148,8 @@ class DataManager(DatabaseManager):
     async def remove_automation(self, user_id: int, id_: str) -> None:
         "AFKオートメーションのデータを削除します。"
         try:
-            assert await self.check_exists(user_id, id_, cursor=cursor) + 1, SETTING_NOTFOUND
+            if not await self.check_exists(user_id, id_, cursor=cursor) + 1:
+                raise Cog.reply_error.BadRequest(SETTING_NOTFOUND)
         except AssertionError:
             await cursor.execute(
                 "DELETE FROM AutoAfk WHERE UserId = %s AND Id = %s;",

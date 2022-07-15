@@ -61,9 +61,11 @@ class MinesweeperView(TimeoutView):
     "マインスイーパーを操作するためのViewです。"
 
     def __init__(self, game: Minesweeper, mx: int, my: int, *args, **kwargs):
-        assert mx <= 25 and my <= 25, {
-            "ja": "でかすぎます。", "en": "It is so big that I can't make board."
-        }
+        if mx > 25 or my > 25:
+            raise Cog.reply_error.BadRequest({
+                "ja": "数が巨大すぎます。",
+                "en": "It is so big that I can't make board."
+            })
         self.game, self.mx, self.my = game, mx, my
         super().__init__(*args, **kwargs)
         self.add_item(MinesweeperXYSelect("x", mx))

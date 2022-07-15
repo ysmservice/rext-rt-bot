@@ -7,6 +7,8 @@ from aiomysql import Pool
 
 from core import RT, Cog, DatabaseManager, cursor
 
+from data import NO_MORE_SETTING
+
 from .__init__ import FSPARENT
 
 
@@ -34,7 +36,8 @@ class DataManager(DatabaseManager):
 
     async def register(self, user_id: int, url: str, endpoint: str) -> None:
         "短縮URLを登録します。"
-        assert self.MAX_URL > len(await self.read(user_id, cursor=cursor)), "設定しすぎです。"
+        if self.MAX_URL <= len(await self.read(user_id, cursor=cursor)):
+            raise Cog.reply_error.BadRequest(NO_MORE_SETTING)
         await cursor.execute(
             "SELECT Url FROM ShortURL WHERE Endpoint = %s;", (endpoint,)
         )

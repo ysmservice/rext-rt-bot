@@ -103,10 +103,11 @@ class RTA(Cog):
         channel: Optional[discord.TextChannel] = None
     ):
         if await self.data.set(ctx.guild.id, (channel := (channel or ctx.channel)).id): # type: ignore
-            assert isinstance(channel, discord.TextChannel), t(dict(
-                ja="テキストチャンネルでなければいけません。",
-                en="It must be a text channel."
-            ), ctx)
+            if not isinstance(channel, discord.TextChannel):
+                raise Cog.reply_error.BadRequest(t(dict(
+                    ja="テキストチャンネルでなければいけません。",
+                    en="It must be a text channel."
+                ), ctx))
             await ctx.reply(t(dict(
                 ja="即抜けRTA通知チャンネルを{mention}にしました。",
                 en="Immediate Exit RTA Notification Channel to {mention}."

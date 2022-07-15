@@ -209,7 +209,8 @@ class LevelCog(Cog, name="Level"):
         self, ctx: commands.Context, level: int, *,
         user: discord.Member | None = None
     ):
-        assert 0 <= level < 23170, TOO_SMALL_OR_LARGE_NUMBER
+        if 0 > level or level >= 23170:
+            raise Cog.reply_error.BadRequest(TOO_SMALL_OR_LARGE_NUMBER)
         await ctx.typing()
         assert ctx.guild is not None and isinstance(ctx.author, discord.Member)
         user = user or ctx.author

@@ -57,7 +57,8 @@ class DataManager(DatabaseManager):
 
     async def set_interval(self, channel_id: int, interval: float) -> None:
         "インターバルを設定します。"
-        assert 0.083 <= interval <= 180, NUMBER_CANT_USED
+        if 0.083 > interval > 180:
+            raise Cog.reply_error.BadRequest(NUMBER_CANT_USED)
         await cursor.execute(
             "UPDATE ForcePinnedMessage SET PinInterval = %s WHERE ChannelId = %s;",
             (interval, channel_id)
@@ -85,8 +86,8 @@ class DataManager(DatabaseManager):
             length += 1
             if row[0] == channel_id:
                 check = False
-        if check:
-            assert length < self.MAX_PIN, NO_MORE_SETTING
+        if check and length >= self.MAX_PIN:
+            raise Cog.reply_error.BadRequest(NO_MORE_SETTING)
         await cursor.execute(
             """INSERT INTO ForcePinnedMessage VALUES (%s, %s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE Content = %s;""",
@@ -131,7 +132,7 @@ class ForcePinnedMessageIntervalModal(discord.ui.Modal):
             await self.data.set_interval(
                 interaction.channel_id, float(str(self.interval))
             )
-        except (ValueError, AssertionError):
+        except (ValueError, Cog.reply_error.BadRequest):
             await interaction.response.edit_message(
                 content=t(NUMBER_CANT_USED, interaction), view=None
             )

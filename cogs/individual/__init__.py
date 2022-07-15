@@ -344,10 +344,11 @@ class Individual(Cog):
                             .convert(ctx, tentative) # type: ignore
                     except commands.BadArgument:
                         ...
-                    assert not isinstance(tentative, str), {
-                        "ja": "ユーザーが見つかりませんでした。",
-                        "en": "The user is not found."
-                    }
+                    if isinstance(tentative, str):
+                        raise Cog.reply_error.BadRequest({
+                            "ja": "ユーザーが見つかりませんでした。",
+                            "en": "The user is not found."
+                        })
             if isinstance(tentative, discord.User | discord.Member):
                 tentative = await self.bot.search_user(tentative.id) # type: ignore
         user = cast(discord.User | discord.Member, tentative)

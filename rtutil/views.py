@@ -175,9 +175,10 @@ class EmbedPage(BasePage):
         before = self.page
         await super().on_turn(mode, interaction)
         try:
-            assert 0 <= self.page
+            if 0 > self.page:
+                raise IndexError()
             embed = self.embeds[self.page]
-        except (AssertionError, IndexError):
+        except IndexError:
             # これ以上いけない場合は一番最初か最後にする。
             match mode[-1]:
                 case "l":

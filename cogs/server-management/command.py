@@ -78,7 +78,8 @@ class DataManager(DatabaseManager):
 
     async def write(self, guild_id: int, command: str, response: ContentData, full: bool) -> None:
         "データの書き込みをします。"
-        assert guild_id not in self.caches or len(self.caches[guild_id]) < self.MAX, NO_MORE_SETTING
+        if guild_id in self.caches and len(self.caches[guild_id]) >= self.MAX:
+            raise Cog.reply_error.BadRequest(NO_MORE_SETTING)
         if await self.exists(guild_id, command, cursor=cursor):
             await cursor.execute(
                 """UPDATE OriginalCommand SET Response = %s, Full = %s
@@ -94,7 +95,8 @@ class DataManager(DatabaseManager):
 
     async def delete(self, guild_id: int, command: str) -> None:
         "データの削除をします。"
-        assert guild_id in self.caches and command in self.caches[guild_id], ALREADY_NO_SETTING
+        if guild_id not in self.caches or command not in self.caches[guild_id]:
+            raise Cog.reply_error.BadRequest(ALREADY_NO_SETTING)
         await cursor.execute(
             "DELETE FROM OriginalCommand WHERE GuildId = %s AND Command = %s;",
             (guild_id, command)
