@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar, Optional, Any
+from typing import TYPE_CHECKING, TypeVar, ParamSpec, Optional, Any
+from collections.abc import Callable, Coroutine
 
 from discord.ext import commands
 from discord.ext.fslash import is_fslash
@@ -92,11 +93,9 @@ tdpocket.t = t
 _set_t(t)
 
 
-class BadRequest(Exception):
-    "400エラーを発生させます。"
-
-
 UCReT = TypeVar("UCReT")
+PoP = ParamSpec("PoP")
+PoT = TypeVar("PoT")
 class Cog(commands.Cog):
     "Extended cog"
 

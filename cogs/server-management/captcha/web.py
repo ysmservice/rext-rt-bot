@@ -4,13 +4,18 @@ import discord
 
 from core import t
 
-from data import URL
+from data import URL, NOT_PAID
 
 from .part import CaptchaPart, CaptchaContext
 
 
 class WebCaptchaPart(CaptchaPart):
     async def on_button_push(self, _: CaptchaContext, interaction: discord.Interaction) -> None:
+        assert interaction.guild_id is not None
+        if not await self.cog.bot.customers.check(interaction.guild_id):
+            await interaction.response.send_message(t(NOT_PAID, interaction), ephemeral=True)
+            return
+
         view = discord.ui.View(timeout=0.0)
         view.add_item(discord.ui.Button(
             label="Go captcha page", url=f"{URL}/captcha/login/{interaction.guild_id}"

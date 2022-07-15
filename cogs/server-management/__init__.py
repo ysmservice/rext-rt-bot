@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 
 from discord.ext import commands
 import discord
+from orjson import loads
 
 from core import RT, Cog, t
 
@@ -66,13 +67,13 @@ class ServerManagement(Cog):
     def __init__(self, bot: RT):
         self.bot = bot
         self._CTX_MES_SEARCH = "Search"
-        self._CTX_MES_GC = "Get content"
+        self._CTX_MES_GC = "Get Content"
         self.bot.tree.add_command(discord.app_commands.ContextMenu(
             name=self._CTX_MES_SEARCH, callback=self.search,
             type=discord.AppCommandType.message
         ))
         self.bot.tree.add_command(discord.app_commands.ContextMenu(
-            name=self._CTX_MES_GC, callback=self.get_embed,
+            name=self._CTX_MES_GC, callback=self.get_content,
             type=discord.AppCommandType.message
         ))
 
@@ -83,7 +84,7 @@ class ServerManagement(Cog):
     @commands.Cog.listener()
     async def on_help_load(self):
         self.bot.help_.set_help(Cog.Help()
-            .set_title("Context Search")
+            .set_title(self._CTX_MES_SEARCH)
             .set_headline(ja="お手軽検索", en="Easliy search")
             .set_description(
                 ja="""検索したいメッセージのコンテキストメニューのアプリの`Search`を押すことで、Googleの検索のURLを作ります。
@@ -92,7 +93,7 @@ class ServerManagement(Cog):
             )
             .set_category(FSPARENT))
         self.bot.help_.set_help(Cog.Help()
-            .set_title("Get content")
+            .set_title(self._CTX_MES_GC)
             .set_headline(ja="メッセージの内容のコードを取得します。", en="Get message content code")
             .set_description(
                 ja="""メッセージの内容を表すコードを取得します。
@@ -104,6 +105,9 @@ class ServerManagement(Cog):
                     If you want to use the content of an already existing message in a command, perhaps this can do it.
                     Example: `command`"""
             )
+            .set_extra("Notes",
+                ja="製品版を購入している場合は、これで取得したコードに埋め込みが含まれます。",
+                en="If you have purchased the commercial version, the embedding will be included in the code you get with this.")
             .set_category(FSPARENT))
         self.bot.help_.set_help(Cog.Help()
             .set_title("autoPublish")
@@ -133,11 +137,12 @@ class ServerManagement(Cog):
                 If the slow mode is lower than `10` seconds, this function cannot be used.
                 This is to avoid creating a lot of threads when someone is posting messages in a row, which will make Discord angry."""))
 
-    async def get_embed(self, interaction: discord.Interaction, message: discord.Message):
+    async def get_content(self, interaction: discord.Interaction, message: discord.Message):
         data = ContentData(content={}, author=message.author.id, json=True)
         if message.content:
             data["content"]["content"] = message.content
-        if message.embeds:
+        assert interaction.guild_id is not None
+        if message.embeds and await self.bot.customers.check(interaction.guild_id):
             data["content"]["embeds"] = [embed.to_dict() for embed in message.embeds]
         await interaction.response.send_message(
             code_block(dumps(data), "json"),
@@ -190,9 +195,7 @@ class ServerManagement(Cog):
     @commands.cooldown(1, 600, commands.BucketType.channel)
     @discord.app_commands.describe(content="The characters that must be included in the message to be counted. If not specified, all are included.")
     async def messagecount(self, ctx: commands.Context, *, content: str | None = None):
-        message = await ctx.reply(t({
-            "ja": "数え中...", "en": "Counting..."
-        }, ctx))
+        message = await ctx.reply(t({"ja": "数え中...", "en": "Counting..."}, ctx))
         count = len([
             mes async for mes in ctx.channel.history(limit=5000)
             if content is None or content in mes.content
@@ -213,6 +216,31 @@ class ServerManagement(Cog):
             en="""You can specify a string of characters that must be included in the message to be counted.
                 If not entered, all messages will be counted."""))
     del MESC_HELP
+
+    @commands.command(
+        aliases=("ca", "送信者変更", "そへ"), fsparent=FSPARENT,
+        description="Change the sender of the content code."
+    )
+    @discord.app_commands.describe(
+        member=(_d_m := "The sender of the change."),
+        code=(_d_c := "Content code")
+    )
+    async def change_author(self, ctx: commands.Context, member: discord.Member, *, code: str):
+        assert ctx.guild is not None
+        await self.bot.customers.assert_(ctx.guild.id)
+        data: ContentData = loads(code)
+        data["author"] = member.id
+        await ctx.reply(
+            code_block(dumps(data), "json"),
+            allowed_mentions=discord.AllowedMentions.none()
+        )
+
+    (Cog.HelpCommand(change_author)
+        .merge_description("headline", en="コンテンツコードの送信者を変更します。")
+        .for_customer()
+        .add_arg("member", "Member", ja="変更先の送信者です。", en=_d_m)
+        .add_arg("code", "str", ja="コンテンツコードです。", en=_d_c))
+    del _d_m, _d_c
 
     @commands.command(
         aliases=("tm", "タイムマシン", "バック・トゥ・ザ・フューチャー"), fsparent=FSPARENT,

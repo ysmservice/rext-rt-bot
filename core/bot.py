@@ -353,6 +353,22 @@ class RT(commands.Bot):
                 (target,)
             )
 
+    async def censor(self, cursor: Cursor, table: str, max_: int, type_: str = "GuildId") -> None:
+        """製品版を適用していないサーバーの設定を削除します。
+        `max_`の数になるまで削除を行います。"""
+        async for row in DatabaseManager.fetchstep(
+            cursor, "SELECT DISTINCT {} FROM {};".format(type_, table)
+        ):
+            if not await self.customers.check(row[0]):
+                await cursor.execute("SELECT SUM({}) FROM {};".format(type_, table))
+                if (now := (await cursor.fetchone())[0]) <= max_:
+                    continue
+                await cursor.execute(
+                    """DELETE FROM {} WHERE {} = %s LIMIT {};""".format(
+                        table, type_, now - max_
+                    ), (row[0],)
+                )
+
 
 # `get_...`を非推奨とする。
 def _mark_get_as_deprecated(func):

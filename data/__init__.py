@@ -9,9 +9,9 @@ from toml import load
 
 __all__ = (
     "SECRET", "DATA", "CANARY", "get_category", "HOST_PORT", "URL", "API_URL", "SHARD",
-    "TEST", "PREFIXES", "TOPIC_PREFIX", "ADMINS", "Colors", "EMOJIS",
+    "TEST", "PREFIXES", "TOPIC_PREFIX", "ADMINS", "Colors", "EMOJIS", "ONLY_PRODUCT",
     "SUPPORT_SERVER", "PERMISSION_TEXTS", "SETTING_NOTFOUND", "ALREADY_NO_SETTING",
-    "TOO_LARGE_NUMBER", "TOO_SMALL_NUMBER", "TOO_SMALL_OR_LARGE_NUMBER",
+    "TOO_LARGE_NUMBER", "TOO_SMALL_NUMBER", "TOO_SMALL_OR_LARGE_NUMBER", "NOT_PAID",
     "NO_MORE_SETTING", "NUMBER_CANT_USED", "FORBIDDEN", "notfound", "NOTFOUND",
     "ROLE_NOTFOUND", "CHANNEL_NOTFOUND", "MESSAGE_NOTFOUND",
     "SET_ALIASES", "DELETE_ALIASES", "ADD_ALIASES", "REMOVE_ALIASES", "SHOW_ALIASES",
@@ -140,6 +140,11 @@ PERMISSION_TEXTS = {
 "権限の日本語での名前"
 
 
+ONLY_PRODUCT = dict(ja="**製品版限定**", en="**Product version only**.")
+NOT_PAID = dict(
+    ja="このサーバーは製品版が適用されているサーバーではないため、この機能を使用することができません。",
+    en="This server is not a server to which the product version is applied and therefore cannot use this feature."
+)
 SETTING_NOTFOUND = {
     "ja": "設定が見つかりませんでした。",
     "en": "Setting not found."

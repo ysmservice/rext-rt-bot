@@ -5,8 +5,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from rtlib.common.cacher import Cacher
+from rtlib.common.reply_error import BadRequest
+
+from data import NOT_PAID
 
 if TYPE_CHECKING:
+    from .types_ import Text
     from .bot import RT
 
 
@@ -42,6 +46,11 @@ class CustomerPool:
                     )
                     self.caches[guild_id] = bool(await cursor.fetchone())
         return self.caches[guild_id]
+
+    async def assert_(self, guild_id: int, resopnse_text: Text = NOT_PAID) -> None:
+        "指定されたサーバーが製品版適用済みではない場合は`rtlib.common.reply_error.ReplyError`を発生させます。"
+        if not await self.bot.customers.check(guild_id):
+            raise BadRequest(resopnse_text)
 
     def acquire(self, free: int, customer: int) -> Plan:
         "プランを作ります。"

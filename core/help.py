@@ -14,6 +14,8 @@ from discord.ext.fslash import _get
 
 from rtlib.common.utils import code_block
 
+from data import ONLY_PRODUCT
+
 from .utils import (
     get_kwarg, get_fsparent, get_inner_text, gettext, cleantext,
     make_default, concat_text
@@ -139,6 +141,11 @@ class Help:
     def add_sub(self: SelfT, sub: Help) -> SelfT:
         "サブコマンドを設定します。"
         self.sub.append(sub)
+        return self
+
+    def for_customer(self: SelfT) -> SelfT:
+        "説明に製品版限定と書き加えます。"
+        self.description = concat_text(self.description, ONLY_PRODUCT, "\n")
         return self
 
     def __str__(self) -> str:

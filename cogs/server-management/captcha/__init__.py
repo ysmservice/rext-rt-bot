@@ -317,14 +317,15 @@ class Captcha(Cog):
     @captcha.command(aliases=("ウェブ",), description="Set up web captcha")
     @_role_describe
     async def web(self, ctx: commands.Context, *, role: discord.Role):
+        assert ctx.guild is not None
+        await self.bot.customers.assert_(ctx.guild.id)
         await self.setup(ctx, "web", role)
 
     _SETUP_HELP.add_sub(Cog.HelpCommand(web)
         .set_description(
             ja="ウェブで行う認証方式で、本格的な認証で安全度が高いです。",
             en="Web captcha. It is a full-fledged captcha and highly secure."
-        )
-        .set_args(**_BASE_ARGS))
+        ).for_customer().set_args(**_BASE_ARGS))
 
     @captcha.command(aliases=("ワンクリック", "oc"), description="Set up web captcha")
     @_role_describe

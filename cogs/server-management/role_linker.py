@@ -146,6 +146,7 @@ class DataManager(DatabaseManager):
             else:
                 if guild.get_role(row[1]) is None or guild.get_role(row[2]):
                     await self.delete(*row[:3], cursor=cursor)
+        await self.cog.bot.censor(cursor, "RoleLinker", self.MAX)
 
 
 class RoleLinkerEventContext(Cog.EventContext):
@@ -222,6 +223,7 @@ class RoleLinker(Cog):
                 For example, when one role is added, another role is added.
                 And, the reverse can be done. (When one role is added, another role is removed.)"""
         )
+        .for_customer()
         .set_extra("Notes",
             ja="Discordにやりすぎと言われないようにロールの付与と削除は五秒以上遅れることがあります。",
             en="Adding and removing roles can be delayed for more than five seconds so that Discord does not say you are overdoing it.")
