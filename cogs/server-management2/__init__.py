@@ -1,4 +1,5 @@
 # RT - Server Management 2
+import asyncio
 
 import discord
 from discord.ext import commands
@@ -21,11 +22,17 @@ class ServerManagement2(Cog):
         await ctx.reply(f"👋 Kicked {self.name_and_id(target)}")
         
     @commands.command(description="Ban a user", fsparent=FSPARENT)
-    @discord.app_commands.describe(target_id="Target user id", reason="Reason")
+    @discord.app_commands.describe(target_ids="Target user ids", reason="Reason")
     @commands.has_permissions(ban_members=True)
-    async def ban(self, ctx, target_id: int, *, reason: str | None = None):
-        await ctx.guild.ban(discord.Object(target_id), reason=reason)
-        await ctx.reply(f"👋 Baned `{target_id}`")
+    @commands.cooldown(1, 60, commands.BucketType.guild)
+    async def ban(self, ctx, target_ids: commands.Greedy[int], *, reason: str | None = None):
+        if len(target_ids) > 10:
+            raise Cog.BadRequest({"ja": "10人以下までしかできません。", "en": "You can only specify up to 10 people."})
+        await asyncio.gather(*(ctx.guild.ban(
+            discord.Object(target_id, reason=reason)
+            for target_id in target_ids
+        ))
+        await ctx.reply("\n".join(f"👋 Baned `{target_id}`" for target_id in target_ids))
 
     @commands.command(
         aliases=("sm", "channel_cooldown", "スローモード", "チャンネルクールダウン"),
@@ -44,7 +51,7 @@ class ServerManagement2(Cog):
 
     Cog.HelpCommand(ban) \
         .merge_description("headline", ja="対象のユーザーをbanします。") \
-        .add_arg("target_id", "int", ja="対象とするユーザーID", en="Target user id") \
+        .add_arg("target_ids", "int", ja="対象とするユーザーID(複数指定可)", en="Target user id(Multiple designations allowed)") \
         .add_arg("reason", "str", ja="理由", en="reason")
 
     Cog.HelpCommand(slowmode) \
