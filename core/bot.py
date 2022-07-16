@@ -315,8 +315,6 @@ class RT(commands.Bot):
         logger.info("Closing...")
         self.dispatch("close")
         # お片付けをする。
-        self.cachers.close()
-        logger.info("Closed cacher")
         self.pool.close()
         logger.info("Closed pool")
         await self.rtws.close(reason="Closing bot")
