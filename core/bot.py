@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, TypeVar, Literal, TypedDict, Any
 from functools import wraps
 from dataclasses import dataclass
 
-from logging import getLogger, DEBUG
+from logging import currentframe, getLogger, DEBUG
 from warnings import warn
 
 from os.path import isdir
@@ -290,7 +290,7 @@ class RT(commands.Bot):
         if obj is None:
             type_for_fetch = type_for_fetch or type_
             try:
-                obj = await getattr(guild, f"fetch_{type_}")(id_)
+                obj = await getattr(guild, f"fetch_{type_for_fetch}")(id_)
             except discord.NotFound:
                 obj = None
         return obj
@@ -374,14 +374,16 @@ def _mark_get_as_deprecated(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not kwargs.pop("force", False):
-            warn("This function is deprecated. Use a function that starts with search_... instead.")
+            frame = currentframe()
+            if frame is not None and "discord" not in frame.f_code.co_filename:
+                warn("This function is deprecated. Use a function that starts with search_... instead.", stacklevel=2)
         return func(*args, **kwargs)
     return wrapper
 def _mark_all_get_method_as_deprecated(obj, ignore=()):
     for name in dir(obj):
         if name.startswith("get") and (not ignore or all(word not in name for word in ignore)):
             setattr(obj, name, _mark_get_as_deprecated(getattr(obj, name)))
-_mark_all_get_method_as_deprecated(RT)
+_mark_all_get_method_as_deprecated(RT, ignore=("prefix",))
 _mark_all_get_method_as_deprecated(discord.Guild, ignore=("role", "scheduled"))
 
 

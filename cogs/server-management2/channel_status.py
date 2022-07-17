@@ -125,11 +125,14 @@ class ChannelStatus(Cog):
                 guild = await self.bot.search_guild(row[0])
             if guild is None:
                 continue
+
             error = None
-            channel = guild.get_channel(row[1])
+            channel = await self.bot.search_channel_from_guild(guild, row[1])
+
             if channel is None:
                 error = CHANNEL_NOTFOUND
             else:
+                assert isinstance(channel, discord.TextChannel | discord.VoiceChannel)
                 # チャンネルの名前を新しいのに更新する。
                 text = self._update_text(row[2], guild)
                 if text == channel.name:
@@ -172,8 +175,14 @@ class ChannelStatus(Cog):
     @commands.has_guild_permissions(manage_channels=True)
     async def set_(
         self, ctx: commands.Context, text: str, *,
-        channel: discord.abc.GuildChannel | None = None
+        channel: discord.TextChannel | discord.VoiceChannel | None = None
     ):
+        channel = channel or ctx.channel # type: ignore
+        if not isinstance(channel, discord.TextChannel | discord.VoiceChannel):
+            raise Cog.reply_error.BadRequest({
+                "ja": "テキストチャンネルかボイスチャンネルでなければなりません。",
+                "en": "It must be a text or voice channel."
+            })
         async with ctx.typing():
             assert ctx.guild is not None
             await self.data.set_(ctx.guild.id, (channel or ctx.channel).id, text)
