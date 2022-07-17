@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypeVar, Literal, TypedDict, Any
+from collections.abc import Callable
 
 from functools import wraps
 from dataclasses import dataclass
@@ -96,6 +97,7 @@ class RT(commands.Bot):
         self.logger = logger
         if TEST:
             logger.setLevel(DEBUG)
+        self.after_queue: list[Callable[[], Any]] = []
 
         extend_force_slash(self, replace_invalid_annotation_to_str=True,
         first_groups=[discord.app_commands.Group(
@@ -105,6 +107,11 @@ class RT(commands.Bot):
         })
 
         self.check(self._guild_check)
+
+    def process_after_queue(self) -> None:
+        "非同期のイベントループ終了後に実行すべきなお片付けをします。"
+        for after in self.after_queue:
+            after()
 
     @property
     def signature(self) -> str:
@@ -317,7 +324,7 @@ class RT(commands.Bot):
         logger.info("Closing...")
         self.dispatch("close")
         # お片付けをする。
-        self.mixers.close()
+        self.after_queue.append(self.cachers.close)
         self.pool.close()
         await self.rtws.close(reason="Closing bot")
         return await super().close()

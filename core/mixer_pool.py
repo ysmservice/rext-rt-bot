@@ -197,7 +197,7 @@ class MixerPool:
         await self.release(self.get_voice_channel(member), *args, **kwargs)
 
     def close(self) -> None:
-        self.executor.shutdown()
+        self.bot.after_queue.append(self.close)
         self._auto_disconnect.cancel()
 
     @tasks.loop(seconds=30)

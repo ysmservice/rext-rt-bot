@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TypeAlias, Literal, Optional
-from collections.abc import Sequence, Callable, Iterator
+from typing import TypeAlias, Literal, Any
+from collections.abc import Sequence, Callable, Coroutine, Iterator
 
 from functools import cache
 
@@ -19,7 +19,7 @@ from core import t
 
 __all__ = (
     "TimeoutView", "PageMode", "BasePage", "EmbedPage", "NoEditEmbedPage",
-    "separate_to_embeds", "check", "CANT_MODE"
+    "EasyCallbackSelect", "separate_to_embeds", "check", "CANT_MODE"
 )
 CANT_MODE = dict(
     ja="これ以上ページを捲ることができません。",
@@ -31,7 +31,7 @@ class TimeoutView(discord.ui.View):
     "タイムアウト時にコンポーネントを使用不可に編集するようにするViewです。"
 
     target: discord.abc.Snowflake | int | UserMember
-    _ctx: Optional[discord.Message | discord.Interaction | OriginalContext] = None
+    _ctx: discord.Message | discord.Interaction | OriginalContext | None = None
 
     async def on_timeout(self):
         for child in self.children:
@@ -45,7 +45,7 @@ class TimeoutView(discord.ui.View):
 
     def set_message(
         self, ctx: Context | OriginalContext | discord.Interaction | None,
-        message: Optional[discord.Message | OriginalContext | Context] = None
+        message: discord.Message | OriginalContext | Context | None = None
     ):
         "Viewを編集するメッセージを指定します。"
         if isinstance(ctx, Context):
@@ -228,3 +228,17 @@ class NoEditEmbedPage(EmbedPage):
     def on_edit(self, _, **kwargs):
         del kwargs["view"]
         return kwargs
+
+
+class EasyCallbackSelect(discord.ui.Select):
+    "コールバックを簡単に設定できるセレクトです。"
+
+    def __init__(
+        self, callback: Callable[[EasyCallbackSelect, discord.Interaction], Coroutine],
+        *args: Any, **kwargs: Any
+    ):
+        self._callback = callback
+        super().__init__(*args, **kwargs)
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        await self._callback(self, interaction)

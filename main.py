@@ -25,4 +25,4 @@ bot.logger.info("Now loading...")
 if __name__ == "__main__":
     try: bot.run(SECRET["token"], log_handler=None)
     except KeyboardInterrupt: ...
-    bot.cachers.close()
+    finally: bot.process_after_queue()
