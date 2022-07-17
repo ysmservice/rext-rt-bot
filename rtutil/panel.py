@@ -3,7 +3,7 @@
 from typing import Any
 from collections.abc import Sequence, Callable
 
-from emoji import UNICODE_EMOJI_ENGLISH
+from emoji.unicode_codes.data_dict import EMOJI_DATA
 
 
 __all__ = ("make_panel", "tally_panel", "extract_emojis")
@@ -43,7 +43,7 @@ def extract_emojis(
                 if not_mention or line.count(">") != 1:
                     # もし外部絵文字なら。
                     emojis.append(line[:line.find(">") + 1])
-            elif line[0] in (UNICODE_EMOJI_ENGLISH or EMOJIS):
+            elif line[0] in (EMOJI_DATA or EMOJIS):
                 # もし普通の絵文字なら。
                 emojis.append(line[0])
             elif make_default:
