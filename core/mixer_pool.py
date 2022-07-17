@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, TypeAlias, TypeVar, Generic, Any
 from collections.abc import Callable
 
 from concurrent.futures import ThreadPoolExecutor
+from collections import defaultdict
 
 from discord.ext import tasks
 import discord
@@ -37,105 +38,109 @@ SILENT_DATA = AudioSegment(
 "無音データです。"
 
 
+ControllerSourceT = TypeVar("ControllerSourceT", bound=discord.AudioSource)
+class Controller(Generic[ControllerSourceT]):
+    "音源の操作をするためのコントローラーです。"
+
+    def __init__(self, group: str, tag: str, source: ControllerSourceT, after: AfterFunction):
+        self.group, self.tag, self.source = group, tag, source
+        self.is_stopped = False
+        self.is_paused = False
+        self.after = after
+
+    def stop(self) -> None:
+        "音源の再生を停止します。"
+        self.is_stopped = True
+
+    def toggle_pause(self) -> bool:
+        "一時停止をするまたはやめます。"
+        self.is_paused = not self.is_paused
+        return self.is_paused
+
+
 SourceT = TypeVar("SourceT", bound=discord.AudioSource)
 class MixinAudioSource(discord.AudioSource, Generic[SourceT]):
     """音声をミックスできるようにした`discord.AudioSource`です。
     これでミックスするオーディオソースはOpusでエンコードされていないデータを返す必要があります。"""
 
     def __init__(self, *args: Any, **kwargs: Any):
-        self.sources: dict[str, SourceT] = {}
-        self.paused = set[str]()
-        self._remove_queues = set[str]()
-        self.before = 0.0
+        self.controllers = defaultdict[str, dict[str, Controller[SourceT]]](dict)
         super().__init__(*args, **kwargs)
 
     def is_opus(self) -> bool:
         return False
 
     def read(self) -> bytes:
-        # 削除キューにある音源を削除する。
-        for queue in self._remove_queues:
-            self.cleanup_source(queue, None)
-        self._remove_queues.clear()
-
         # 全ての音声のデータを取り出す。
         data = SILENT_DATA
-        for tag, source in set(self.sources.items()):
-            # もしソースが一時停止中なら、音声データを読み込まないで無音データを代わりに重ねる。
-            if tag in self.paused:
-                data = data.overlay(SILENT_DATA)
-                continue
-            # 音声を重ねる。
-            error = False
-            try:
-                if (new := source.read()):
-                    data = data.overlay(AudioSegment(new))
-                else:
-                    error = None
-            except Exception as e:
-                error = e
-            # 使い終わったまたはエラーしたソースはお片付けする。
-            if error is not False:
-                self.cleanup_source(tag, error)
+        for group in set(self.controllers.keys()):
+            for controller in set(self.controllers[group].values()):
+                # もし音源が再生停止となっているのなら止める。
+                if controller.is_stopped:
+                    self.cleanup_source(controller, None)
+                # もし音源が一時停止中なら、音声データを読み込まないで無音データを代わりに重ねる。
+                if controller.is_paused:
+                    data = data.overlay(SILENT_DATA)
+                    continue
+                # 音声を重ねる。
+                error = False
+                try:
+                    if (new := controller.source.read()):
+                        data = data.overlay(AudioSegment(new))
+                    else:
+                        error = None
+                except Exception as e:
+                    error = e
+                # 使い終わったまたはエラーしたソースはお片付けする。
+                if error is not False:
+                    self.cleanup_source(controller, error)
 
-        return data.raw_data if self.sources else bytes()
+        return data.raw_data if self.controllers else bytes()
 
-    def cleanup_source(self, tag: str, error: Exception | None):
+    def cleanup_source(self, controller: Controller, error: Exception | None) -> None:
         "音源のお片付けをします。"
-        self.sources[tag].cleanup()
-        getattr(self.sources[tag], "_after")(error)
-        del self.sources[tag]
+        controller.source.cleanup()
+        controller.after(error)
+        del self.controllers[controller.group][controller.tag]
+        if not self.controllers[controller.group]:
+            del self.controllers[controller.group]
 
     def cleanup(self) -> None:
         "このクラスのインスタンスのお片付けをします。"
-        for tag in set(self.sources.keys()):
-            self.cleanup_source(tag, None)
+        for group in set(self.controllers.keys()):
+            for controller in set(self.controllers[group].values()):
+                self.cleanup_source(controller, None)
 
 
 MixerSourceT = TypeVar("MixerSourceT", bound=discord.AudioSource)
 class Mixer(Generic[MixerSourceT]):
-    "複数の音源を重ねて再生をするということを簡単にするためのクラスです。"
-
-    now: MixinAudioSource[MixerSourceT] | None = None
+    "複数の音源を重ねて再生をするということを簡単に行うためのクラスです。"
 
     def __init__(self, pool: MixerPool, vc: discord.VoiceClient):
         self.pool, self.vc = pool, vc
+        self.now = MixinAudioSource[MixerSourceT]()
 
     def play(
-        self, tag: str, source: MixerSourceT,
+        self, group: str, tag: str, source: MixerSourceT,
         after: AfterFunction = lambda _: None,
     ) -> None:
-        "音源を追加します。まだ何も再生していない場合は自動で再生が始まります。"
-        if self.now is None:
-            self.now = MixinAudioSource()
-        play = not self.now.sources
-        setattr(source, "_after", after)
-        self.now.sources[tag] = source
+        """音源を再生します。既に何かしら音源が再生されている場合でも重ねて再生されます。
+        `group`引数は音源を提供する元を識別するためのグループ名を入れてください。
+        例えば、音楽プレイヤーの場合は`"Music"`などが良いでしょう。
+        `tag`引数は音源を識別するための名前です。"""
+        play = not self.now.controllers
+        self.now.controllers[group][tag] = Controller(group, tag, source, after)
         # もしまだ再生を行なっていないのなら再生を始める。
         if play:
             self.vc.play(self.now)
 
-    def _check(self) -> None:
-        if self.now is None:
-            raise KeyError("その音源が見つかりませんでした。")
+    def get_controllers(self, group: str) -> dict[str, Controller]:
+        "指定されたグループの音源のコントローラーを返します。"
+        return self.now.controllers[group]
 
-    def remove_source(self, tag: str) -> None:
-        "音源を削除します。"
-        self._check()
-        assert self.now is not None
-        self.now._remove_queues.add(tag)
-
-    def toggle_pause_source(self, tag: str) -> bool:
-        """指定されたタグの音源の再生の一時停止するまたはやめます。
-        帰ってきた値が`True`の場合は止めたということになります。"""
-        self._check()
-        assert self.now is not None
-        if tag in self.now.paused:
-            self.now.paused.remove(tag)
-            return False
-        else:
-            self.now.paused.add(tag)
-            return True
+    def is_playing(self, group: str) -> bool:
+        "指定されたグループから提供されている音源が再生されているかどうかを返します。"
+        return group in self.now.controllers
 
 
 class MixerPool:

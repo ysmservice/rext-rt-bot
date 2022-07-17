@@ -13,7 +13,7 @@ __all__ = (
     "SUPPORT_SERVER", "PERMISSION_TEXTS", "SETTING_NOTFOUND", "ALREADY_NO_SETTING",
     "TOO_LARGE_NUMBER", "TOO_SMALL_NUMBER", "TOO_SMALL_OR_LARGE_NUMBER", "NOT_PAID",
     "NO_MORE_SETTING", "NUMBER_CANT_USED", "FORBIDDEN", "notfound", "NOTFOUND",
-    "ROLE_NOTFOUND", "CHANNEL_NOTFOUND", "MESSAGE_NOTFOUND",
+    "ROLE_NOTFOUND", "CHANNEL_NOTFOUND", "MESSAGE_NOTFOUND", "U_NOT_SBJT",
     "SET_ALIASES", "DELETE_ALIASES", "ADD_ALIASES", "REMOVE_ALIASES", "SHOW_ALIASES",
     "LIST_ALIASES", "OFF_ALIASES", "ON_ALIASES", "TOGGLE_ALIASES", "START_ALIASES",
     "STOP_ALIASES"
@@ -146,6 +146,10 @@ ONLY_PRODUCT = dict(ja="**製品版限定**", en="**Product version only**.")
 NOT_PAID = dict(
     ja="このサーバーは製品版が適用されているサーバーではないため、この機能を使用することができません。",
     en="This server is not a server to which the product version is applied and therefore cannot use this feature."
+)
+U_NOT_SBJT = dict(
+    ja="あなたはこのメッセージの対象ではありません。",
+    en="You are not the subject of this message."
 )
 SETTING_NOTFOUND = {
     "ja": "設定が見つかりませんでした。",

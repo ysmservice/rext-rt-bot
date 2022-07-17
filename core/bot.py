@@ -370,12 +370,14 @@ class RT(commands.Bot):
 
 
 # `get_...`を非推奨とする。
+def _check_frame(frame):
+    return frame is not None and "discord" not in frame.f_code.co_filename
 def _mark_get_as_deprecated(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not kwargs.pop("force", False):
             frame = currentframe()
-            if frame is not None and "discord" not in frame.f_code.co_filename:
+            if _check_frame(frame) and _check_frame(frame.f_back):
                 warn("This function is deprecated. Use a function that starts with search_... instead.", stacklevel=2)
         return func(*args, **kwargs)
     return wrapper
