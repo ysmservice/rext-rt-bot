@@ -99,6 +99,11 @@ PoT = TypeVar("PoT")
 class Cog(commands.Cog):
     "Extended cog"
 
+    class Context(commands.Context):
+        guild: discord.Guild
+        author: discord.Member
+        channel: discord.TextChannel | discord.ForumChannel | discord.VoiceChannel | discord.Thread
+
     text_format = staticmethod(text_format)
     detail_or = staticmethod(lambda detail: "ERROR" if detail else "SUCCESS")
     reply_error = reply_error

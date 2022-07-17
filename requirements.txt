@@ -10,8 +10,8 @@ discord-ext-fslash
 jishaku
 ipcs
 uvloop; sys_platform != "win32" and implementation_name == "cpython"
-aioitertools
 pynacl
+pydub
 # cogs.individual
 ## reprypt
 reprypt
@@ -25,3 +25,7 @@ emoji
 bs4
 lxml
 pillow
+# cogs.music
+yt-dlp
+niconico.py
+requests

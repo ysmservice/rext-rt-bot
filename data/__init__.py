@@ -34,6 +34,7 @@ class NormalData(TypedDict):
     backend: BackendData
     shard_ids: List[int] | Literal["auto"]
     shard_count: int | None
+    opus: str
 with open("data.toml", "r") as f:
     DATA: NormalData = load(f) # type: ignore
 
@@ -103,7 +104,8 @@ EMOJIS = {
     "lvup_local": "<:level_up_local:876339471832997888>",
     "lvup_global": "<:level_up_global:876339460252528710>",
     "check": "<:check_mark:885714065106808864>",
-    "search": "<:search:876360747440017439>"
+    "search": "<:search:876360747440017439>",
+    "loading": "<a:loading:997753310436134932>"
 }
 
 
