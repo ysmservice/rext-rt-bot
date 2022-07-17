@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from logging import currentframe, getLogger, DEBUG
 from warnings import warn
 
+from concurrent.futures import ThreadPoolExecutor
 from os.path import isdir
 from os import listdir
 from time import time
@@ -97,7 +98,8 @@ class RT(commands.Bot):
         self.logger = logger
         if TEST:
             logger.setLevel(DEBUG)
-        self.after_queue: list[Callable[[], Any]] = []
+        self.executor = ThreadPoolExecutor(3, thread_name_prefix="ThreadForVoiceFeatures")
+        self.after_queue: list[Callable[[], Any]] = [lambda: self.executor.shutdown(True)]
 
         extend_force_slash(self, replace_invalid_annotation_to_str=True,
         first_groups=[discord.app_commands.Group(

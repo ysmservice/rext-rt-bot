@@ -18,7 +18,7 @@ from requests import get
 
 from data import TEST
 
-from .types_ import MusicType
+from .types_ import MusicType, MusicRaw
 
 if TYPE_CHECKING:
     from .__init__ import MusicCog
@@ -107,16 +107,32 @@ class Music:
         self.started_at, self.error_time = None, 0
         self.on_close = None
 
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
+
+    def to_raw(self) -> MusicRaw:
+        "辞書にデータをまとめます。"
+        return MusicRaw(
+            type=self.type_, title=self.title, url=self.url,
+            thumbnail=self.thumbnail, duration=self.duration
+        )
+
+    @classmethod
+    def from_raw(cls, data: MusicRaw, cog: MusicCog, author: discord.Member) -> Music:
+        "辞書からこのクラスのインスタンスを作ります。"
+        data["type_"] = data.pop("type") # type: ignore
+        return cls(cog, author, **data) # type: ignore
+
     def close(self) -> None:
         "音楽再生終了時に呼ぶべきメソッドです。"
         if self.on_close is not None:
-            self.on_close()
+            self.cog.bot.executor.submit(self.on_close)
 
     async def make_source(self) -> discord.PCMVolumeTransformer:
         "音源を取得します。"
         return discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(
             await self.cog.bot.loop.run_in_executor(
-                self.cog.bot.mixers.executor,
+                self.cog.bot.executor,
                 self._get_direct_source_link
             ), before_options=FFMPEG_BEFORE_OPTIONS, options=FFMPEG_OPTIONS
         ))
@@ -139,7 +155,7 @@ class Music:
     ) -> GetSourceReturnType:
         "URLからこのクラスのインスタンスを作成します。"
         return await cog.bot.loop.run_in_executor(
-            cog.bot.mixers.executor, lambda: cls._wrapped_get_music(
+            cog.bot.executor, lambda: cls._wrapped_get_music(
                 cls, cog, author, url, max_result
             )
         )
@@ -245,9 +261,10 @@ class Music:
     @property
     def now(self) -> float:
         "何秒再生してから経過したかです。"
-        self._check_started_at()
-        assert self.started_at is not None
-        return time() - self.started_at
+        if self.started_at is None:
+            return 0.0
+        else:
+            return time() - self.started_at
 
     @property
     def formated_now(self) -> str:

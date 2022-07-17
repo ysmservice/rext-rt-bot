@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, TypeAlias, TypeVar, Generic, Any
 from collections.abc import Callable
 
-from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
 
 from discord.ext import tasks
@@ -78,9 +77,9 @@ class MixinAudioSource(discord.AudioSource, Generic[SourceT]):
                 # もし音源が再生停止となっているのなら止める。
                 if controller.is_stopped:
                     self.cleanup_source(controller, None)
+                    continue
                 # もし音源が一時停止中なら、音声データを読み込まないで無音データを代わりに重ねる。
                 if controller.is_paused:
-                    data = data.overlay(SILENT_DATA)
                     continue
                 # 音声を重ねる。
                 error = False
@@ -151,7 +150,6 @@ class MixerPool:
         self._try_loaded = False
         self.mixers: dict[VoiceChannel, Mixer] = {}
         self._auto_disconnect.start()
-        self.executor = ThreadPoolExecutor(3, thread_name_prefix="ThreadForVoiceFeatures")
 
     def _try_load_opus(self) -> None:
         if not self._try_loaded:
@@ -197,7 +195,6 @@ class MixerPool:
         await self.release(self.get_voice_channel(member), *args, **kwargs)
 
     def close(self) -> None:
-        self.bot.after_queue.append(self.close)
         self._auto_disconnect.cancel()
 
     @tasks.loop(seconds=30)

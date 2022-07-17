@@ -25,7 +25,7 @@ from rtlib.common import set_handler
 from .utils import hundred_shorten
 from .data_manager import DataManager
 from .player import MusicPlayer, LoopMode
-from .views import ConfirmView
+from .views import ConfirmView, QueueListView
 from .music import Music, is_url
 
 from data import EMOJIS, U_NOT_SBJT
@@ -226,6 +226,14 @@ class MusicCog(Cog, name="Music"):
             ext, "\n"
         ), ctx), embed=embed or None, view=None)
 
+    @check()
+    @command(
+        description="Displays the current queue. It can also be deleted.",
+        aliases=("qs", "キュー", "きゅー", "きゅ", "きゆ")
+    )
+    async def queue(self, ctx: Cog.Context):
+        await QueueListView(ctx, self, "Queue", self.now[ctx.guild].queue).first_reply(ctx)
+
     @command(
         description="Play music. YouTube, Soundcloud, and Nico Nico Douga are supported.",
         aliases=("p", "再生", "プレイ", "ぷれい")
@@ -309,11 +317,10 @@ class MusicCog(Cog, name="Music"):
     )
     async def stop(self, ctx: Cog.Context):
         self.now[ctx.guild].queue = self.now[ctx.guild].queue[:1]
-        # もし音楽プレイヤー以外も使っている場合は、スキップで曲の再生を終了させるだけにする。
-        if len(self.now[ctx.guild].mixer.now.sources) == 1: # type: ignore
-            await self.bot.mixers.release(self.now[ctx.guild].mixer.vc.channel)
-        else:
+        if self.now[ctx.guild].is_playing():
             self.now[ctx.guild].skip()
+        if not self.now[ctx.guild].mixer.now.controllers:
+            await self.bot.mixers.release(self.now[ctx.guild].mixer.vc.channel)
         del self.now[ctx.guild]
         return "⏹ Stopped"
 

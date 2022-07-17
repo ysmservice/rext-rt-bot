@@ -52,21 +52,12 @@ class MusicPlayer:
             lambda e: self.cog.bot.loop.create_task(self._after(e))
         )
 
-    async def _close(self, close):
-        await self.cog.bot.loop.run_in_executor(
-            self.cog.bot.mixers.executor, close
-        )
-
     async def _after(self, error: Exception | None) -> None:
         # 再生終了後に呼び出されるメソッドです。
         last = self.queue.pop(0)
-        if self.cog.bot.is_ready():
-            self.cog.bot.loop.create_task(
-                self._close(last.close),
-                name="MusicPlayer: Close music"
-            )
-        else:
-            last.close()
+        last.close()
+
+        # エラーがあるのならそれを報告する。
         if error is not None:
             await self.sendable.send(t(dict(
                 ja="{name}の再生に失敗しました。\nエラーコード：{error}",
@@ -74,6 +65,7 @@ class MusicPlayer:
             ), last.author, name=last.title, error=code_block(
                 make_error_message(error), "python"
             )), allowed_mentions=discord.AllowedMentions.none())
+
         if self.queue:
             await self.play()
 
@@ -89,7 +81,7 @@ class MusicPlayer:
     @property
     def now_controller(self) -> Controller[discord.PCMVolumeTransformer] | None:
         if self.now is not None:
-            return self.controllers[self.now.tag]
+            return self.controllers.get(self.now.tag)
 
     def is_playing(self) -> bool:
         "現在再生を行なっているかどうかを返します。"
