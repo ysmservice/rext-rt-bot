@@ -128,7 +128,7 @@ class General(Cog):
                     self.now_status_mode = mode
 
     @commands.command(
-        aliases=("p", "latency", "レイテンシ"),
+        aliases=("pg", "pingu", "latency", "レイテンシ"),
         description="Displays RT's latency."
     )
     async def ping(self, ctx: commands.Context):

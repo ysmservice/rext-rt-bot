@@ -41,6 +41,7 @@ from rtlib.common.utils import make_simple_error_text
 from data import DATA, CATEGORIES, PREFIXES, SECRET, TEST, SHARD, ADMINS, URL, API_URL, Colors
 
 from .customer_pool import CustomerPool
+from .mixer_pool import MixerPool
 from .utils import logger
 from .rtws import setup
 from . import tdpocket
@@ -140,6 +141,7 @@ class RT(commands.Bot):
                 logger.info("Load extension: %s", path)
 
     async def setup_hook(self):
+        self.mixers = MixerPool(self)
         self.cachers = CacherPool()
         self.cachers.start()
         logger.info("Prepared cacher")
@@ -315,10 +317,9 @@ class RT(commands.Bot):
         logger.info("Closing...")
         self.dispatch("close")
         # お片付けをする。
+        self.mixers.close()
         self.pool.close()
-        logger.info("Closed pool")
         await self.rtws.close(reason="Closing bot")
-        logger.info("Closed ipcs")
         return await super().close()
 
     @property

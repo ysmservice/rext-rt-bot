@@ -26,7 +26,8 @@ def setup(bot: RT):
             disconnected = False
 
     @bot.rtws.listen()
-    async def on_close():
+    async def on_close(code: int, reason: str):
         global disconnected
         disconnected = True
         bot.dispatch("backend_disconnect")
+        bot.logger.warning("Disconnected from server: %s - %s" % (code, reason))

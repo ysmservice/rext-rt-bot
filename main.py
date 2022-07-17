@@ -21,7 +21,8 @@ bot = RT(
 )
 bot.logger.info("Now loading...")
 
+
 if __name__ == "__main__":
-    try: run(bot.start(SECRET["token"]))
+    try: bot.run(SECRET["token"], log_handler=None)
     except KeyboardInterrupt: ...
-    finally: bot.cachers.close()
+    bot.cachers.close()

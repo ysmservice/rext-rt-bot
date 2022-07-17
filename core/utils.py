@@ -70,7 +70,7 @@ def make_default(text: str | Text, **kwargs) -> Text:
 def concat_text(data: Text, plus: Text, space: str = "") -> Text:
     "TextとTextを連結させます。"
     for key, value in list(data.items()):
-        data[key] = f'{value}{space}{plus.get(key, plus.get("en", key))}'
+        data[key] = f'{value}{space}{plus.get(key, plus.get("en", ""))}'
     return data
 
 
