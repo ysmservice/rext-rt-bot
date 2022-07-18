@@ -22,9 +22,9 @@ from .__init__ import FSPARENT
 class Method(Enum):
     "メッセージリンク展開をどのようにするかです。"
 
-    webhook = 0
-    nowebhook = 1
-    none = 2 # 何もしない
+    WEBHOOK = 1
+    NOWEBHOOK = 2
+    NONE = 4 # 何もしない
 
 
 class DataManager(DatabaseManager):
@@ -38,7 +38,7 @@ class DataManager(DatabaseManager):
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS Expander (
                 GuildId BIGINT PRIMARY KEY NOT NULL,
-                Method ENUM("webhook", "nowebhook", "none")
+                Method ENUM("WEBHOOK", "NOWEBHOOK", "NONE")
             );"""
         )
 
@@ -50,7 +50,7 @@ class DataManager(DatabaseManager):
                 (guild_id,)
             )
             self.caches[guild_id] = getattr(Method, row[0]) \
-                if (row := await cursor.fetchone()) else Method.webhook
+                if (row := await cursor.fetchone()) else Method.WEBHOOK
         return self.caches[guild_id]
 
     async def write(self, guild_id: int, method: Method) -> None:
@@ -58,7 +58,7 @@ class DataManager(DatabaseManager):
         await cursor.execute(
             """INSERT INTO Expander VALUES (%s, %s)
                 ON DUPLICATE KEY UPDATE Method = %s;""",
-            (guild_id, method, method)
+            (guild_id, method, method.name)
         )
         self.caches[guild_id] = method
 
@@ -99,7 +99,7 @@ class Expander(Cog):
 
         # キャッシュを作ったりする。
         data = await self.data.read(message.guild.id)
-        if data == Method.none:
+        if data == Method.NONE:
             return
 
         # メッセージリンクの展開を行う。
@@ -131,7 +131,7 @@ class Expander(Cog):
 
         # 展開したものを送信する。
         if embeds:
-            if data == Method.webhook:
+            if data == Method.WEBHOOK:
                 await artificially_send(
                     message.channel, message.author, message.clean_content, # type: ignore
                     embeds=embeds[:5]
