@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar, ParamSpec, Optional, Any
-from collections.abc import Callable, Coroutine
+from typing import TYPE_CHECKING, TypeVar, Generic, ParamSpec, Optional, Any
 
 from discord.ext import commands
 from discord.ext.fslash import is_fslash
@@ -96,10 +95,12 @@ _set_t(t)
 UCReT = TypeVar("UCReT")
 PoP = ParamSpec("PoP")
 PoT = TypeVar("PoT")
+CogT = TypeVar("CogT")
 class Cog(commands.Cog):
     "Extended cog"
 
-    class Context(commands.Context):
+    class Context(commands.Context, Generic[CogT]):
+        cog: CogT
         guild: discord.Guild
         author: discord.Member
         channel: discord.TextChannel | discord.ForumChannel | discord.VoiceChannel | discord.Thread

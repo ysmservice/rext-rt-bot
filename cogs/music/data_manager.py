@@ -47,7 +47,7 @@ class DataManager(DatabaseManager):
             )
         self.dj_role_caches[guild_id] = role_id
 
-    async def get_dj_role(self, guild_id: int) -> int | None:
+    async def get_dj_role_id(self, guild_id: int) -> int | None:
         "DJロールを取得します。"
         if guild_id not in self.dj_role_caches:
             await cursor.execute(

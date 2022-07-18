@@ -11,9 +11,12 @@ import discord
 
 from core import Cog, t
 from core.utils import concat_text
+from core.types_ import Text
 
 from rtutil.views import EmbedPage, TimeoutView
 from rtutil.utils import adjust_min_max, set_page
+
+from rtlib.common.types_ import CoroutineFunction
 
 from .utils import can_control, can_control_by_interaction, hundred_shorten
 
@@ -29,7 +32,10 @@ ASK_EVERYONE = {
     "en": "You do not have the DJ role or authority to perform this operation."
         "\nSo I would like to ask everyone."
 }
-AfterConfirm: TypeAlias = Union[Coroutine[Any, Any, str], Callable[[], str]]
+AfterConfirm: TypeAlias = Union[
+    Coroutine[Any, Any, str], Callable[[], str],
+    Callable[[], Coroutine]
+]
 class ConfirmView(TimeoutView):
     "確認ボタンを実装したViewです。"
 
@@ -43,7 +49,10 @@ class ConfirmView(TimeoutView):
 
     @staticmethod
     async def _run_after(after) -> str:
-        return (await after) if iscoroutine(after) else after() # type: ignore
+        after = (await after) if iscoroutine(after) else after() # type: ignore
+        if iscoroutine(after):
+            after = await after
+        return after
 
     @discord.ui.button(label="Okay", emoji="✅")
     async def confirm(self, interaction: discord.Interaction, _):
@@ -59,22 +68,34 @@ class ConfirmView(TimeoutView):
             )
         self.set_message(interaction)
 
+    @staticmethod
+    async def process(
+        cls: type[ConfirmView], reply: CoroutineFunction, author: discord.Member, # type: ignore
+        content: dict[str, str], dj_role_id: int | None, after: AfterConfirm
+    ) -> None:
+        "渡されたものを実行します。また、他の人への確認が必要無場合は確認を行います。"
+        assert isinstance(author, discord.Member) and author.voice is not None \
+            and author.voice.channel is not None
+        if can_control(author, dj_role_id):
+            await reply(content=await cls._run_after(after))
+        else:
+            view = cls(after, sum((1 for m in author.voice.channel.members if not m.bot)))
+            view.ok.add(author.id)
+            await reply(t(content, author.guild), view=view)
+
+
+class ConfirmViewForCommand(ConfirmView):
+    "`ConfirmView`をコマンドで簡単に使えるように拡張したものです。"
+
     @classmethod
     async def process(
-        cls, ctx: Cog.Context, content: dict[str, str],
-        dj_role_id: int | None, after: AfterConfirm
+        cls, ctx: Cog.Context[MusicCog],
+        content: Text, after: AfterConfirm
     ) -> None:
-        "渡されたコルーチンを実行します。また、他の人への確認が必要無場合は確認を行います。"
-        assert isinstance(ctx.author, discord.Member) and ctx.author.voice is not None \
-            and ctx.author.voice.channel is not None
-        if can_control(ctx.author, dj_role_id):
-            await ctx.reply(await cls._run_after(after))
-        else:
-            view = cls(after, sum((1 for m in ctx.author.voice.channel.members if not m.bot)))
-            view.ok.add(ctx.author.id)
-            view.set_message(ctx, await ctx.reply(
-                t(concat_text(content, ASK_EVERYONE), ctx.guild), view=view
-            ))
+        await ConfirmView.process(
+            cls, ctx.reply, ctx.author, concat_text(content, ASK_EVERYONE),
+            await ctx.cog.data.get_dj_role_id(ctx.guild.id), after
+        )
 
 
 SpT = TypeVar("SpT")

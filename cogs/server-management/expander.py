@@ -161,7 +161,7 @@ class Expander(Cog):
                 ja="現在の設定：`{data}`", en="Current setting: `{data}`"
             ), ctx, data=(await self.data.read(ctx.guild.id)).name))
         else:
-            await self.data.write(ctx.guild.id, getattr(Method, mode))
+            await self.data.write(ctx.guild.id, getattr(Method, mode.upper()))
             await ctx.reply("Ok")
 
     (Cog.HelpCommand(expansion)
