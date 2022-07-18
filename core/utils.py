@@ -24,8 +24,7 @@ if TYPE_CHECKING:
 
 __all__ = (
     "get_inner_text", "separate", "gettext", "cleantext", "make_default",
-    "get_kwarg", "truncate", "concat_text", "quick_invoke_command",
-    "get_fsparent", "logger"
+    "get_kwarg", "truncate", "concat_text", "quick_invoke_command", "logger"
 )
 logger = getLogger("rt")
 set_handler(logger)
