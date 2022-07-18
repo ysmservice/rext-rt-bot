@@ -320,7 +320,8 @@ class HelpCore(Cog):
                 self.data[value.category][command.name] = value
                 if self.data[value.category][command.name].category == "Other":
                     if command.cog is not None:
-                        category = get_fsparent(command.cog.__class__)
+                        category = command.cog.__module__[command.cog.__module__.find(".")+1:]
+                        category = category[:category.find(".")]
                         self.data[category][command.name] = \
                             self.data[value.category][command.name]
                         del self.data[value.category][command.name]
