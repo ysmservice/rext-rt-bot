@@ -58,7 +58,7 @@ class DataManager(DatabaseManager):
         await cursor.execute(
             """INSERT INTO Expander VALUES (%s, %s)
                 ON DUPLICATE KEY UPDATE Method = %s;""",
-            (guild_id, method, method.name)
+            (guild_id, method.name, method.name)
         )
         self.caches[guild_id] = method
 
