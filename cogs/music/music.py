@@ -126,13 +126,13 @@ class Music:
     def close(self) -> None:
         "音楽再生終了時に呼ぶべきメソッドです。"
         if self.on_close is not None:
-            self.cog.bot.executor.submit(self.on_close)
+            self.cog.bot.executors.clean.submit(self.on_close)
 
     async def make_source(self) -> discord.PCMVolumeTransformer:
         "音源を取得します。"
         return discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(
             await self.cog.bot.loop.run_in_executor(
-                self.cog.bot.executor,
+                self.cog.bot.executors.normal,
                 self._get_direct_source_link
             ), before_options=FFMPEG_BEFORE_OPTIONS, options=FFMPEG_OPTIONS
         ))
@@ -155,7 +155,7 @@ class Music:
     ) -> GetSourceReturnType:
         "URLからこのクラスのインスタンスを作成します。"
         return await cog.bot.loop.run_in_executor(
-            cog.bot.executor, lambda: cls._wrapped_get_music(
+            cog.bot.executors.normal, lambda: cls._wrapped_get_music(
                 cls, cog, author, url, max_result
             )
         )

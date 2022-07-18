@@ -178,7 +178,7 @@ class LevelCog(Cog, name="Level"):
         await self.data.preapre_table()
         self.process_queues.start()
 
-    async def cog_unlaod(self):
+    async def cog_unload(self):
         self.process_queues.cancel()
 
     @commands.group(

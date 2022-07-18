@@ -13,6 +13,7 @@ from core import Cog, t
 from core.utils import concat_text
 
 from rtutil.views import EmbedPage, TimeoutView
+from rtutil.utils import adjust_min_max, set_page
 
 from .utils import can_control, can_control_by_interaction, hundred_shorten
 
@@ -46,14 +47,16 @@ class ConfirmView(TimeoutView):
 
     @discord.ui.button(label="Okay", emoji="✅")
     async def confirm(self, interaction: discord.Interaction, _):
-        self.ok.add(interaction.user)
-        if len(self.ok) >= self.required:
+        self.ok.add(interaction.user.id)
+        if (length := len(self.ok)) >= self.required:
             await interaction.response.send_message("{}\n{}".format(t(dict(
                 ja="みんながOKしたので実効が決まりました。",
                 en="Everyone said yes, so we decided to do the action."
-            ), interaction), await self._run_after(self.after))) # type: ignore
+            ), interaction.guild), await self._run_after(self.after))) # type: ignore
         else:
-            await interaction.response.send_message("Ok", ephemeral=True)
+            await interaction.response.send_message(
+                f"Ok: {length}/{self.required}", ephemeral=True
+            )
         self.set_message(interaction)
 
     @classmethod
@@ -67,9 +70,10 @@ class ConfirmView(TimeoutView):
         if can_control(ctx.author, dj_role_id):
             await ctx.reply(await cls._run_after(after))
         else:
-            view = cls(after, len(ctx.author.voice.channel.members))
+            view = cls(after, sum((1 for m in ctx.author.voice.channel.members if not m.bot)))
+            view.ok.add(ctx.author.id)
             view.set_message(ctx, await ctx.reply(
-                t(concat_text(content, ASK_EVERYONE), ctx), view=view
+                t(concat_text(content, ASK_EVERYONE), ctx.guild), view=view
             ))
 
 
@@ -105,11 +109,11 @@ class MusicListView(EmbedPage):
 
     def update_embeds(self) -> None:
         "埋め込みを最新の状態にします。"
-        self.embeds = [
+        self.embeds = set_page([
             Cog.Embed(self.title, description="\n".join(
                 self.make_option_text(music) for music in sample
             )) for sample in self.musics
-        ]
+        ])
 
 
 class MusicListWithSelectView(MusicListView):
@@ -127,6 +131,7 @@ class MusicListWithSelectView(MusicListView):
         for key, text in self.selects.items():
             self.mapped_selects[key].placeholder = t(text, ctx)
         self.update_options()
+        self.removed = set()
 
     @staticmethod
     def select(*args: Any, **kwargs: Any) -> ...:
@@ -138,18 +143,20 @@ class MusicListWithSelectView(MusicListView):
         for index in sorted(map(int, values), reverse=True):
             if self.page == 1 and index == 0:
                 continue
-            del self.musics[self.page][index]
+            self.removed.add(self.musics[self.page].pop(index))
 
     def update_options(self) -> None:
         "セレクトのオプションを更新します。"
         for item in self.mapped_selects.values():
             if item.custom_id in self.selects:
                 item.options.clear()
+                index = 0
                 for index, music in enumerate(self.musics[self.page]):
                     item.add_option(
                         label=hundred_shorten(music["title"]),
                         value=str(index), description=hundred_shorten(music["url"])
                     )
+                item.min_values, item.max_values = adjust_min_max(index + 1, 1, 25)
 
     async def update(self, interaction: discord.Interaction) -> None:
         "セレクトの内容の更新をして埋め込みの更新をし返信をします。"
@@ -171,12 +178,18 @@ class QueueListView(MusicListWithSelectView):
     def make_option_text(self, music: Music) -> str:
         return f"{music.author.mention}：[{music['title']}]({music['url']})"
 
+    def on_edit(self, _, **kwargs):
+        self.update_options()
+        return kwargs
+
     def _remove_options(self, select: discord.ui.Select) -> str:
         self.remove_options(select.values)
+        for music in self.removed:
+            self.cog.now[self.ctx.guild].queue.remove(music)
         return t(dict(
             ja="キューから曲を削除しました。",
             en="Song removed from queue."
-        ), self.ctx.guild.id)
+        ), self.ctx.guild)
 
     @MusicListWithSelectView.select(custom_id="music.remove_queue")
     async def remove_queue(self, interaction: discord.Interaction, select: discord.ui.Select):
@@ -192,13 +205,13 @@ class QueueListView(MusicListWithSelectView):
                 en="People who are not listening to music cannot delete songs from the queue."
             ), interaction.user), ephemeral=True)
         else:
-            await interaction.response.edit_message(
-                content=concat_text(
+            await interaction.response.send_message(
+                content=t(concat_text(
                     ASK_EVERYONE, {
                         "ja": "キューを何曲か削除しても良いですか？",
                         "en": "Can I delete some songs from the queue?"
                     }, "\n"
-                ), view=ConfirmView(
+                ), interaction.guild), view=ConfirmView(
                     lambda: self._remove_options(select),
                     len(interaction.user.voice.channel.members) # type: ignore
                 )

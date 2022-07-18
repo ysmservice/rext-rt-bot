@@ -66,7 +66,7 @@ class MusicPlayer:
                 make_error_message(error), "python"
             )), allowed_mentions=discord.AllowedMentions.none())
 
-        if self.queue:
+        if not self.cog.bot.is_closing() and self.queue:
             await self.play()
 
     @property

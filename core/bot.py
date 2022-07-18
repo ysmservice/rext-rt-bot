@@ -16,7 +16,7 @@ from os.path import isdir
 from os import listdir
 from time import time
 
-from asyncio import sleep
+from asyncio import gather, sleep, all_tasks
 
 from discord.ext import commands
 import discord
@@ -28,7 +28,7 @@ from jishaku.features.baseclass import Feature
 
 from ipcs import Client, logger as ipcs_logger
 
-from aiomysql import create_pool, Cursor
+from aiomysql import create_pool, Cursor, Pool
 from aiohttp import ClientSession
 from orjson import dumps
 
@@ -62,11 +62,14 @@ set_handler(ipcs_logger)
 class Prefixes(TypedDict):
     Guild: dict[int, str]
     User: dict[int, str]
-
 @dataclass
 class Caches:
     guild: dict[int, str]
     user: dict[int, str]
+@dataclass
+class Executors:
+    normal: ThreadPoolExecutor
+    clean: ThreadPoolExecutor    
 
 
 GetT = TypeVar("GetT", bound=discord.abc.Snowflake)
@@ -98,9 +101,16 @@ class RT(commands.Bot):
         self.logger = logger
         if TEST:
             logger.setLevel(DEBUG)
-        self.executor = ThreadPoolExecutor(3, thread_name_prefix="ThreadForVoiceFeatures")
-        self.after_queue: list[Callable[[], Any]] = [lambda: self.executor.shutdown(True)]
+        self.executors = Executors(
+            ThreadPoolExecutor(4, thread_name_prefix="RT.NormalExecutor"),
+            ThreadPoolExecutor(2, thread_name_prefix="RT.CleanExecutor")
+        )
+        self.after_queue: list[Callable[[], Any]] = [
+            lambda: self.executors.normal.shutdown(False, cancel_futures=True),
+            lambda: self.executors.clean.shutdown(True)
+        ]
 
+        self._closing = False
         extend_force_slash(self, replace_invalid_annotation_to_str=True,
         first_groups=[discord.app_commands.Group(
             name=key, description=CATEGORIES[key]["en"]
@@ -155,7 +165,7 @@ class RT(commands.Bot):
         self.cachers.start()
         logger.info("Prepared cacher")
         self.exists_caches = self.cachers.acquire(60.0)
-        self.pool = await create_pool(**SECRET["mysql"])
+        self.pool: Pool = await create_pool(**SECRET["mysql"])
         logger.info("Prepared customer pool")
         self.customers = CustomerPool(self)
 
@@ -322,14 +332,19 @@ class RT(commands.Bot):
             channel = await self.fetch_channel(channel_id)
         return channel
 
+    def is_closing(self) -> bool:
+        "終了処理をしている途中かどうかです。"
+        return self._closing
+
     async def close(self):
-        logger.info("Closing...")
-        self.dispatch("close")
         # お片付けをする。
+        logger.info("Closing...")
+        self._closing = True
+        await super().close()
+        await self.rtws.close(reason="Closing bot")
+        self.dispatch("close")
         self.after_queue.append(self.cachers.close)
         self.pool.close()
-        await self.rtws.close(reason="Closing bot")
-        return await super().close()
 
     @property
     def round_latency(self) -> str:
@@ -386,7 +401,7 @@ def _mark_get_as_deprecated(func):
     def wrapper(*args, **kwargs):
         if not kwargs.pop("force", False):
             frame = currentframe()
-            if _check_frame(frame) and _check_frame(frame.f_back):
+            if _check_frame(frame) or _check_frame(frame.f_back):
                 warn("This function is deprecated. Use a function that starts with search_... instead.", stacklevel=2)
         return func(*args, **kwargs)
     return wrapper
