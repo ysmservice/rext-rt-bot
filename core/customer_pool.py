@@ -34,6 +34,17 @@ class CustomerPool:
     def __init__(self, bot: RT):
         self.bot = bot
         self.caches: Cacher[int, bool] = self.bot.cachers.acquire(900.0)
+        self.bot.loop.create_task(self.prepare_table(), name="CreateCustomersTable")
+
+    async def prepare_table(self) -> None:
+        async with self.bot.pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute(
+                    """CREATE TABLE IF NOT EXISTS Customers (
+                        GuildId BIGINT PRIMARY KEY NOT NULL,
+                        UserId BIGINT, Deadline DOUBLE
+                    );"""
+                )
 
     async def check(self, guild_id: int) -> bool:
         "指定されたサーバーが製品版を所有しているかどうかを調べます。"
