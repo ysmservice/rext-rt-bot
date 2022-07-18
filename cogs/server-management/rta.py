@@ -18,6 +18,8 @@ from rtlib.common.cacher import Cacher
 
 from data import FORBIDDEN
 
+from .__init__ import FSPARENT
+
 
 class DataManager(DatabaseManager):
     def __init__(self, bot: RT):
@@ -86,8 +88,6 @@ class RTA(Cog):
 
     async def cog_load(self):
         await self.data.prepare_table()
-
-    FSPARENT = Cog.get_fsparent(cog_load)
 
     @commands.group(description="Immediate Quit RTA Feature", fsparent=FSPARENT)
     @commands.has_guild_permissions(administrator=True)

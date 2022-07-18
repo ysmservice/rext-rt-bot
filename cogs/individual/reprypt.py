@@ -10,6 +10,8 @@ from core import Cog, RT
 
 from rtlib.common.utils import code_block
 
+from .__init__ import FSPARENT
+
 
 class Reprypt(Cog):
     def __init__(self, bot: RT):
@@ -18,8 +20,6 @@ class Reprypt(Cog):
     @executor_function
     def process(self, mode: str, text: str, key: str) -> str:
         return encrypt(text, key) if mode == "en" else decrypt(text, key)
-
-    FSPARENT = Cog.get_fsparent(__init__)
 
     @commands.group(
         name="reprypt",

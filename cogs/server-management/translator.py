@@ -13,6 +13,8 @@ from deep_translator import GoogleTranslator
 from core.utils import quick_invoke_command
 from core import Cog, RT, t
 
+from .__init__ import FSPARENT
+
 
 FEATURE_NAME = "Translate"
 class Translator(Cog):
@@ -27,8 +29,6 @@ class Translator(Cog):
     @executor_function
     def translate(self, target: str, content: str) -> str:
         return GoogleTranslator(target=target).translate(content)
-
-    FSPARENT = Cog.get_fsparent(__init__)
 
     @commands.command(
         "translate", description="Translation.",

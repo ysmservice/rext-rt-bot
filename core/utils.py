@@ -31,14 +31,6 @@ logger = getLogger("rt")
 set_handler(logger)
 
 
-def get_fsparent(obj: Any) -> str:
-    "オブジェクトからカテゴリーを取得します。"
-    fsparent = getfile(obj)
-    fsparent = fsparent[:fsparent.rfind("/" if os.name != "nt" else "\\")]
-    fsparent = fsparent[fsparent.rfind("/" if os.name != "nt" else "\\")+1:]
-    return fsparent
-
-
 # 言語関連
 def get_inner_text(data: dict[str, Text], key: str, language: str) -> str:
     "渡されたTextが入っている辞書から、特定のキーのTextの指定された言語の値を取り出します。"
