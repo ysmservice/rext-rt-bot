@@ -17,7 +17,7 @@ from rtlib.common.utils import code_block
 from data import ONLY_PRODUCT
 
 from .utils import (
-    get_kwarg, get_fsparent, get_inner_text, gettext, cleantext,
+    get_kwarg, get_inner_text, gettext, cleantext,
     make_default, concat_text
 )
 from .types_ import CmdGrp, Text
